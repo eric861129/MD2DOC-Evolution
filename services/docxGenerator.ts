@@ -8,36 +8,31 @@ import {
   ShadingType
 } from "docx";
 import { ParsedBlock, BlockType } from "../types.ts";
-
-// 單位換算常數 (1 cm ≒ 567 Twips)
-const CM_TO_TWIPS = 567;
-
-// 字體設定
-const FONT_MAIN_CJK = "Microsoft JhengHei"; // 微軟正黑體
-const FONT_MAIN_LATIN = "Consolas";
+import { parseInlineElements, InlineStyleType } from "../utils/styleParser.ts";
+import { FONTS, COLORS, SIZES } from "../constants/theme.ts";
 
 // 基礎字型設定
 const FONT_CONFIG_NORMAL = {
-  ascii: FONT_MAIN_LATIN,
-  hAnsi: FONT_MAIN_LATIN,
-  eastAsia: FONT_MAIN_CJK,
-  cs: FONT_MAIN_LATIN
+  ascii: FONTS.LATIN,
+  hAnsi: FONTS.LATIN,
+  eastAsia: FONTS.CJK,
+  cs: FONTS.LATIN
 };
 
 // 快捷鍵字型設定 (統一使用標準字體)
 const FONT_CONFIG_SHORTCUT = {
-  ascii: FONT_MAIN_LATIN,
-  hAnsi: FONT_MAIN_LATIN,
-  eastAsia: FONT_MAIN_CJK,
-  cs: FONT_MAIN_LATIN
+  ascii: FONTS.LATIN,
+  hAnsi: FONTS.LATIN,
+  eastAsia: FONTS.CJK,
+  cs: FONTS.LATIN
 };
 
 // 斜體字型設定 (統一使用標準字體，不使用標楷體)
 const FONT_CONFIG_ITALIC = {
-  ascii: FONT_MAIN_LATIN,
-  hAnsi: FONT_MAIN_LATIN,
-  eastAsia: FONT_MAIN_CJK, 
-  cs: FONT_MAIN_LATIN
+  ascii: FONTS.LATIN,
+  hAnsi: FONTS.LATIN,
+  eastAsia: FONTS.CJK, 
+  cs: FONTS.LATIN
 };
 
 // 版面設定介面
@@ -47,95 +42,66 @@ export interface DocxConfig {
 }
 
 const parseInlineStyles = (text: string): TextRun[] => {
-  const runs: TextRun[] = [];
-  // Regex 順序：粗體 > 斜體 > 底線 > 程式碼 > UI按鈕 > 快捷鍵 > 書名號
-  // 注意：Regex 特殊符號需跳脫
-  const regex = /(\*\*.*?\*\*)|(\*.*?\*)|(<u>.*?<\/u>)|(`[^`]+`)|(【.*?】)|(\[.*?\])|(『.*?』)/g;
-  
-  let lastIndex = 0;
-  let match;
-
-  while ((match = regex.exec(text)) !== null) {
-    // 1. 處理匹配前的普通文字
-    if (match.index > lastIndex) {
-      runs.push(new TextRun({ 
-        text: text.substring(lastIndex, match.index),
-        font: FONT_CONFIG_NORMAL
-      }));
+  const segments = parseInlineElements(text);
+  return segments.map(segment => {
+    switch (segment.type) {
+      case InlineStyleType.BOLD:
+        return new TextRun({ 
+          text: segment.content, 
+          bold: true,
+          font: FONT_CONFIG_NORMAL
+        });
+      case InlineStyleType.ITALIC:
+        return new TextRun({ 
+          text: segment.content, 
+          italics: true,
+          color: COLORS.PRIMARY_BLUE, // 深藍色
+          font: FONT_CONFIG_ITALIC
+        });
+      case InlineStyleType.UNDERLINE:
+        return new TextRun({ 
+          text: segment.content, 
+          color: COLORS.LINK_BLUE, // 亮藍色連結感
+          underline: {
+              type: UnderlineType.SINGLE,
+              color: COLORS.LINK_BLUE
+          },
+          font: FONT_CONFIG_NORMAL
+        });
+      case InlineStyleType.CODE:
+        return new TextRun({ 
+          text: segment.content, 
+          font: FONT_CONFIG_NORMAL,
+          shading: { fill: COLORS.BG_CODE, type: ShadingType.CLEAR, color: "auto" }
+        });
+      case InlineStyleType.UI_BUTTON:
+        return new TextRun({ 
+          text: segment.content, 
+          bold: true,
+          font: FONT_CONFIG_NORMAL,
+          shading: { fill: COLORS.BG_BUTTON, type: ShadingType.CLEAR, color: "auto" }
+        });
+      case InlineStyleType.SHORTCUT:
+        return new TextRun({ 
+          text: segment.content, 
+          font: FONT_CONFIG_SHORTCUT,
+          size: 20, // 稍微縮小一點
+          shading: { fill: COLORS.BG_SHORTCUT, type: ShadingType.CLEAR, color: "auto" }
+        });
+      case InlineStyleType.BOOK:
+        return new TextRun({ 
+          text: segment.content, 
+          bold: true,
+          font: FONT_CONFIG_NORMAL
+        });
+      case InlineStyleType.TEXT:
+      default:
+        return new TextRun({ 
+          text: segment.content,
+          font: FONT_CONFIG_NORMAL
+        });
     }
-
-    const fullMatch = match[0];
-
-    // 2. 判斷匹配類型並套用對應樣式
-    if (fullMatch.startsWith('**')) {
-      // 粗體
-      runs.push(new TextRun({ 
-        text: fullMatch.slice(2, -2), 
-        bold: true,
-        font: FONT_CONFIG_NORMAL
-      }));
-    } else if (fullMatch.startsWith('*')) {
-      // 斜體：顏色深藍，Italic
-      runs.push(new TextRun({ 
-        text: fullMatch.slice(1, -1), 
-        italics: true,
-        color: "1E3A8A", // 深藍色
-        font: FONT_CONFIG_ITALIC
-      }));
-    } else if (fullMatch.startsWith('<u>')) {
-      // 底線：單線，藍色字
-      runs.push(new TextRun({ 
-        text: fullMatch.slice(3, -4), 
-        color: "2563EB", // 亮藍色連結感
-        underline: {
-            type: UnderlineType.SINGLE,
-            color: "2563EB"
-        },
-        font: FONT_CONFIG_NORMAL
-      }));
-    } else if (fullMatch.startsWith('`')) {
-      // 行內程式碼
-      runs.push(new TextRun({ 
-        text: fullMatch.slice(1, -1), 
-        font: FONT_CONFIG_NORMAL,
-        shading: { fill: "F1F5F9", type: ShadingType.CLEAR, color: "auto" }
-      }));
-    } else if (fullMatch.startsWith('【')) {
-      // UI 按鈕：加粗 + 背景
-      runs.push(new TextRun({ 
-        text: fullMatch, 
-        bold: true,
-        font: FONT_CONFIG_NORMAL,
-        shading: { fill: "E2E8F0", type: ShadingType.CLEAR, color: "auto" }
-      }));
-    } else if (fullMatch.startsWith('[')) {
-      // 快捷鍵：標準字體 + 外框感
-      runs.push(new TextRun({ 
-        text: fullMatch, 
-        font: FONT_CONFIG_SHORTCUT,
-        size: 20, // 稍微縮小一點
-        shading: { fill: "F8FAFC", type: ShadingType.CLEAR, color: "auto" }
-      }));
-    } else if (fullMatch.startsWith('『')) {
-      // 書籍/專案：加粗
-      runs.push(new TextRun({ 
-        text: fullMatch, 
-        bold: true,
-        font: FONT_CONFIG_NORMAL
-      }));
-    }
-
-    lastIndex = regex.lastIndex;
-  }
-
-  // 3. 處理剩餘文字
-  if (lastIndex < text.length) {
-    runs.push(new TextRun({ 
-      text: text.substring(lastIndex),
-      font: FONT_CONFIG_NORMAL
-    }));
-  }
-  return runs;
+  });
 };
 
 export const generateDocx = async (
@@ -151,7 +117,7 @@ export const generateDocx = async (
           children: parseInlineStyles(block.content),
           heading: "Heading1",
           spacing: { before: 480, after: 240 },
-          border: { bottom: { style: "single", space: 8, color: "000000", size: 18 } }
+          border: { bottom: { style: "single", space: 8, color: COLORS.BLACK, size: 18 } }
         }));
         break;
       case BlockType.HEADING_2:
@@ -185,12 +151,12 @@ export const generateDocx = async (
              break: index > 0 ? 1 : undefined
           })),
           border: {
-            top: { style: "single", space: 10, size: 6, color: "BFBFBF" },
-            bottom: { style: "single", space: 10, size: 6, color: "BFBFBF" },
-            left: { style: "single", space: 10, size: 6, color: "BFBFBF" },
-            right: { style: "single", space: 10, size: 6, color: "BFBFBF" },
+            top: { style: "single", space: 10, size: 6, color: COLORS.CODE_BORDER },
+            bottom: { style: "single", space: 10, size: 6, color: COLORS.CODE_BORDER },
+            left: { style: "single", space: 10, size: 6, color: COLORS.CODE_BORDER },
+            right: { style: "single", space: 10, size: 6, color: COLORS.CODE_BORDER },
           },
-          shading: { fill: "F8F9FA" },
+          shading: { fill: COLORS.BG_CODE },
           spacing: { before: 400, after: 400, line: 240 },
           indent: { left: 400, right: 400 }
         }));
@@ -205,10 +171,10 @@ export const generateDocx = async (
               ...parseInlineStyles(block.content)
           ],
           border: {
-            top: { style: isUser ? "dashed" : "dotted", space: 10, color: "404040" },
-            bottom: { style: isUser ? "dashed" : "dotted", space: 10, color: "404040" },
-            left: { style: isUser ? "dashed" : "dotted", space: 10, color: "404040" },
-            right: { style: isUser ? "dashed" : "dotted", space: 10, color: "404040" },
+            top: { style: isUser ? "dashed" : "dotted", space: 10, color: COLORS.CHAT_BORDER },
+            bottom: { style: isUser ? "dashed" : "dotted", space: 10, color: COLORS.CHAT_BORDER },
+            left: { style: isUser ? "dashed" : "dotted", space: 10, color: COLORS.CHAT_BORDER },
+            right: { style: isUser ? "dashed" : "dotted", space: 10, color: COLORS.CHAT_BORDER },
           },
           // User: 靠右視覺 (左縮排大), AI: 靠左視覺 (右縮排大)
           indent: isUser ? { left: 1440 } : { right: 1440 }, 
@@ -216,37 +182,37 @@ export const generateDocx = async (
           alignment: isUser ? AlignmentType.RIGHT : AlignmentType.LEFT,
           spacing: { before: 300, after: 300 },
           // AI: 淺灰底, User: 無底色(White/Clear)
-          shading: { fill: isUser ? "FFFFFF" : "F2F2F2" }
+          shading: { fill: isUser ? COLORS.WHITE : COLORS.BG_AI_CHAT }
         }));
         break;
       case BlockType.CALLOUT_TIP:
       case BlockType.CALLOUT_NOTE:
       case BlockType.CALLOUT_WARNING:
         let label = "NOTE";
-        let borderColor = "94A3B8";
+        let borderColor = COLORS.CALLOUT.NOTE.BORDER;
         let borderStyle: any = "single";
         let borderSize = 24;
-        let shadingFill = "F8FAFC";
+        let shadingFill = COLORS.CALLOUT.NOTE.BG;
 
         if (block.type === BlockType.CALLOUT_TIP) {
           label = "TIP";
-          borderColor = "64748B";
+          borderColor = COLORS.CALLOUT.TIP.BORDER;
           borderStyle = "single";
           borderSize = 36;
-          shadingFill = "F9FAFB";
+          shadingFill = COLORS.CALLOUT.TIP.BG;
         } else if (block.type === BlockType.CALLOUT_WARNING) {
           label = "WARNING";
-          borderColor = "000000";
+          borderColor = COLORS.CALLOUT.WARNING.BORDER;
           borderStyle = "single"; // 實線
           borderSize = 48; // 粗線
-          shadingFill = "F1F5F9";
+          shadingFill = COLORS.CALLOUT.WARNING.BG;
         } else {
           // NOTE
           label = "NOTE";
-          borderColor = "CBD5E1";
+          borderColor = COLORS.CALLOUT.NOTE.BORDER;
           borderStyle = "dashed"; // 虛線
           borderSize = 24;
-          shadingFill = "FFFFFF";
+          shadingFill = COLORS.CALLOUT.NOTE.BG;
         }
 
         // 構建 Callout 內容，使用 parseInlineStyles 以支援粗體/斜體等樣式
@@ -294,7 +260,7 @@ export const generateDocx = async (
         docChildren.push(new Paragraph({
           text: "",
           border: {
-            bottom: { style: "single", size: 12, color: "000000", space: 1 }
+            bottom: { style: "single", size: 12, color: COLORS.BLACK, space: 1 }
           },
           spacing: { before: 240, after: 240 }
         }));
@@ -307,8 +273,8 @@ export const generateDocx = async (
       properties: {
         page: {
           size: {
-            width: config.widthCm * CM_TO_TWIPS,
-            height: config.heightCm * CM_TO_TWIPS,
+            width: config.widthCm * SIZES.CM_TO_TWIPS,
+            height: config.heightCm * SIZES.CM_TO_TWIPS,
           },
           margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }, // 邊距維持約 2.54cm，可視需求調整
         },

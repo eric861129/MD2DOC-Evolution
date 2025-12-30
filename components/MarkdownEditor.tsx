@@ -4,6 +4,8 @@ import saveAs from 'file-saver';
 import { parseMarkdown } from '../services/markdownParser.ts';
 import { generateDocx } from '../services/docxGenerator.ts';
 import { BlockType, ParsedBlock } from '../types.ts';
+import { parseInlineElements, InlineStyleType } from '../utils/styleParser.ts';
+import { FONTS } from '../constants/theme.ts';
 
 const INITIAL_CONTENT = `# 技術書稿排版範例樣式表
 
@@ -99,12 +101,16 @@ const MarkdownEditor: React.FC = () => {
   const [selectedSizeIndex, setSelectedSizeIndex] = useState(0);
 
   useEffect(() => {
-    try {
-      const blocks = parseMarkdown(content);
-      setParsedBlocks(blocks);
-    } catch (e) {
-      console.error("Markdown 解析出錯:", e);
-    }
+    const timer = setTimeout(() => {
+      try {
+        const blocks = parseMarkdown(content);
+        setParsedBlocks(blocks);
+      } catch (e) {
+        console.error("Markdown 解析出錯:", e);
+      }
+    }, 300); // 300ms 防抖延遲
+
+    return () => clearTimeout(timer);
   }, [content]);
 
   const handleDownload = async () => {
@@ -123,6 +129,34 @@ const MarkdownEditor: React.FC = () => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const renderPreviewContent = () => {
+    const elements: JSX.Element[] = [];
+    let i = 0;
+    while (i < parsedBlocks.length) {
+      const block = parsedBlocks[i];
+      if (block.type === BlockType.BULLET_LIST) {
+        const listItems: ParsedBlock[] = [];
+        while (i < parsedBlocks.length && parsedBlocks[i].type === BlockType.BULLET_LIST) {
+          listItems.push(parsedBlocks[i]);
+          i++;
+        }
+        elements.push(
+          <ul key={`list-${i}`} className="ml-8 mb-8">
+            {listItems.map((item, idx) => (
+              <li key={idx} className="relative mb-2 pl-4 leading-[1.8] list-none before:content-[''] before:absolute before:left-0 before:top-[0.7em] before:w-2 before:h-2 before:bg-slate-400 before:rounded-full">
+                 <RenderRichText text={item.content} />
+              </li>
+            ))}
+          </ul>
+        );
+      } else {
+        elements.push(<PreviewBlock key={i} block={block} />);
+        i++;
+      }
+    }
+    return elements;
   };
 
   return (
@@ -173,7 +207,7 @@ const MarkdownEditor: React.FC = () => {
           </div>
           <textarea
             className="flex-1 w-full p-10 resize-none focus:outline-none text-base leading-[1.8] text-slate-700 selection:bg-indigo-100"
-            style={{ fontFamily: '"Consolas", "Microsoft JhengHei", sans-serif' }}
+            style={{ fontFamily: `"${FONTS.LATIN}", "${FONTS.CJK}", sans-serif` }}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             spellCheck={false}
@@ -188,12 +222,10 @@ const MarkdownEditor: React.FC = () => {
           <div className="flex-1 overflow-y-auto p-12 lg:p-16 scroll-smooth">
             <div 
               className="max-w-2xl mx-auto bg-white shadow-2xl p-16 lg:p-20 min-h-screen text-slate-900 rounded-sm border border-slate-200"
-              style={{ fontFamily: '"Consolas", "Microsoft JhengHei", sans-serif' }}
+              style={{ fontFamily: `"${FONTS.LATIN}", "${FONTS.CJK}", sans-serif` }}
             >
               {parsedBlocks.length > 0 ? (
-                parsedBlocks.map((block, idx) => (
-                  <PreviewBlock key={idx} block={block} />
-                ))
+                renderPreviewContent()
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-slate-300 mt-20 opacity-30">
                   <Sparkles className="w-12 h-12 mb-4" />
@@ -208,62 +240,52 @@ const MarkdownEditor: React.FC = () => {
   );
 };
 
-const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
-  const renderRichText = (text: string) => {
-    // Regex matches: Bold, Italic, Underline, Code, Button, Shortcut, Book
-    const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|<u>.*?<\/u>|`[^`]+`|【.*?】|\[.*?\]|『.*?』)/g);
-    
-    return parts.map((part, i) => {
-      if (!part) return null;
-      
-      // Bold
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-bold text-slate-900">{part.slice(2, -2)}</strong>;
-      }
-      // Italic (Standard font, blue color)
-      if (part.startsWith('*') && part.endsWith('*')) {
-        return <span key={i} className="italic text-blue-800">{part.slice(1, -1)}</span>;
-      }
-      // Underline
-      if (part.startsWith('<u>') && part.endsWith('</u>')) {
-        return <span key={i} className="underline decoration-blue-500 text-blue-600 decoration-1 underline-offset-2">{part.slice(3, -4)}</span>;
-      }
-      // Inline Code
-      if (part.startsWith('`') && part.endsWith('`')) {
-        return <code key={i} className="bg-slate-100 px-1.5 py-0.5 rounded text-[0.9em] font-mono text-slate-700 border border-slate-200">{part.slice(1, -1)}</code>;
-      }
-      // UI Button
-      if (part.startsWith('【') && part.endsWith('】')) {
-        return (
-          <span key={i} className="inline-block px-1.5 py-0.5 mx-0.5 text-[0.8rem] font-bold bg-slate-200 border border-slate-400 rounded text-slate-800 shadow-[1px_1px_0_0_#94a3b8]">
-            {part}
-          </span>
-        );
-      }
-      // Shortcut (Standard font, boxed)
-      if (part.startsWith('[') && part.endsWith(']')) {
-        return (
-          <span key={i} className="inline-block px-1 mx-0.5 text-[0.8rem] bg-white border border-slate-300 rounded shadow-sm text-slate-600">
-            {part}
-          </span>
-        );
-      }
-      // Book/Project
-      if (part.startsWith('『') && part.endsWith('』')) {
-        return <span key={i} className="font-bold text-slate-900">{part}</span>;
-      }
-      
-      return <span key={i}>{part}</span>;
-    });
-  };
+const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
+  const segments = parseInlineElements(text);
+  
+  return (
+    <>
+      {segments.map((segment, i) => {
+        switch (segment.type) {
+          case InlineStyleType.BOLD:
+            return <strong key={i} className="font-bold text-slate-900">{segment.content}</strong>;
+          case InlineStyleType.ITALIC:
+            return <span key={i} className="italic text-blue-800">{segment.content}</span>;
+          case InlineStyleType.UNDERLINE:
+            return <span key={i} className="underline decoration-blue-500 text-blue-600 decoration-1 underline-offset-2">{segment.content}</span>;
+          case InlineStyleType.CODE:
+            return <code key={i} className="bg-slate-100 px-1.5 py-0.5 rounded text-[0.9em] font-mono text-slate-700 border border-slate-200">{segment.content}</code>;
+          case InlineStyleType.UI_BUTTON:
+            return (
+              <span key={i} className="inline-block px-1.5 py-0.5 mx-0.5 text-[0.8rem] font-bold bg-slate-200 border border-slate-400 rounded text-slate-800 shadow-[1px_1px_0_0_#94a3b8]">
+                {segment.content}
+              </span>
+            );
+          case InlineStyleType.SHORTCUT:
+            return (
+              <span key={i} className="inline-block px-1 mx-0.5 text-[0.8rem] bg-white border border-slate-300 rounded shadow-sm text-slate-600">
+                {segment.content}
+              </span>
+            );
+          case InlineStyleType.BOOK:
+            return <span key={i} className="font-bold text-slate-900">{segment.content}</span>;
+          case InlineStyleType.TEXT:
+          default:
+            return <span key={i}>{segment.content}</span>;
+        }
+      })}
+    </>
+  );
+};
 
+const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
   switch (block.type) {
     case BlockType.HEADING_1:
-      return <h1 className="text-4xl font-black mb-12 mt-16 pb-4 border-b-4 border-slate-900 tracking-tight leading-tight">{renderRichText(block.content)}</h1>;
+      return <h1 className="text-4xl font-black mb-12 mt-16 pb-4 border-b-4 border-slate-900 tracking-tight leading-tight"><RenderRichText text={block.content} /></h1>;
     case BlockType.HEADING_2:
-      return <h2 className="text-2xl font-black mb-8 mt-12 tracking-tight flex items-center gap-3 before:w-2 before:h-8 before:bg-indigo-600">{renderRichText(block.content)}</h2>;
+      return <h2 className="text-2xl font-black mb-8 mt-12 tracking-tight flex items-center gap-3 before:w-2 before:h-8 before:bg-indigo-600"><RenderRichText text={block.content} /></h2>;
     case BlockType.HEADING_3:
-      return <h3 className="text-xl font-bold mb-6 mt-10 text-slate-800 underline decoration-indigo-200 underline-offset-8 decoration-4">{renderRichText(block.content)}</h3>;
+      return <h3 className="text-xl font-bold mb-6 mt-10 text-slate-800 underline decoration-indigo-200 underline-offset-8 decoration-4"><RenderRichText text={block.content} /></h3>;
     case BlockType.CODE_BLOCK:
       return (
         <div className="my-10 border border-slate-300 bg-slate-50 p-8 rounded shadow-sm">
@@ -275,7 +297,7 @@ const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
         <div className="flex justify-end my-12 pl-20">
           <div className="max-w-[85%] border-2 border-dashed border-slate-900 p-6 bg-white relative text-right">
             <div className="absolute -top-3 left-4 bg-white px-2 text-[10px] font-black tracking-widest text-indigo-600 border border-slate-200">USER</div>
-            <div className="whitespace-pre-wrap leading-[1.8]">{renderRichText(block.content)}</div>
+            <div className="whitespace-pre-wrap leading-[1.8]"><RenderRichText text={block.content} /></div>
           </div>
         </div>
       );
@@ -284,7 +306,7 @@ const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
         <div className="flex justify-start my-12 pr-20">
           <div className="max-w-[85%] border-2 border-dotted border-slate-900 p-6 bg-slate-100 relative text-left">
             <div className="absolute -top-3 right-4 bg-slate-100 px-2 text-[10px] font-black tracking-widest text-indigo-600 border border-slate-200">AI</div>
-            <div className="whitespace-pre-wrap leading-[1.8] text-slate-800">{renderRichText(block.content)}</div>
+            <div className="whitespace-pre-wrap leading-[1.8] text-slate-800"><RenderRichText text={block.content} /></div>
           </div>
         </div>
       );
@@ -292,29 +314,27 @@ const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
       return (
         <div className="my-14 p-6 bg-slate-50 border border-slate-400 shadow-sm relative">
            <div className="absolute -top-3 left-4 bg-slate-50 px-2 text-xs font-bold text-slate-600 border border-slate-400">TIP</div>
-           <div className="whitespace-pre-wrap leading-[1.8] text-slate-800">{renderRichText(block.content)}</div>
+           <div className="whitespace-pre-wrap leading-[1.8] text-slate-800"><RenderRichText text={block.content} /></div>
         </div>
       );
     case BlockType.CALLOUT_WARNING:
       return (
         <div className="my-14 p-6 bg-slate-50 border-2 border-black shadow-md relative">
            <div className="absolute -top-3 left-4 bg-white px-2 text-xs font-black text-black border-2 border-black">WARNING</div>
-           <div className="whitespace-pre-wrap leading-[1.8] text-slate-900 font-bold">{renderRichText(block.content)}</div>
+           <div className="whitespace-pre-wrap leading-[1.8] text-slate-900 font-bold"><RenderRichText text={block.content} /></div>
         </div>
       );
     case BlockType.CALLOUT_NOTE:
       return (
         <div className="my-14 p-6 bg-white border border-dashed border-slate-400 shadow-sm relative">
            <div className="absolute -top-3 left-4 bg-white px-2 text-xs font-bold text-slate-500 border border-dashed border-slate-400">NOTE</div>
-           <div className="whitespace-pre-wrap leading-[1.8] text-slate-800 italic">{renderRichText(block.content)}</div>
+           <div className="whitespace-pre-wrap leading-[1.8] text-slate-800 italic"><RenderRichText text={block.content} /></div>
         </div>
       );
-    case BlockType.BULLET_LIST:
-      return <li className="ml-8 list-none relative mb-4 pl-4 leading-[1.8] before:content-[''] before:absolute before:left-0 before:top-[0.7em] before:w-2 before:h-2 before:bg-slate-400 before:rounded-full">{renderRichText(block.content)}</li>;
     case BlockType.HORIZONTAL_RULE:
       return <hr className="my-8 border-t-2 border-slate-900" />;
     default:
-      return <p className="mb-8 leading-[2.1] text-justify text-slate-800 tracking-tight">{renderRichText(block.content)}</p>;
+      return <p className="mb-8 leading-[2.1] text-justify text-slate-800 tracking-tight"><RenderRichText text={block.content} /></p>;
   }
 };
 
