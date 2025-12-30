@@ -134,7 +134,7 @@ const MarkdownEditor: React.FC = () => {
           </div>
           <div>
             <h1 className="text-xl font-black text-slate-900 tracking-tight">BookPublisher <span className="text-slate-400 font-normal">MD2Docx</span></h1>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">核心引擎：Markdown -> Word (v2.0)</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">核心引擎：Markdown -&gt; Word (v2.0)</p>
           </div>
         </div>
         
