@@ -4,8 +4,19 @@
 
 🔗 **線上試用 (Live Demo):** [https://eric861129.github.io/BookPublisher_MD2Doc/](https://eric861129.github.io/BookPublisher_MD2Doc/)
 
-![Project Banner](https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=2574&auto=format&fit=crop)
-*(示意圖)*
+## 📄 範例下載 (Sample Output)
+
+您可以從這裡查看匯出的 Word 文件效果：
+- [📥 下載範例文件 (範例Word.docx)](samples/範例Word.docx)
+
+<div align="center">
+  <img src="docs/images/1.jpg" width="48%" alt="Cover & Header" />
+  <img src="docs/images/2.jpg" width="48%" alt="Chat Dialogues" />
+  <br/>
+  <img src="docs/images/3.jpg" width="48%" alt="Callouts & Styles" />
+  <img src="docs/images/4.jpg" width="48%" alt="Code Blocks" />
+</div>
+*(實際 Word 輸出效果截圖)*
 
 ## ✨ 核心特色 (Features)
 
