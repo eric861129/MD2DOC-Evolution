@@ -12,7 +12,12 @@ import {
   TextRun,
   AlignmentType,
   UnderlineType,
-  ShadingType
+  ShadingType,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  BorderStyle
 } from "docx";
 import { ParsedBlock, BlockType } from "../types.ts";
 import { parseInlineElements, InlineStyleType } from "../utils/styleParser.ts";
@@ -263,6 +268,40 @@ export const generateDocx = async (
           spacing: { before: 120, after: 120 }
         }));
         break;
+      case BlockType.NUMBERED_LIST:
+        docChildren.push(new Paragraph({
+          children: parseInlineStyles(block.content),
+          numbering: { reference: "default-numbering", level: 0 },
+          spacing: { before: 120, after: 120 }
+        }));
+        break;
+      case BlockType.TABLE:
+        if (block.tableRows) {
+          docChildren.push(new Table({
+            rows: block.tableRows.map((row) => 
+              new TableRow({
+                children: row.map((cellText) => 
+                  new TableCell({
+                    children: [new Paragraph({ children: parseInlineStyles(cellText) })],
+                    width: { size: 100 / row.length, type: WidthType.PERCENTAGE },
+                    borders: {
+                      top: { style: BorderStyle.SINGLE, size: 4, color: COLORS.BLACK },
+                      bottom: { style: BorderStyle.SINGLE, size: 4, color: COLORS.BLACK },
+                      left: { style: BorderStyle.SINGLE, size: 4, color: COLORS.BLACK },
+                      right: { style: BorderStyle.SINGLE, size: 4, color: COLORS.BLACK },
+                    },
+                    shading: { fill: COLORS.WHITE },
+                    margins: { top: 100, bottom: 100, left: 100, right: 100 }
+                  })
+                )
+              })
+            ),
+            width: { size: 100, type: WidthType.PERCENTAGE },
+          }));
+          // Add some spacing after table
+          docChildren.push(new Paragraph({ text: "", spacing: { before: 240 } }));
+        }
+        break;
       case BlockType.HORIZONTAL_RULE:
         docChildren.push(new Paragraph({
           text: "",
@@ -276,6 +315,21 @@ export const generateDocx = async (
   }
 
   const doc = new Document({
+    numbering: {
+      config: [
+        {
+          reference: "default-numbering",
+          levels: [
+            {
+              level: 0,
+              format: "decimal",
+              text: "%1.",
+              alignment: AlignmentType.LEFT,
+            },
+          ],
+        },
+      ],
+    },
     sections: [{
       properties: {
         page: {

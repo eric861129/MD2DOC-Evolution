@@ -90,6 +90,26 @@ const myBook: BookConfig = {
 
 ### 5.1 三級標題範例
 這裡是三級標題下的文字，匯出時會自動加上底部的裝飾線或特定的縮排間距。
+
+## 7. 表格與圖片支援
+
+### 7.1 表格範例 (自動識別)
+
+| 功能特姓 | 支援狀況 | 備註說明 |
+| --- | --- | --- |
+| 粗體樣式 | ✅ 支援 | 使用 ** 星號包覆 |
+| 表格排版 | ✅ 支援 | 自動生成格線 |
+| 轉檔引擎 | 🚀 快速 | 純前端運算 |
+
+### 7.2 圖片插入指引
+
+目前支援標準 Markdown 圖片語法，但僅供寫作參考：
+
+\`![圖片描述](https://example.com/image.jpg)\`
+
+> [!NOTE]
+> **圖片匯出注意**：由於瀏覽器安全性限制 (CORS)，直接匯出包含網路圖片的 Word 檔可能會失敗或無法顯示。
+> 建議在 Markdown 中僅標示圖片位置，匯出 Word 後再手動置入高畫質圖片以確保最佳印刷品質。
 `;
 
 // 定義可選的版面尺寸
@@ -138,6 +158,24 @@ const MarkdownEditor: React.FC = () => {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const target = e.target as HTMLTextAreaElement;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+
+      // 在當前位置插入兩個空格
+      const newContent = content.substring(0, start) + "  " + content.substring(end);
+      setContent(newContent);
+
+      // 重新設定光標位置 (需要在 state 更新後的下一個事件循環中)
+      setTimeout(() => {
+        target.selectionStart = target.selectionEnd = start + 2;
+      }, 0);
+    }
+  };
+
   const renderPreviewContent = () => {
     const elements: JSX.Element[] = [];
     let i = 0;
@@ -150,13 +188,28 @@ const MarkdownEditor: React.FC = () => {
           i++;
         }
         elements.push(
-          <ul key={`list-${i}`} className="ml-8 mb-8">
+          <ul key={`bullet-list-${i}`} className="ml-8 mb-8">
             {listItems.map((item, idx) => (
               <li key={idx} className="relative mb-2 pl-4 leading-[1.8] list-none before:content-[''] before:absolute before:left-0 before:top-[0.7em] before:w-2 before:h-2 before:bg-slate-400 before:rounded-full">
                  <RenderRichText text={item.content} />
               </li>
             ))}
           </ul>
+        );
+      } else if (block.type === BlockType.NUMBERED_LIST) {
+        const listItems: ParsedBlock[] = [];
+        while (i < parsedBlocks.length && parsedBlocks[i].type === BlockType.NUMBERED_LIST) {
+          listItems.push(parsedBlocks[i]);
+          i++;
+        }
+        elements.push(
+          <ol key={`numbered-list-${i}`} className="ml-8 mb-8 list-decimal">
+            {listItems.map((item, idx) => (
+              <li key={idx} className="mb-2 pl-2 leading-[1.8] text-slate-800">
+                 <RenderRichText text={item.content} />
+              </li>
+            ))}
+          </ol>
         );
       } else {
         elements.push(<PreviewBlock key={i} block={block} />);
@@ -217,6 +270,7 @@ const MarkdownEditor: React.FC = () => {
             style={{ fontFamily: `"${FONTS.LATIN}", "${FONTS.CJK}", sans-serif` }}
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            onKeyDown={handleKeyDown}
             spellCheck={false}
             placeholder="在此輸入您的 Markdown 稿件..."
           />
@@ -336,6 +390,24 @@ const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
         <div className="my-14 p-6 bg-white border border-dashed border-slate-400 shadow-sm relative">
            <div className="absolute -top-3 left-4 bg-white px-2 text-xs font-bold text-slate-500 border border-dashed border-slate-400">NOTE</div>
            <div className="whitespace-pre-wrap leading-[1.8] text-slate-800 italic"><RenderRichText text={block.content} /></div>
+        </div>
+      );
+    case BlockType.TABLE:
+      return (
+        <div className="my-10 overflow-x-auto">
+          <table className="w-full border-collapse border border-slate-400 text-left shadow-sm">
+            <tbody>
+              {block.tableRows?.map((row, rIdx) => (
+                <tr key={rIdx} className={`border-b border-slate-300 ${rIdx === 0 ? 'bg-slate-100 font-bold' : 'bg-white'}`}>
+                  {row.map((cell, cIdx) => (
+                    <td key={cIdx} className="p-4 border-r border-slate-300 text-sm text-slate-800 last:border-r-0">
+                      <RenderRichText text={cell} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       );
     case BlockType.HORIZONTAL_RULE:

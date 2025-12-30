@@ -10,6 +10,8 @@ export enum BlockType {
   CALLOUT_NOTE = 'CALLOUT_NOTE',
   CALLOUT_WARNING = 'CALLOUT_WARNING',
   BULLET_LIST = 'BULLET_LIST',
+  NUMBERED_LIST = 'NUMBERED_LIST',
+  TABLE = 'TABLE',
   HORIZONTAL_RULE = 'HORIZONTAL_RULE'
 }
 
@@ -17,4 +19,5 @@ export interface ParsedBlock {
   type: BlockType;
   content: string; // Plain text or raw content
   language?: string; // For code blocks
+  tableRows?: string[][]; // For tables: 2D array of cell content
 }
