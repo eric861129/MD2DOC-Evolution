@@ -9,7 +9,6 @@ import { ParsedBlock, BlockType } from "../types.ts";
 const MAIN_FONT_CJK = "Microsoft JhengHei";
 const MAIN_FONT_LATIN = "Consolas";
 
-// 專業字體配置：確保拉丁字元與中文字元分開處理
 const FONT_CONFIG = {
   ascii: MAIN_FONT_LATIN,
   hAnsi: MAIN_FONT_LATIN,
@@ -73,29 +72,29 @@ export const generateDocx = async (blocks: ParsedBlock[]): Promise<Blob> => {
         docChildren.push(new Paragraph({
           children: parseInlineStyles(block.content),
           heading: "Heading1",
-          spacing: { before: 400, after: 200 },
-          border: { bottom: { style: "single", space: 6, color: "000000", size: 12 } }
+          spacing: { before: 480, after: 240 },
+          border: { bottom: { style: "single", space: 8, color: "000000", size: 18 } }
         }));
         break;
       case BlockType.HEADING_2:
         docChildren.push(new Paragraph({
           children: parseInlineStyles(block.content),
           heading: "Heading2",
-          spacing: { before: 300, after: 150 }
+          spacing: { before: 400, after: 200 }
         }));
         break;
       case BlockType.HEADING_3:
         docChildren.push(new Paragraph({
           children: parseInlineStyles(block.content),
           heading: "Heading3",
-          spacing: { before: 200, after: 100 }
+          spacing: { before: 300, after: 150 }
         }));
         break;
       case BlockType.PARAGRAPH:
         docChildren.push(new Paragraph({
           children: parseInlineStyles(block.content),
-          spacing: { before: 180, after: 180 },
-          alignment: "both" // "both" 是 Word 中 justified 的標準值
+          spacing: { before: 200, after: 200 },
+          alignment: "both"
         }));
         break;
       case BlockType.CODE_BLOCK:
@@ -104,17 +103,17 @@ export const generateDocx = async (blocks: ParsedBlock[]): Promise<Blob> => {
           children: codeLines.map((line, index) => new TextRun({
              text: line,
              font: FONT_CONFIG,
-             size: 19,
+             size: 18,
              break: index > 0 ? 1 : undefined
           })),
           border: {
-            top: { style: "single", space: 6 },
-            bottom: { style: "single", space: 6 },
-            left: { style: "single", space: 6 },
-            right: { style: "single", space: 6 },
+            top: { style: "single", space: 10, size: 6, color: "BFBFBF" },
+            bottom: { style: "single", space: 10, size: 6, color: "BFBFBF" },
+            left: { style: "single", space: 10, size: 6, color: "BFBFBF" },
+            right: { style: "single", space: 10, size: 6, color: "BFBFBF" },
           },
-          shading: { fill: "F7F7F7" },
-          spacing: { before: 300, after: 300, line: 240 },
+          shading: { fill: "F8F9FA" },
+          spacing: { before: 400, after: 400, line: 240 },
           indent: { left: 400, right: 400 }
         }));
         break;
@@ -128,12 +127,12 @@ export const generateDocx = async (blocks: ParsedBlock[]): Promise<Blob> => {
               ...parseInlineStyles(block.content)
           ],
           border: {
-            top: { style: isUser ? "dashed" : "dotted", space: 10 },
-            bottom: { style: isUser ? "dashed" : "dotted", space: 10 },
-            left: { style: isUser ? "dashed" : "dotted", space: 10 },
-            right: { style: isUser ? "dashed" : "dotted", space: 10 },
+            top: { style: isUser ? "dashed" : "dotted", space: 10, color: "404040" },
+            bottom: { style: isUser ? "dashed" : "dotted", space: 10, color: "404040" },
+            left: { style: isUser ? "dashed" : "dotted", space: 10, color: "404040" },
+            right: { style: isUser ? "dashed" : "dotted", space: 10, color: "404040" },
           },
-          indent: isUser ? { left: 1500 } : { right: 1500 },
+          indent: isUser ? { left: 1200 } : { right: 1200 },
           spacing: { before: 300, after: 300 },
           shading: { fill: isUser ? "FFFFFF" : "F2F2F2" }
         }));
@@ -141,11 +140,41 @@ export const generateDocx = async (blocks: ParsedBlock[]): Promise<Blob> => {
       case BlockType.CALLOUT_TIP:
       case BlockType.CALLOUT_NOTE:
       case BlockType.CALLOUT_WARNING:
+        let label = "NOTE";
+        let borderColor = "94A3B8";
+        let borderStyle: any = "single";
+        let borderSize = 24;
+        let shadingFill = "F8FAFC";
+
+        if (block.type === BlockType.CALLOUT_TIP) {
+          label = "TIP";
+          borderColor = "64748B";
+          borderStyle = "single";
+          borderSize = 36;
+          shadingFill = "F9FAFB";
+        } else if (block.type === BlockType.CALLOUT_WARNING) {
+          label = "WARNING";
+          borderColor = "000000";
+          borderStyle = "single";
+          borderSize = 48;
+          shadingFill = "F1F5F9";
+        } else {
+          label = "NOTE";
+          borderColor = "CBD5E1";
+          borderStyle = "dashed";
+          borderSize = 24;
+          shadingFill = "FFFFFF";
+        }
+
         docChildren.push(new Paragraph({
-          children: block.content.split('\n').map((l, i) => new TextRun({ text: l, font: FONT_CONFIG, break: i > 0 ? 1 : 0 })),
-          shading: { fill: "F9F9F9" },
-          border: { left: { style: "single", space: 15, size: 36, color: "000000" } },
-          spacing: { before: 400, after: 400 },
+          children: [
+            new TextRun({ text: `[ ${label} ]`, bold: true, size: 18, font: FONT_CONFIG }),
+            new TextRun({ text: "", break: 1 }),
+            ...block.content.split('\n').map((l, i) => new TextRun({ text: l, font: FONT_CONFIG, break: i > 0 ? 1 : 0 }))
+          ],
+          shading: { fill: shadingFill },
+          border: { left: { style: borderStyle, space: 15, size: borderSize, color: borderColor } },
+          spacing: { before: 400, after: 400, line: 360 },
           indent: { left: 400 }
         }));
         break;
@@ -153,7 +182,16 @@ export const generateDocx = async (blocks: ParsedBlock[]): Promise<Blob> => {
         docChildren.push(new Paragraph({
           children: parseInlineStyles(block.content),
           bullet: { level: 0 },
-          spacing: { before: 100, after: 100 }
+          spacing: { before: 120, after: 120 }
+        }));
+        break;
+      case BlockType.HORIZONTAL_RULE:
+        docChildren.push(new Paragraph({
+          text: "",
+          border: {
+            bottom: { style: "single", size: 6, color: "000000", space: 1 }
+          },
+          spacing: { before: 240, after: 240 }
         }));
         break;
     }
@@ -161,7 +199,11 @@ export const generateDocx = async (blocks: ParsedBlock[]): Promise<Blob> => {
 
   const doc = new Document({
     sections: [{
-      properties: {},
+      properties: {
+        page: {
+          margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
+        },
+      },
       children: docChildren
     }],
     styles: {

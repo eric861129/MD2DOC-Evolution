@@ -46,7 +46,15 @@ export const parseMarkdown = (text: string): ParsedBlock[] => {
       continue;
     }
 
-    // 2. Handle Chat Dialogues (Enhanced for full-width colons)
+    // 2. Handle Horizontal Rules (---, ***, ___)
+    // Must be checked before lists and headers to prevent misinterpretation
+    if (trimmedLine.match(/^[-*_]{3,}$/)) {
+      flushBuffer();
+      blocks.push({ type: BlockType.HORIZONTAL_RULE, content: '' });
+      continue;
+    }
+
+    // 3. Handle Chat Dialogues (Enhanced for full-width colons)
     // Matches "User:", "User：", "User (Prompt):", etc.
     if (trimmedLine.match(/^(User|AI)[：:]/i) || trimmedLine.startsWith('User（') || trimmedLine.startsWith('AI（')) {
       flushBuffer();
@@ -57,7 +65,7 @@ export const parseMarkdown = (text: string): ParsedBlock[] => {
       continue;
     }
 
-    // 3. Handle Callouts / Blockquotes
+    // 4. Handle Callouts / Blockquotes
     if (trimmedLine.startsWith('>')) {
       flushBuffer();
       let type = BlockType.CALLOUT_NOTE; // Default
@@ -86,7 +94,7 @@ export const parseMarkdown = (text: string): ParsedBlock[] => {
       continue;
     }
 
-    // 4. Headers
+    // 5. Headers
     if (trimmedLine.startsWith('# ')) {
       flushBuffer();
       blocks.push({ type: BlockType.HEADING_1, content: trimmedLine.replace('# ', '') });
@@ -103,14 +111,14 @@ export const parseMarkdown = (text: string): ParsedBlock[] => {
       continue;
     }
 
-    // 5. Lists
+    // 6. Lists
     if (trimmedLine.match(/^[-*]\s/)) {
       flushBuffer();
       blocks.push({ type: BlockType.BULLET_LIST, content: trimmedLine.replace(/^[-*]\s/, '') });
       continue;
     }
 
-    // 6. Empty Lines
+    // 7. Empty Lines
     if (trimmedLine === '') {
       flushBuffer();
       continue;

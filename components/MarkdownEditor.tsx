@@ -5,20 +5,66 @@ import { parseMarkdown } from '../services/markdownParser.ts';
 import { generateDocx } from '../services/docxGenerator.ts';
 import { BlockType, ParsedBlock } from '../types.ts';
 
-const INITIAL_CONTENT = `# 第1章：啟程——為什麼你需要「文件」與「魔法」？
+const INITIAL_CONTENT = `# 技術書稿排版範例樣式表
 
-## 1.1 Vibe Coding 的真諦：你是指揮家，不是打字員
+## 1. 基礎文字與段落樣式
 
-最近在技術圈有個詞紅到發紫，叫做 **「Vibe Coding」**。
-這是什麼意思？表面上翻譯叫做「氛圍編碼」，但我們用更直白的話來說，就是**「跟著感覺寫程式」**。
+這是一段標準的正文。我們支援多種行內樣式，例如 **粗體強調** 以吸引讀者注意。當提到程式碼變數時，可以使用 \`inline code\` 樣式。
 
-User：**「嘿 Gemini，我要一個深色模式的登入頁面，按鈕要帶點賽博龐克（Cyberpunk）的霓虹光。」**
+對於書籍介面的描述，我們設計了特殊的括號樣式：點擊 【確定】 按鈕後即可完成操作。這在 Word 匯出後也會保持加粗與特殊視覺感。
 
-幾秒鐘後，咻！程式碼吐出來了。
+### 1.1 列表測試
+- 第一項重點內容
+- 第二項重點內容，包含 \`行內程式\`
+- 第三項內容，測試自動換行的對齊效果
+
+---
+
+## 2. 角色對話框展示 (左右對齊效果)
+
+User：嘿 Gemini，請幫我示範一下這個 APP 的對話框排版效果。
+
+AI：沒問題！在這個系統中，User 的對話會靠右側顯示，並使用虛線邊框；而 AI 的回覆則會靠左側顯示，搭配點狀邊框與淺灰色背景。這種排版非常適合技術書籍中的「情境模擬」或「問答環節」。
+
+---
+
+## 3. 程式碼區塊樣式
+
+下面展示的是標準的程式碼區塊，匯出至 Word 時會自動加上細邊框、淺灰背景，並使用等寬字體 (Consolas)。
+
+\`\`\`typescript
+interface BookConfig {
+  title: string;
+  author: string;
+  publishDate: Date;
+}
+
+const myBook: BookConfig = {
+  title: "Vibe Coding 實戰指南",
+  author: "ChiYu",
+  publishDate: new Date()
+};
+\`\`\`
+
+---
+
+## 4. 特殊提醒與警告 (Callouts)
+
+> [!TIP]
+> **提示 (Tip)**：通常用於分享小撇步或最佳實踐。在 Word 中會以實線邊框標註。
 
 > [!NOTE]
-> **【ChiYu 的專業小補充】**
-> 既然我們要寫文件，就要有專業的樣子。我們給文件標上版本號，例如 \`v1.0.0\`。這遵循 Semantic Versioning (語義化版本)。
+> **筆記 (Note)**：用於補充背景知識。網頁預覽會呈現斜體效果，Word 中則使用虛線邊框區隔。
+
+> [!WARNING]
+> **警告 (Warning)**：非常重要的注意事項。在 Word 中會使用最粗的實線邊框，確保讀者不會遺漏。
+
+---
+
+## 5. 多層級標題測試
+
+### 5.1 三級標題範例
+這裡是三級標題下的文字，匯出時會自動加上底部的裝飾線或特定的縮排間距。
 `;
 
 const MarkdownEditor: React.FC = () => {
@@ -26,7 +72,6 @@ const MarkdownEditor: React.FC = () => {
   const [parsedBlocks, setParsedBlocks] = useState<ParsedBlock[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // 當內容變動時，即時解析 Markdown 區塊供預覽使用
   useEffect(() => {
     try {
       const blocks = parseMarkdown(content);
@@ -41,7 +86,7 @@ const MarkdownEditor: React.FC = () => {
     setIsGenerating(true);
     try {
       const blob = await generateDocx(parsedBlocks);
-      saveAs(blob, "Technical_Manuscript.docx");
+      saveAs(blob, "Technical_Manuscript_Template.docx");
     } catch (error) {
       console.error("Word 轉檔失敗:", error);
       alert("轉檔失敗，請確認內容格式是否正確。");
@@ -52,7 +97,6 @@ const MarkdownEditor: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-      {/* 導覽列 */}
       <header className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center z-20 shadow-sm">
         <div className="flex items-center gap-4">
           <div className="bg-slate-900 p-2.5 rounded-xl">
@@ -76,9 +120,7 @@ const MarkdownEditor: React.FC = () => {
         </div>
       </header>
 
-      {/* 主介面 */}
       <main className="flex flex-1 overflow-hidden">
-        {/* 編輯器 */}
         <div className="w-1/2 flex flex-col border-r border-slate-200 bg-white">
           <div className="bg-slate-50 px-6 py-2 border-b border-slate-200 text-[10px] font-black text-slate-400 uppercase tracking-widest">
             Manuscript Editor (Draft)
@@ -93,7 +135,6 @@ const MarkdownEditor: React.FC = () => {
           />
         </div>
 
-        {/* 預覽區 */}
         <div className="w-1/2 flex flex-col bg-slate-100/50">
           <div className="bg-slate-50 px-6 py-2 border-b border-slate-200 text-[10px] font-black text-slate-400 uppercase tracking-widest">
             Print Layout Preview (WYSIWYG)
@@ -123,7 +164,6 @@ const MarkdownEditor: React.FC = () => {
 
 const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
   const renderRichText = (text: string) => {
-    // 支援粗體、行內程式碼、介面括號
     const parts = text.split(/(\*\*.*?\*\*|`[^`]+`|【.*?】)/g);
     return parts.map((part, i) => {
       if (!part) return null;
@@ -153,7 +193,7 @@ const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
       return <h3 className="text-xl font-bold mb-6 mt-10 text-slate-800 underline decoration-indigo-200 underline-offset-8 decoration-4">{renderRichText(block.content)}</h3>;
     case BlockType.CODE_BLOCK:
       return (
-        <div className="my-10 border-2 border-slate-900 bg-slate-50 p-8 rounded shadow-[8px_8px_0_0_#e2e8f0]">
+        <div className="my-10 border border-slate-300 bg-slate-50 p-8 rounded shadow-sm">
           <pre className="text-sm font-mono whitespace-pre text-slate-900 leading-relaxed overflow-x-auto">{block.content}</pre>
         </div>
       );
@@ -176,16 +216,30 @@ const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
         </div>
       );
     case BlockType.CALLOUT_TIP:
-    case BlockType.CALLOUT_NOTE:
-    case BlockType.CALLOUT_WARNING:
       return (
-        <div className="my-14 p-8 bg-slate-50 border-l-[12px] border-indigo-600 shadow-sm">
-          <div className="font-black text-[10px] mb-4 tracking-[0.3em] uppercase opacity-40">Section Note</div>
+        <div className="my-14 p-8 bg-slate-50 border-l-[12px] border-slate-500 shadow-sm">
+          <div className="font-black text-[10px] mb-4 tracking-[0.3em] uppercase opacity-40">Section Tip</div>
           <div className="whitespace-pre-wrap leading-[1.8] text-slate-800">{renderRichText(block.content)}</div>
         </div>
       );
+    case BlockType.CALLOUT_WARNING:
+      return (
+        <div className="my-14 p-8 bg-slate-100 border-l-[12px] border-black shadow-sm">
+          <div className="font-black text-[10px] mb-4 tracking-[0.3em] uppercase opacity-40">Attention / Warning</div>
+          <div className="whitespace-pre-wrap leading-[1.8] text-slate-800 font-bold">{renderRichText(block.content)}</div>
+        </div>
+      );
+    case BlockType.CALLOUT_NOTE:
+      return (
+        <div className="my-14 p-8 bg-white border-l-[12px] border-dashed border-slate-300 shadow-sm border-y border-r">
+          <div className="font-black text-[10px] mb-4 tracking-[0.3em] uppercase opacity-40">Note</div>
+          <div className="whitespace-pre-wrap leading-[1.8] text-slate-800 italic">{renderRichText(block.content)}</div>
+        </div>
+      );
     case BlockType.BULLET_LIST:
-      return <li className="ml-8 list-none relative mb-4 pl-4 leading-[1.8] before:content-[''] before:absolute before:left-0 before:top-[0.7em] before:w-2 before:h-2 before:bg-indigo-400 before:rounded-full">{renderRichText(block.content)}</li>;
+      return <li className="ml-8 list-none relative mb-4 pl-4 leading-[1.8] before:content-[''] before:absolute before:left-0 before:top-[0.7em] before:w-2 before:h-2 before:bg-slate-400 before:rounded-full">{renderRichText(block.content)}</li>;
+    case BlockType.HORIZONTAL_RULE:
+      return <hr className="my-8 border-t-2 border-slate-200" />;
     default:
       return <p className="mb-8 leading-[2.1] text-justify text-slate-800 tracking-tight">{renderRichText(block.content)}</p>;
   }
