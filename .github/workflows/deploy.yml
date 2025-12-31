@@ -2,63 +2,45 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
 concurrency:
-  group: "pages-${{ github.ref_name }}"
-  cancel-in-progress: false
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-
       - name: Install dependencies
         run: npm ci
-
-      - name: Set Environment Variables
-        shell: bash
-        run: |
-          echo "Processing branch: ${{ github.ref_name }}"
-          if [ "${{ github.ref_name }}" == "main" ]; then
-            echo "VITE_BASE_URL=/BookPublisher_MD2Doc/" >> $GITHUB_ENV
-            echo "TARGET_FOLDER=." >> $GITHUB_ENV
-            echo "MODE=production" >> $GITHUB_ENV
-          else
-            echo "VITE_BASE_URL=/BookPublisher_MD2Doc/dev/" >> $GITHUB_ENV
-            echo "TARGET_FOLDER=dev" >> $GITHUB_ENV
-            echo "MODE=development" >> $GITHUB_ENV
-          fi
-
       - name: Build
         run: npm run build
-        env:
-          VITE_BASE_URL: ${{ env.VITE_BASE_URL }}
-          NODE_ENV: ${{ env.MODE }}
-
-      - name: List Build Output
-        run: ls -R dist
-
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          folder: dist
-          target-folder: ${{ env.TARGET_FOLDER }}
-          branch: gh-pages
-          clean: ${{ github.ref_name == 'main' }}
-          clean-exclude: |
-            dev
+          path: ./dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
