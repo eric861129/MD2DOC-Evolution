@@ -150,12 +150,7 @@ const MarkdownEditor: React.FC = () => {
             <FileText className="text-white w-6 h-6" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black text-slate-900 tracking-tight">BookPublisher <span className="text-slate-400 font-normal">MD2Docx</span></h1>
-              {import.meta.env.BASE_URL.includes('/dev/') && (
-                <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter">Dev</span>
-              )}
-            </div>
+            <h1 className="text-xl font-black text-slate-900 tracking-tight">BookPublisher <span className="text-slate-400 font-normal">MD2Docx</span></h1>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">核心引擎：Markdown -&gt; Word (v2.0)</p>
           </div>
         </div>
