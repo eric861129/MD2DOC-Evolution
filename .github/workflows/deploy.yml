@@ -2,45 +2,55 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, dev ]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
 concurrency:
   group: "pages"
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
+
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Set Environment Variables
+        run: |
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            echo "BASE_URL=/BookPublisher_MD2Doc/" >> $GITHUB_ENV
+            echo "TARGET_FOLDER=." >> $GITHUB_ENV
+          else
+            echo "BASE_URL=/BookPublisher_MD2Doc/dev/" >> $GITHUB_ENV
+            echo "TARGET_FOLDER=dev" >> $GITHUB_ENV
+          fi
+
       - name: Build
         run: npm run build
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist
+        env:
+          BASE_URL: ${{ env.BASE_URL }}
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          target-folder: ${{ env.TARGET_FOLDER }}
+          branch: gh-pages
+          clean: ${{ github.ref_name == 'main' }} # Only clean root if deploying main
+          clean-exclude: |
+            dev
