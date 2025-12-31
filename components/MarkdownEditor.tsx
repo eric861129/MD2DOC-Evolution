@@ -5,7 +5,7 @@
  * See LICENSE file in the project root for full license information.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Download, FileText, Sparkles, Settings2 } from 'lucide-react';
 import saveAs from 'file-saver';
 import { parseMarkdown } from '../services/markdownParser.ts';
@@ -130,6 +130,10 @@ const MarkdownEditor: React.FC = () => {
   const [selectedSizeIndex, setSelectedSizeIndex] = useState(0);
   const [wordCount, setWordCount] = useState(0);
 
+  // Refs for sync scrolling
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+
   // 計算字數 (中文字 + 英文字)
   const getWordCount = (text: string) => {
     // 移除 markdown 符號，只保留文字大致估算
@@ -192,6 +196,19 @@ const MarkdownEditor: React.FC = () => {
         target.selectionStart = target.selectionEnd = start + 2;
       }, 0);
     }
+  };
+
+  const handleScroll = () => {
+    if (!textareaRef.current || !previewRef.current) return;
+
+    const textarea = textareaRef.current;
+    const preview = previewRef.current;
+
+    // 計算左側捲動百分比
+    const percentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight);
+    
+    // 設定右側捲動位置
+    preview.scrollTop = percentage * (preview.scrollHeight - preview.clientHeight);
   };
 
   const renderPreviewContent = () => {
@@ -287,6 +304,8 @@ const MarkdownEditor: React.FC = () => {
             </span>
           </div>
           <textarea
+            ref={textareaRef}
+            onScroll={handleScroll}
             className="flex-1 w-full p-10 resize-none focus:outline-none text-base leading-[1.8] text-slate-700 selection:bg-indigo-100"
             style={{ fontFamily: `"${FONTS.LATIN}", "${FONTS.CJK}", sans-serif` }}
             value={content}
@@ -301,7 +320,10 @@ const MarkdownEditor: React.FC = () => {
           <div className="bg-slate-50 px-6 py-2 border-b border-slate-200 text-[10px] font-black text-slate-400 uppercase tracking-widest">
             Print Layout Preview (WYSIWYG)
           </div>
-          <div className="flex-1 overflow-y-auto p-12 lg:p-16 scroll-smooth">
+          <div 
+            ref={previewRef}
+            className="flex-1 overflow-y-auto p-12 lg:p-16 scroll-smooth"
+          >
             <div 
               className="max-w-2xl mx-auto bg-white shadow-2xl p-16 lg:p-20 min-h-screen text-slate-900 rounded-sm border border-slate-200"
               style={{ fontFamily: `"${FONTS.LATIN}", "${FONTS.CJK}", sans-serif` }}
