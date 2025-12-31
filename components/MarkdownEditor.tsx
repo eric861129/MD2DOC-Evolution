@@ -142,7 +142,7 @@ const MarkdownEditor: React.FC = () => {
 
   // Logic: Word Count
   const getWordCount = (text: string) => {
-    const cleanText = text.replace(/[*#>`~_[\]()]/g, ' ');
+    const cleanText = text.replace(/[*#>`~_[\\\]()]/g, ' ');
     const cjk = (cleanText.match(/[一-龥぀-ゟ゠-ヿ]/g) || []).length;
     const latin = (cleanText.replace(/[一-龥぀-ゟ゠-ヿ]/g, ' ').match(/\b\w+\b/g) || []).length;
     return cjk + latin;
