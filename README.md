@@ -120,8 +120,9 @@ AI: React Hook 是 React 16.8 新增的特性...
 
 ## 🛠️ 技術棧 (Tech Stack)
 
-- **Frontend Framework**: [React 19](https://react.dev/)
-- **Build Tool**: [Vite](https://vitejs.dev/)
+- **Frontend Framework**: [React 19](https://react.dev/) (Hooks-based Modular Architecture)
+- **Build Tool**: [Vite 6](https://vitejs.dev/)
+- **Design System**: Centralized Theming System (`theme.ts`)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Document Generation**: [docx](https://docx.js.org/)
 - **UI Icons**: [Lucide React](https://lucide.dev/)
