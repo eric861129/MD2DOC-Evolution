@@ -5,7 +5,7 @@
  * See LICENSE file in the project root for full license information.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { Download, FileText, Sparkles, Settings2 } from 'lucide-react';
 import { useMarkdownEditor } from '../hooks/useMarkdownEditor';
 import { BlockType, ParsedBlock } from '../types.ts';
@@ -13,64 +13,20 @@ import { parseInlineElements, InlineStyleType } from '../utils/styleParser.ts';
 import { FONTS } from '../constants/theme.ts';
 
 const MarkdownEditor: React.FC = () => {
-  // 優先從 localStorage 讀取草稿
-  const [content, setContent] = useState(() => {
-    return localStorage.getItem('draft_content') || INITIAL_CONTENT;
-  });
-  const [parsedBlocks, setParsedBlocks] = useState<ParsedBlock[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedSizeIndex, setSelectedSizeIndex] = useState(0);
-  const [wordCount, setWordCount] = useState(0);
-
-  // Refs for sync scrolling
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const previewRef = useRef<HTMLDivElement>(null);
-
-  // 計算字數 (中文字 + 英文字)
-  const getWordCount = (text: string) => {
-    // 移除 markdown 符號，只保留文字大致估算
-    const cleanText = text.replace(/[*#>`~_\[\]()]/g, ' ');
-    // 匹配中日韓文字
-    const cjk = (cleanText.match(/[\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff]/g) || []).length;
-    // 匹配英文單字 (以空格分隔)
-    const latin = (cleanText.replace(/[\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff]/g, ' ').match(/\b\w+\b/g) || []).length;
-    return cjk + latin;
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      try {
-        const blocks = parseMarkdown(content);
-        setParsedBlocks(blocks);
-        setWordCount(getWordCount(content));
-        
-        // Auto Save
-        localStorage.setItem('draft_content', content);
-      } catch (e) {
-        console.error("Markdown 解析出錯:", e);
-      }
-    }, 300); // 300ms 防抖延遲
-
-    return () => clearTimeout(timer);
-  }, [content]);
-
-  const handleDownload = async () => {
-    if (parsedBlocks.length === 0) return;
-    setIsGenerating(true);
-    try {
-      const sizeConfig = PAGE_SIZES[selectedSizeIndex];
-      const blob = await generateDocx(parsedBlocks, { 
-        widthCm: sizeConfig.width, 
-        heightCm: sizeConfig.height 
-      });
-      saveAs(blob, "Professional_Manuscript.docx");
-    } catch (error) {
-      console.error("Word 轉檔失敗:", error);
-      alert("轉檔失敗，請確認內容格式是否正確。");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+  const {
+    content,
+    setContent,
+    parsedBlocks,
+    isGenerating,
+    selectedSizeIndex,
+    setSelectedSizeIndex,
+    wordCount,
+    textareaRef,
+    previewRef,
+    handleScroll,
+    handleDownload,
+    pageSizes
+  } = useMarkdownEditor();
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Tab') {
@@ -78,25 +34,16 @@ const MarkdownEditor: React.FC = () => {
       const target = e.target as HTMLTextAreaElement;
       const start = target.selectionStart;
       const end = target.selectionEnd;
+
+      // 在當前位置插入兩個空格
       const newContent = content.substring(0, start) + "  " + content.substring(end);
       setContent(newContent);
+
+      // 重新設定光標位置
       setTimeout(() => {
         target.selectionStart = target.selectionEnd = start + 2;
       }, 0);
     }
-  };
-
-  const handleScroll = () => {
-    if (!textareaRef.current || !previewRef.current) return;
-
-    const textarea = textareaRef.current;
-    const preview = previewRef.current;
-
-    // 計算左側捲動百分比
-    const percentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight);
-    
-    // 設定右側捲動位置
-    preview.scrollTop = percentage * (preview.scrollHeight - preview.clientHeight);
   };
 
   const renderPreviewContent = () => {
@@ -156,6 +103,7 @@ const MarkdownEditor: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-4">
+          {/* 版面尺寸選擇器 */}
           <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
             <Settings2 className="w-4 h-4 text-slate-500" />
             <select 
@@ -233,6 +181,7 @@ const MarkdownEditor: React.FC = () => {
 
 const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
   const segments = parseInlineElements(text);
+  
   return (
     <>
       {segments.map((segment, i) => {
@@ -246,9 +195,17 @@ const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
           case InlineStyleType.CODE:
             return <code key={i} className="bg-slate-100 px-1.5 py-0.5 rounded text-[0.9em] font-mono text-slate-700 border border-slate-200">{segment.content}</code>;
           case InlineStyleType.UI_BUTTON:
-            return <span key={i} className="inline-block px-1.5 py-0.5 mx-0.5 text-[0.8rem] font-bold bg-slate-200 border border-slate-400 rounded text-slate-800 shadow-[1px_1px_0_0_#94a3b8]">{segment.content}</span>;
+            return (
+              <span key={i} className="inline-block px-1.5 py-0.5 mx-0.5 text-[0.8rem] font-bold bg-slate-200 border border-slate-400 rounded text-slate-800 shadow-[1px_1px_0_0_#94a3b8]">
+                {segment.content}
+              </span>
+            );
           case InlineStyleType.SHORTCUT:
-            return <span key={i} className="inline-block px-1 mx-0.5 text-[0.8rem] bg-white border border-slate-300 rounded shadow-sm text-slate-600">{segment.content}</span>;
+            return (
+              <span key={i} className="inline-block px-1 mx-0.5 text-[0.8rem] bg-white border border-slate-300 rounded shadow-sm text-slate-600">
+                {segment.content}
+              </span>
+            );
           case InlineStyleType.BOOK:
             return <span key={i} className="font-bold text-slate-900">{segment.content}</span>;
           case InlineStyleType.TEXT:
