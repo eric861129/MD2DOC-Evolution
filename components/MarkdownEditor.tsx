@@ -121,17 +121,35 @@ const PAGE_SIZES = [
 ];
 
 const MarkdownEditor: React.FC = () => {
-  const [content, setContent] = useState(INITIAL_CONTENT);
+  // 優先從 localStorage 讀取草稿
+  const [content, setContent] = useState(() => {
+    return localStorage.getItem('draft_content') || INITIAL_CONTENT;
+  });
   const [parsedBlocks, setParsedBlocks] = useState<ParsedBlock[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  // 新增版面尺寸狀態，預設為第一個 (技術書籍)
   const [selectedSizeIndex, setSelectedSizeIndex] = useState(0);
+  const [wordCount, setWordCount] = useState(0);
+
+  // 計算字數 (中文字 + 英文字)
+  const getWordCount = (text: string) => {
+    // 移除 markdown 符號，只保留文字大致估算
+    const cleanText = text.replace(/[*#>`~_\[\]()]/g, ' ');
+    // 匹配中日韓文字
+    const cjk = (cleanText.match(/[\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff]/g) || []).length;
+    // 匹配英文單字 (以空格分隔)
+    const latin = (cleanText.replace(/[\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff]/g, ' ').match(/\b\w+\b/g) || []).length;
+    return cjk + latin;
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
         const blocks = parseMarkdown(content);
         setParsedBlocks(blocks);
+        setWordCount(getWordCount(content));
+        
+        // Auto Save
+        localStorage.setItem('draft_content', content);
       } catch (e) {
         console.error("Markdown 解析出錯:", e);
       }
@@ -262,8 +280,11 @@ const MarkdownEditor: React.FC = () => {
 
       <main className="flex flex-1 overflow-hidden">
         <div className="w-1/2 flex flex-col border-r border-slate-200 bg-white">
-          <div className="bg-slate-50 px-6 py-2 border-b border-slate-200 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            Manuscript Editor (Draft)
+          <div className="bg-slate-50 px-6 py-2 border-b border-slate-200 flex justify-between items-center">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Manuscript Editor (Draft)</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+               {wordCount} Words
+            </span>
           </div>
           <textarea
             className="flex-1 w-full p-10 resize-none focus:outline-none text-base leading-[1.8] text-slate-700 selection:bg-indigo-100"
