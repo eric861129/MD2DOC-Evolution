@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: "pages-${{ github.ref_name }}"
   cancel-in-progress: false
 
 jobs:
@@ -31,19 +31,27 @@ jobs:
         run: npm ci
 
       - name: Set Environment Variables
+        shell: bash
         run: |
+          echo "Processing branch: ${{ github.ref_name }}"
           if [ "${{ github.ref_name }}" == "main" ]; then
-            echo "BASE_URL=/BookPublisher_MD2Doc/" >> $GITHUB_ENV
+            echo "VITE_BASE_URL=/BookPublisher_MD2Doc/" >> $GITHUB_ENV
             echo "TARGET_FOLDER=." >> $GITHUB_ENV
+            echo "MODE=production" >> $GITHUB_ENV
           else
-            echo "BASE_URL=/BookPublisher_MD2Doc/dev/" >> $GITHUB_ENV
+            echo "VITE_BASE_URL=/BookPublisher_MD2Doc/dev/" >> $GITHUB_ENV
             echo "TARGET_FOLDER=dev" >> $GITHUB_ENV
+            echo "MODE=development" >> $GITHUB_ENV
           fi
 
       - name: Build
         run: npm run build
         env:
-          BASE_URL: ${{ env.BASE_URL }}
+          VITE_BASE_URL: ${{ env.VITE_BASE_URL }}
+          NODE_ENV: ${{ env.MODE }}
+
+      - name: List Build Output
+        run: ls -R dist
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
@@ -51,6 +59,7 @@ jobs:
           folder: dist
           target-folder: ${{ env.TARGET_FOLDER }}
           branch: gh-pages
-          clean: ${{ github.ref_name == 'main' }} # Only clean root if deploying main
+          clean: ${{ github.ref_name == 'main' }}
           clean-exclude: |
             dev
+            .nojekyll
