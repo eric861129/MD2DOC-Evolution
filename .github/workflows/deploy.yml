@@ -33,17 +33,17 @@ jobs:
       - name: Set Environment Variables
         run: |
           if [ "${{ github.ref_name }}" == "main" ]; then
-            echo "VITE_BASE_URL=/BookPublisher_MD2Doc/" >> $GITHUB_ENV
+            echo "BASE_URL=/BookPublisher_MD2Doc/" >> $GITHUB_ENV
             echo "TARGET_FOLDER=." >> $GITHUB_ENV
           else
-            echo "VITE_BASE_URL=/BookPublisher_MD2Doc/dev/" >> $GITHUB_ENV
+            echo "BASE_URL=/BookPublisher_MD2Doc/dev/" >> $GITHUB_ENV
             echo "TARGET_FOLDER=dev" >> $GITHUB_ENV
           fi
 
       - name: Build
         run: npm run build
         env:
-          VITE_BASE_URL: ${{ env.VITE_BASE_URL }}
+          BASE_URL: ${{ env.BASE_URL }}
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
