@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { useMarkdownEditor } from '../hooks/useMarkdownEditor';
+import { useDarkMode } from '../hooks/useDarkMode';
 
 // Components
 import { EditorHeader } from './editor/EditorHeader';
@@ -13,6 +14,8 @@ import { EditorPane } from './editor/EditorPane';
 import { PreviewPane } from './editor/PreviewPane';
 
 const MarkdownEditor: React.FC = () => {
+  const { isDark, toggleDarkMode } = useDarkMode();
+  
   const {
     content,
     setContent,
@@ -29,7 +32,7 @@ const MarkdownEditor: React.FC = () => {
   } = useMarkdownEditor();
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
+    <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden transition-colors">
       <EditorHeader 
         pageSizes={pageSizes}
         selectedSizeIndex={selectedSizeIndex}
@@ -37,6 +40,8 @@ const MarkdownEditor: React.FC = () => {
         onDownload={handleDownload}
         isGenerating={isGenerating}
         hasContent={parsedBlocks.length > 0}
+        isDark={isDark}
+        toggleDarkMode={toggleDarkMode}
       />
 
       <main className="flex flex-1 overflow-hidden">

@@ -65,7 +65,7 @@ export const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
         <div className="flex justify-end my-12 pl-20">
           <div className="max-w-[85%] border-2 border-dashed border-slate-900 p-6 bg-white relative text-right">
             <div className="absolute -top-3 left-4 bg-white px-2 text-[10px] font-black tracking-widest text-indigo-600 border border-slate-200">USER</div>
-            <div className="whitespace-pre-wrap leading-[1.8]"><RenderRichText text={block.content} /></div>
+            <div className="whitespace-pre-wrap leading-[1.8] text-slate-900"><RenderRichText text={block.content} /></div>
           </div>
         </div>
       );
