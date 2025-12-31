@@ -7,11 +7,15 @@
 
 import React from 'react';
 import MarkdownEditor from './components/MarkdownEditor';
+import Footer from './components/Footer';
 
 const App: React.FC = () => {
   return (
-    <div className="min-h-screen">
-      <MarkdownEditor />
+    <div className="min-h-screen flex flex-col">
+      <main className="flex-grow">
+        <MarkdownEditor />
+      </main>
+      <Footer />
     </div>
   );
 };
