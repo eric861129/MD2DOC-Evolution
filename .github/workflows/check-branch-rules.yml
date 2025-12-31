@@ -1,0 +1,44 @@
+name: Branch Flow Rules
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  check-branch-flow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Branch Flow Rules
+        run: |
+          TARGET_BRANCH="${{ github.base_ref }}"
+          SOURCE_BRANCH="${{ github.head_ref }}"
+          
+          echo "Checking PR flow: $SOURCE_BRANCH -> $TARGET_BRANCH"
+          
+          # Rule 1: Merging into 'main'
+          if [[ "$TARGET_BRANCH" == "main" ]]; then
+            if [[ "$SOURCE_BRANCH" == "dev" || "$SOURCE_BRANCH" == hotfix/* ]]; then
+              echo "✅ Valid flow for main: $SOURCE_BRANCH -> main"
+              exit 0
+            else
+              echo "❌ Invalid flow! 'main' branch only accepts merges from 'dev' or 'hotfix/*' branches."
+              echo "Current source: $SOURCE_BRANCH"
+              exit 1
+            fi
+          fi
+
+          # Rule 2: Merging into 'dev'
+          if [[ "$TARGET_BRANCH" == "dev" ]]; then
+            if [[ "$SOURCE_BRANCH" == dev_feature_* || "$SOURCE_BRANCH" == hotfix/* ]]; then
+              echo "✅ Valid flow for dev: $SOURCE_BRANCH -> dev"
+              exit 0
+            else
+              echo "❌ Invalid flow! 'dev' branch only accepts merges from 'dev_feature_*' or 'hotfix/*' branches."
+              echo "Current source: $SOURCE_BRANCH"
+              exit 1
+            fi
+          fi
+          
+          # Allow other flows (optional, or restrict strictly)
+          echo "ℹ️ No specific rules for target branch '$TARGET_BRANCH'. Passing."
+          exit 0
