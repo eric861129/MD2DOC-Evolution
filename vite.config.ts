@@ -5,7 +5,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
     return {
-      base: '/BookPublisher_MD2Doc/',
+      // 改用相對路徑，增加部署靈活性
+      base: './',
       server: {
         port: 3000,
         host: '0.0.0.0',
