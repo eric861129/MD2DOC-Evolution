@@ -56,7 +56,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
     <script>
         // 關鍵：將 Buffer 掛載到全局，docx 庫才能運作
-        window.Buffer = window.Buffer || buffer.Buffer;
+        // 修正：檢查 window.buffer 是否存在，避免直接引用導致 ReferenceError
+        if (window.buffer) {
+            window.Buffer = window.Buffer || window.buffer.Buffer;
+        }
         // 確保 process.env 存在，避免 Gemini SDK 報錯
         window.process = window.process || { env: { API_KEY: "" } };
     </script>
