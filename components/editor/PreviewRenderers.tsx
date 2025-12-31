@@ -48,6 +48,26 @@ export const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
 
 export const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
   switch (block.type) {
+    case BlockType.TOC:
+      const tocLines = block.content.split('\n');
+      return (
+        <div className="my-12">
+          <h2 className="text-3xl font-black mb-8 text-center tracking-widest text-slate-900 uppercase">目 錄</h2>
+          <div className="space-y-3">
+            {tocLines.map((line, idx) => {
+              const cleanText = line.replace(/^[-*\d\.]+\s*/, '').trim();
+              if (!cleanText) return null;
+              return (
+                <div key={idx} className="flex items-end gap-2 group">
+                  <span className="text-slate-800 font-medium whitespace-nowrap"><RenderRichText text={cleanText} /></span>
+                  <div className="flex-1 border-b-2 border-dotted border-slate-300 mb-1 opacity-50 group-hover:border-slate-400 transition-colors"></div>
+                  <span className="text-slate-400 font-mono text-sm mb-0.5">...</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
     case BlockType.HEADING_1:
       return <h1 className="text-4xl font-black mb-12 mt-16 pb-4 border-b-4 border-slate-900 tracking-tight leading-tight"><RenderRichText text={block.content} /></h1>;
     case BlockType.HEADING_2:

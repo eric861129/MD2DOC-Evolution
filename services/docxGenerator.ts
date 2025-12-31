@@ -2,7 +2,6 @@
  * BookPublisher MD2Docx
  * Copyright (c) 2025 EricHuang
  * Licensed under the MIT License.
- * See LICENSE file in the project root for full license information.
  */
 
 import { 
@@ -17,7 +16,9 @@ import {
   TableRow,
   TableCell,
   WidthType,
-  BorderStyle
+  BorderStyle,
+  TabStopType,
+  TabStopPosition
 } from "docx";
 import { ParsedBlock, BlockType } from "../types.ts";
 import { parseInlineElements, InlineStyleType } from "../utils/styleParser.ts";
@@ -49,24 +50,24 @@ const parseInlineStyles = (text: string): TextRun[] => {
       case InlineStyleType.ITALIC:
         return new TextRun({ ...baseConfig, italics: true, color: COLORS.PRIMARY_BLUE });
       case InlineStyleType.UNDERLINE:
-        return new TextRun({ 
+        return new TextRun({
           ...baseConfig, 
           color: COLORS.LINK_BLUE, 
           underline: { type: UnderlineType.SINGLE, color: COLORS.LINK_BLUE } 
         });
       case InlineStyleType.CODE:
-        return new TextRun({ 
+        return new TextRun({
           ...baseConfig, 
           shading: { fill: COLORS.BG_CODE, type: ShadingType.CLEAR, color: "auto" } 
         });
       case InlineStyleType.UI_BUTTON:
-        return new TextRun({ 
+        return new TextRun({
           ...baseConfig, 
           bold: true, 
           shading: { fill: COLORS.BG_BUTTON, type: ShadingType.CLEAR, color: "auto" } 
         });
       case InlineStyleType.SHORTCUT:
-        return new TextRun({ 
+        return new TextRun({
           ...baseConfig, 
           size: FONT_SIZES.SHORTCUT, 
           shading: { fill: COLORS.BG_SHORTCUT, type: ShadingType.CLEAR, color: "auto" } 
@@ -80,6 +81,46 @@ const parseInlineStyles = (text: string): TextRun[] => {
 };
 
 // --- Block Builders ---
+
+const createManualTOC = (content: string, pageConfig: DocxConfig): Paragraph[] => {
+  const lines = content.split('\n');
+  const tocParagraphs: Paragraph[] = [];
+
+  // 目錄標題
+  tocParagraphs.push(new Paragraph({
+    children: [new TextRun({ text: "目 錄", bold: true, size: FONT_SIZES.H1, font: FONT_CONFIG_NORMAL })],
+    alignment: AlignmentType.CENTER,
+    spacing: { before: 480, after: 480 }
+  }));
+
+  // 計算右側定位點位置 (總寬度減去邊距)
+  // 假設兩邊邊距各為 1440 twips (1 inch)
+  // 1 cm = 567 twips
+  const rightPos = (pageConfig.widthCm * SIZES.CM_TO_TWIPS) - 2880;
+
+  lines.forEach(line => {
+    const cleanLine = line.replace(/^[-*\d\.]+\s*/, '').trim();
+    if (!cleanLine) return;
+
+    tocParagraphs.push(new Paragraph({
+      children: [
+        new TextRun({ text: cleanLine, font: FONT_CONFIG_NORMAL }),
+        new TextRun({ children: ["\t"], font: FONT_CONFIG_NORMAL }), // 使用 Tab
+        new TextRun({ text: " ", font: FONT_CONFIG_NORMAL }) // 預留頁碼位置
+      ],
+      tabStops: [
+        {
+          type: TabStopType.RIGHT,
+          position: rightPos,
+          leader: "dot", // 引導點
+        }
+      ],
+      spacing: { before: 120, after: 120 }
+    }));
+  });
+
+  return tocParagraphs;
+};
 
 const createHeading = (content: string, level: 1 | 2 | 3): Paragraph => {
   const configs = {
@@ -211,6 +252,7 @@ export const generateDocx = async (
 
   for (const block of blocks) {
     switch (block.type) {
+      case BlockType.TOC: docChildren.push(...createManualTOC(block.content, config)); break;
       case BlockType.HEADING_1: docChildren.push(createHeading(block.content, 1)); break;
       case BlockType.HEADING_2: docChildren.push(createHeading(block.content, 2)); break;
       case BlockType.HEADING_3: docChildren.push(createHeading(block.content, 3)); break;
