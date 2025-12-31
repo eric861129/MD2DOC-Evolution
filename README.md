@@ -1,5 +1,7 @@
 # BookPublisher MD2Docx
 
+## 喜歡的話可以幫我按星星🌟🌟🌟
+
 **BookPublisher MD2Docx** 是一個開源的 Markdown 編輯與轉檔工具，專為**技術書籍作者**與**內容創作者**設計。它填補了「工程師習慣的 Markdown 寫作」與「出版社要求的 Word 稿件」之間的鴻溝，讓你能專注於內容創作，自動完成繁瑣的排版工作。
 
 🔗 **線上試用 (Live Demo):** [https://eric861129.github.io/BookPublisher_MD2Doc/](https://eric861129.github.io/BookPublisher_MD2Doc/)
@@ -103,7 +105,7 @@ AI: React Hook 是 React 16.8 新增的特性...
 ### 4. 表格 (Tables)
 ```markdown
 | 標題 A | 標題 B |
-| --- | --- |
+| ------ | ------ |
 | 內容 1 | 內容 2 |
 ```
 
