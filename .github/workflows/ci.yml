@@ -1,0 +1,36 @@
+name: CI Build Check
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+jobs:
+  build-check:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    # 如果有 lint script，可以在這裡加
+    # - name: Run Lint
+    #   run: npm run lint
+
+    - name: Build Project
+      run: npm run build
+      # 這一步會觸發 tsc (TypeScript Check) 和 vite build
+      # 如果失敗，GitHub Action 就會掛紅燈，擋下 PR
