@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { FileText, Settings2, Download, Sun, Moon } from 'lucide-react';
+import { Settings2, Download, Sun, Moon } from 'lucide-react';
 
 interface EditorHeaderProps {
   pageSizes: { name: string; width: number; height: number }[];
@@ -28,11 +28,14 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   isDark,
   toggleDarkMode
 }) => {
+  // 處理 LOGO 路徑，考慮到 GitHub Pages 的子目錄
+  const logoPath = `${import.meta.env.BASE_URL}logo.svg`;
+
   return (
     <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex justify-between items-center z-20 shadow-sm transition-colors">
       <div className="flex items-center gap-4">
-        <div className="bg-slate-900 dark:bg-indigo-600 p-2.5 rounded-xl">
-          <FileText className="text-white w-6 h-6" />
+        <div className="bg-slate-900 dark:bg-indigo-600 p-1 rounded-xl">
+          <img src={logoPath} alt="Logo" className="w-9 h-9" />
         </div>
         <div>
           <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
