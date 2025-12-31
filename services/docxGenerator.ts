@@ -5,10 +5,10 @@
  * See LICENSE file in the project root for full license information.
  */
 
-import {
-  Document,
-  Packer,
-  Paragraph,
+import { 
+  Document, 
+  Packer, 
+  Paragraph, 
   TextRun,
   AlignmentType,
   UnderlineType,
@@ -21,7 +21,7 @@ import {
 } from "docx";
 import { ParsedBlock, BlockType } from "../types.ts";
 import { parseInlineElements, InlineStyleType } from "../utils/styleParser.ts";
-import { FONTS, COLORS, SIZES } from "../constants/theme.ts";
+import { FONTS, COLORS, SIZES, FONT_SIZES, SPACING, LAYOUT } from "../constants/theme.ts";
 
 // --- 字型配置 ---
 const FONT_CONFIG_NORMAL = {
@@ -49,27 +49,27 @@ const parseInlineStyles = (text: string): TextRun[] => {
       case InlineStyleType.ITALIC:
         return new TextRun({ ...baseConfig, italics: true, color: COLORS.PRIMARY_BLUE });
       case InlineStyleType.UNDERLINE:
-        return new TextRun({
-          ...baseConfig,
-          color: COLORS.LINK_BLUE,
-          underline: { type: UnderlineType.SINGLE, color: COLORS.LINK_BLUE }
+        return new TextRun({ 
+          ...baseConfig, 
+          color: COLORS.LINK_BLUE, 
+          underline: { type: UnderlineType.SINGLE, color: COLORS.LINK_BLUE } 
         });
       case InlineStyleType.CODE:
-        return new TextRun({
-          ...baseConfig,
-          shading: { fill: COLORS.BG_CODE, type: ShadingType.CLEAR, color: "auto" }
+        return new TextRun({ 
+          ...baseConfig, 
+          shading: { fill: COLORS.BG_CODE, type: ShadingType.CLEAR, color: "auto" } 
         });
       case InlineStyleType.UI_BUTTON:
-        return new TextRun({
-          ...baseConfig,
-          bold: true,
-          shading: { fill: COLORS.BG_BUTTON, type: ShadingType.CLEAR, color: "auto" }
+        return new TextRun({ 
+          ...baseConfig, 
+          bold: true, 
+          shading: { fill: COLORS.BG_BUTTON, type: ShadingType.CLEAR, color: "auto" } 
         });
       case InlineStyleType.SHORTCUT:
-        return new TextRun({
-          ...baseConfig,
-          size: 20,
-          shading: { fill: COLORS.BG_SHORTCUT, type: ShadingType.CLEAR, color: "auto" }
+        return new TextRun({ 
+          ...baseConfig, 
+          size: FONT_SIZES.SHORTCUT, 
+          shading: { fill: COLORS.BG_SHORTCUT, type: ShadingType.CLEAR, color: "auto" } 
         });
       case InlineStyleType.BOOK:
         return new TextRun({ ...baseConfig, bold: true });
@@ -79,21 +79,21 @@ const parseInlineStyles = (text: string): TextRun[] => {
   });
 };
 
-// --- Block Builders: 將不同類型的區塊生成邏輯拆分 ---
+// --- Block Builders ---
 
 const createHeading = (content: string, level: 1 | 2 | 3): Paragraph => {
   const configs = {
-    1: { heading: "Heading1", before: 480, after: 240, borderBottom: true },
-    2: { heading: "Heading2", before: 400, after: 200, borderBottom: false },
-    3: { heading: "Heading3", before: 300, after: 150, borderBottom: false },
+    1: { heading: "Heading1", spacing: SPACING.H1, borderBottom: true },
+    2: { heading: "Heading2", spacing: SPACING.H2, borderBottom: false },
+    3: { heading: "Heading3", spacing: SPACING.H3, borderBottom: false },
   }[level];
 
   return new Paragraph({
     children: parseInlineStyles(content),
     heading: configs.heading as any,
-    spacing: { before: configs.before, after: configs.after },
+    spacing: configs.spacing,
     border: configs.borderBottom ? { 
-      bottom: { style: "single", space: 8, color: COLORS.BLACK, size: 18 }
+      bottom: { style: "single", space: 8, color: COLORS.BLACK, size: LAYOUT.BORDER.H1_BOTTOM } 
     } : undefined
   });
 };
@@ -101,7 +101,7 @@ const createHeading = (content: string, level: 1 | 2 | 3): Paragraph => {
 const createParagraph = (content: string): Paragraph => {
   return new Paragraph({
     children: parseInlineStyles(content),
-    spacing: { before: 200, after: 200 },
+    spacing: SPACING.PARAGRAPH,
     alignment: AlignmentType.BOTH
   });
 };
@@ -112,18 +112,18 @@ const createCodeBlock = (content: string): Paragraph => {
     children: codeLines.map((line, index) => new TextRun({
        text: line,
        font: FONT_CONFIG_NORMAL,
-       size: 18,
+       size: FONT_SIZES.CODE,
        break: index > 0 ? 1 : undefined
     })),
     border: {
-      top: { style: "single", space: 10, size: 6, color: COLORS.CODE_BORDER },
-      bottom: { style: "single", space: 10, size: 6, color: COLORS.CODE_BORDER },
-      left: { style: "single", space: 10, size: 6, color: COLORS.CODE_BORDER },
-      right: { style: "single", space: 10, size: 6, color: COLORS.CODE_BORDER },
+      top: { style: "single", space: 10, size: LAYOUT.BORDER.CODE, color: COLORS.CODE_BORDER },
+      bottom: { style: "single", space: 10, size: LAYOUT.BORDER.CODE, color: COLORS.CODE_BORDER },
+      left: { style: "single", space: 10, size: LAYOUT.BORDER.CODE, color: COLORS.CODE_BORDER },
+      right: { style: "single", space: 10, size: LAYOUT.BORDER.CODE, color: COLORS.CODE_BORDER },
     },
     shading: { fill: COLORS.BG_CODE },
-    spacing: { before: 400, after: 400, line: 240 },
-    indent: { left: 400, right: 400 }
+    spacing: SPACING.CODE_BLOCK,
+    indent: { left: LAYOUT.INDENT.CODE, right: LAYOUT.INDENT.CODE }
   });
 };
 
@@ -131,7 +131,7 @@ const createChatBubble = (content: string, type: BlockType.CHAT_USER | BlockType
   const isUser = type === BlockType.CHAT_USER;
   return new Paragraph({
     children: [
-        new TextRun({ text: isUser ? "User:" : "AI:", bold: true, size: 18, font: FONT_CONFIG_NORMAL }),
+        new TextRun({ text: isUser ? "User:" : "AI:", bold: true, size: FONT_SIZES.LABEL, font: FONT_CONFIG_NORMAL }),
         new TextRun({ text: "", break: 1 }),
         ...parseInlineStyles(content)
     ],
@@ -141,22 +141,22 @@ const createChatBubble = (content: string, type: BlockType.CHAT_USER | BlockType
       left: { style: isUser ? "dashed" : "dotted", space: 10, color: COLORS.CHAT_BORDER },
       right: { style: isUser ? "dashed" : "dotted", space: 10, color: COLORS.CHAT_BORDER },
     },
-    indent: isUser ? { left: 1440 } : { right: 1440 }, 
+    indent: isUser ? { left: LAYOUT.INDENT.CHAT } : { right: LAYOUT.INDENT.CHAT }, 
     alignment: isUser ? AlignmentType.RIGHT : AlignmentType.LEFT,
-    spacing: { before: 300, after: 300 },
+    spacing: SPACING.CHAT,
     shading: { fill: isUser ? COLORS.WHITE : COLORS.BG_AI_CHAT }
   });
 };
 
 const createCallout = (content: string, type: BlockType): Paragraph => {
   const config = {
-    [BlockType.CALLOUT_TIP]: { label: "TIP", color: COLORS.CALLOUT.TIP.BORDER, style: BorderStyle.SINGLE, size: 36, bg: COLORS.CALLOUT.TIP.BG },
-    [BlockType.CALLOUT_WARNING]: { label: "WARNING", color: COLORS.CALLOUT.WARNING.BORDER, style: BorderStyle.SINGLE, size: 48, bg: COLORS.CALLOUT.WARNING.BG },
-    [BlockType.CALLOUT_NOTE]: { label: "NOTE", color: COLORS.CALLOUT.NOTE.BORDER, style: BorderStyle.DASHED, size: 24, bg: COLORS.CALLOUT.NOTE.BG },
-  }[type] || { label: "NOTE", color: COLORS.CALLOUT.NOTE.BORDER, style: BorderStyle.DASHED, size: 24, bg: COLORS.CALLOUT.NOTE.BG };
+    [BlockType.CALLOUT_TIP]: { label: "TIP", color: COLORS.CALLOUT.TIP.BORDER, style: BorderStyle.SINGLE, size: LAYOUT.BORDER.CALLOUT_TIP, bg: COLORS.CALLOUT.TIP.BG },
+    [BlockType.CALLOUT_WARNING]: { label: "WARNING", color: COLORS.CALLOUT.WARNING.BORDER, style: BorderStyle.SINGLE, size: LAYOUT.BORDER.CALLOUT_WARNING, bg: COLORS.CALLOUT.WARNING.BG },
+    [BlockType.CALLOUT_NOTE]: { label: "NOTE", color: COLORS.CALLOUT.NOTE.BORDER, style: BorderStyle.DASHED, size: LAYOUT.BORDER.CALLOUT_NOTE, bg: COLORS.CALLOUT.NOTE.BG },
+  }[type] || { label: "NOTE", color: COLORS.CALLOUT.NOTE.BORDER, style: BorderStyle.DASHED, size: LAYOUT.BORDER.CALLOUT_NOTE, bg: COLORS.CALLOUT.NOTE.BG };
 
   const children: TextRun[] = [
-    new TextRun({ text: `[ ${config.label} ]`, bold: true, size: 18, font: FONT_CONFIG_NORMAL })
+    new TextRun({ text: `[ ${config.label} ]`, bold: true, size: FONT_SIZES.LABEL, font: FONT_CONFIG_NORMAL })
   ];
 
   content.split('\n').forEach(line => {
@@ -167,14 +167,14 @@ const createCallout = (content: string, type: BlockType): Paragraph => {
   return new Paragraph({
     children,
     shading: { fill: config.bg },
-    border: {
+    border: { 
       top: { style: config.style, space: 5, size: config.size, color: config.color },
       bottom: { style: config.style, space: 5, size: config.size, color: config.color },
       left: { style: config.style, space: 15, size: config.size, color: config.color },
       right: { style: config.style, space: 15, size: config.size, color: config.color }
     },
-    spacing: { before: 400, after: 400, line: 360 },
-    indent: { left: 400, right: 400 }
+    spacing: SPACING.CALLOUT,
+    indent: { left: LAYOUT.INDENT.CALLOUT, right: LAYOUT.INDENT.CALLOUT }
   });
 };
 
@@ -222,19 +222,19 @@ export const generateDocx = async (
       case BlockType.CALLOUT_NOTE:
       case BlockType.CALLOUT_WARNING: docChildren.push(createCallout(block.content, block.type)); break;
       case BlockType.BULLET_LIST:
-        docChildren.push(new Paragraph({ children: parseInlineStyles(block.content), bullet: { level: 0 }, spacing: { before: 120, after: 120 } }));
+        docChildren.push(new Paragraph({ children: parseInlineStyles(block.content), bullet: { level: 0 }, spacing: SPACING.LIST }));
         break;
       case BlockType.NUMBERED_LIST:
-        docChildren.push(new Paragraph({ children: parseInlineStyles(block.content), numbering: { reference: "default-numbering", level: 0 }, spacing: { before: 120, after: 120 } }));
+        docChildren.push(new Paragraph({ children: parseInlineStyles(block.content), numbering: { reference: "default-numbering", level: 0 }, spacing: SPACING.LIST }));
         break;
       case BlockType.TABLE:
         if (block.tableRows) {
           docChildren.push(createTable(block.tableRows));
-          docChildren.push(new Paragraph({ text: "", spacing: { before: 240 } }));
+          docChildren.push(new Paragraph({ text: "", spacing: { before: SPACING.TABLE_AFTER } }));
         }
         break;
       case BlockType.HORIZONTAL_RULE:
-        docChildren.push(new Paragraph({ text: "", border: { bottom: { style: "single", size: 12, color: COLORS.BLACK, space: 1 } }, spacing: { before: 240, after: 240 } }));
+        docChildren.push(new Paragraph({ text: "", border: { bottom: { style: "single", size: LAYOUT.BORDER.HR, color: COLORS.BLACK, space: 1 } }, spacing: SPACING.HR }));
         break;
     }
   }
@@ -250,13 +250,13 @@ export const generateDocx = async (
       properties: {
         page: {
           size: { width: config.widthCm * SIZES.CM_TO_TWIPS, height: config.heightCm * SIZES.CM_TO_TWIPS },
-          margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
+          margin: { top: LAYOUT.MARGIN.NORMAL, right: LAYOUT.MARGIN.NORMAL, bottom: LAYOUT.MARGIN.NORMAL, left: LAYOUT.MARGIN.NORMAL },
         },
       },
       children: docChildren
     }],
     styles: {
-      default: { document: { run: { font: FONT_CONFIG_NORMAL, size: 22 } } },
+      default: { document: { run: { font: FONT_CONFIG_NORMAL, size: FONT_SIZES.BODY } } },
     },
   });
 

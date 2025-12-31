@@ -11,6 +11,17 @@ export const FONTS = {
   LATIN: "Consolas",
 };
 
+// 字體大小 (Word 單位: half-points, e.g., 24 = 12pt)
+export const FONT_SIZES = {
+  BODY: 22,
+  CODE: 18,
+  LABEL: 18,
+  SHORTCUT: 20,
+  H1: 32,
+  H2: 28,
+  H3: 24,
+};
+
 // 顏色設定
 export const COLORS = {
   // 基礎色
@@ -29,25 +40,48 @@ export const COLORS = {
   
   // Callout 顏色
   CALLOUT: {
-    TIP: {
-      BORDER: "64748B",
-      BG: "F9FAFB"
-    },
-    NOTE: {
-      BORDER: "CBD5E1",
-      BG: "FFFFFF"
-    },
-    WARNING: {
-      BORDER: "000000",
-      BG: "F1F5F9"
-    }
+    TIP: { BORDER: "64748B", BG: "F9FAFB" },
+    NOTE: { BORDER: "CBD5E1", BG: "FFFFFF" },
+    WARNING: { BORDER: "000000", BG: "F1F5F9" }
   },
   
-  // Chat Border
+  // 特定邊框顏色
   CHAT_BORDER: "404040",
-  
-  // Code Block Border
   CODE_BORDER: "BFBFBF"
+};
+
+// 間距設定 (Word 單位: twips, 1pt = 20 twips)
+export const SPACING = {
+  PARAGRAPH: { BEFORE: 200, AFTER: 200 },
+  H1: { BEFORE: 480, AFTER: 240 },
+  H2: { BEFORE: 400, AFTER: 200 },
+  H3: { BEFORE: 300, AFTER: 150 },
+  CODE_BLOCK: { BEFORE: 400, AFTER: 400, LINE: 240 },
+  CHAT: { BEFORE: 300, AFTER: 300 },
+  CALLOUT: { BEFORE: 400, AFTER: 400, LINE: 360 },
+  LIST: { BEFORE: 120, AFTER: 120 },
+  TABLE_AFTER: 240,
+  HR: { BEFORE: 240, AFTER: 240 }
+};
+
+// 佈局設定 (縮排、邊框粗細等)
+export const LAYOUT = {
+  INDENT: {
+    CODE: 400,
+    CHAT: 1440,
+    CALLOUT: 400
+  },
+  BORDER: {
+    H1_BOTTOM: 18,
+    CODE: 6,
+    CALLOUT_TIP: 36,
+    CALLOUT_WARNING: 48,
+    CALLOUT_NOTE: 24,
+    HR: 12
+  },
+  MARGIN: {
+    NORMAL: 1440 // 1 inch = 1440 twips
+  }
 };
 
 // 單位與尺寸
