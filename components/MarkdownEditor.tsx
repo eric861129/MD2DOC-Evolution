@@ -5,7 +5,7 @@
  * See LICENSE file in the project root for full license information.
  */
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Download, FileText, Sparkles, Settings2 } from 'lucide-react';
 import { useMarkdownEditor } from '../hooks/useMarkdownEditor';
 import { BlockType, ParsedBlock } from '../types.ts';
@@ -13,20 +13,64 @@ import { parseInlineElements, InlineStyleType } from '../utils/styleParser.ts';
 import { FONTS } from '../constants/theme.ts';
 
 const MarkdownEditor: React.FC = () => {
-  const {
-    content,
-    setContent,
-    parsedBlocks,
-    isGenerating,
-    selectedSizeIndex,
-    setSelectedSizeIndex,
-    wordCount,
-    textareaRef,
-    previewRef,
-    handleScroll,
-    handleDownload,
-    pageSizes
-  } = useMarkdownEditor();
+  // 優先從 localStorage 讀取草稿
+  const [content, setContent] = useState(() => {
+    return localStorage.getItem('draft_content') || INITIAL_CONTENT;
+  });
+  const [parsedBlocks, setParsedBlocks] = useState<ParsedBlock[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedSizeIndex, setSelectedSizeIndex] = useState(0);
+  const [wordCount, setWordCount] = useState(0);
+
+  // Refs for sync scrolling
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  // 計算字數 (中文字 + 英文字)
+  const getWordCount = (text: string) => {
+    // 移除 markdown 符號，只保留文字大致估算
+    const cleanText = text.replace(/[*#>`~_\[\]()]/g, ' ');
+    // 匹配中日韓文字
+    const cjk = (cleanText.match(/[\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff]/g) || []).length;
+    // 匹配英文單字 (以空格分隔)
+    const latin = (cleanText.replace(/[\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff]/g, ' ').match(/\b\w+\b/g) || []).length;
+    return cjk + latin;
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        const blocks = parseMarkdown(content);
+        setParsedBlocks(blocks);
+        setWordCount(getWordCount(content));
+        
+        // Auto Save
+        localStorage.setItem('draft_content', content);
+      } catch (e) {
+        console.error("Markdown 解析出錯:", e);
+      }
+    }, 300); // 300ms 防抖延遲
+
+    return () => clearTimeout(timer);
+  }, [content]);
+
+  const handleDownload = async () => {
+    if (parsedBlocks.length === 0) return;
+    setIsGenerating(true);
+    try {
+      const sizeConfig = PAGE_SIZES[selectedSizeIndex];
+      const blob = await generateDocx(parsedBlocks, { 
+        widthCm: sizeConfig.width, 
+        heightCm: sizeConfig.height 
+      });
+      saveAs(blob, "Professional_Manuscript.docx");
+    } catch (error) {
+      console.error("Word 轉檔失敗:", error);
+      alert("轉檔失敗，請確認內容格式是否正確。");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Tab') {
@@ -40,6 +84,19 @@ const MarkdownEditor: React.FC = () => {
         target.selectionStart = target.selectionEnd = start + 2;
       }, 0);
     }
+  };
+
+  const handleScroll = () => {
+    if (!textareaRef.current || !previewRef.current) return;
+
+    const textarea = textareaRef.current;
+    const preview = previewRef.current;
+
+    // 計算左側捲動百分比
+    const percentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight);
+    
+    // 設定右側捲動位置
+    preview.scrollTop = percentage * (preview.scrollHeight - preview.clientHeight);
   };
 
   const renderPreviewContent = () => {
