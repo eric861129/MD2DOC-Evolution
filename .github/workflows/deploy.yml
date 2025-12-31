@@ -62,4 +62,3 @@ jobs:
           clean: ${{ github.ref_name == 'main' }}
           clean-exclude: |
             dev
-            .nojekyll
