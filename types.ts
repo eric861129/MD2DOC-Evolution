@@ -12,7 +12,8 @@ export enum BlockType {
   BULLET_LIST = 'BULLET_LIST',
   NUMBERED_LIST = 'NUMBERED_LIST',
   TABLE = 'TABLE',
-  HORIZONTAL_RULE = 'HORIZONTAL_RULE'
+  HORIZONTAL_RULE = 'HORIZONTAL_RULE',
+  TOC = 'TOC'
 }
 
 export interface ParsedBlock {

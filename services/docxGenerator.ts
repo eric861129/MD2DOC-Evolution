@@ -17,7 +17,10 @@ import {
   TableRow,
   TableCell,
   WidthType,
-  BorderStyle
+  BorderStyle,
+  TableOfContents,
+  HeadingLevel,
+  PageBreak
 } from "docx";
 import { ParsedBlock, BlockType } from "../types.ts";
 import { parseInlineElements, InlineStyleType } from "../utils/styleParser.ts";
@@ -76,6 +79,14 @@ const parseInlineStyles = (text: string): TextRun[] => {
       default:
         return new TextRun(baseConfig);
     }
+  });
+};
+
+// --- TOC Helper ---
+const createTOC = (): TableOfContents => {
+  return new TableOfContents("目錄", {
+    hyperlink: true,      // 讓目錄項目可以點擊跳轉
+    headingStyleRange: "1-3", // 抓取 Heading 1 到 Heading 3
   });
 };
 
@@ -215,6 +226,10 @@ export const generateDocx = async (
       case BlockType.HEADING_2: docChildren.push(createHeading(block.content, 2)); break;
       case BlockType.HEADING_3: docChildren.push(createHeading(block.content, 3)); break;
       case BlockType.PARAGRAPH: docChildren.push(createParagraph(block.content)); break;
+      case BlockType.TOC:
+        docChildren.push(createTOC());
+        docChildren.push(new Paragraph({ children: [new PageBreak() ]}));
+        break;
       case BlockType.CODE_BLOCK: docChildren.push(createCodeBlock(block.content)); break;
       case BlockType.CHAT_USER:
       case BlockType.CHAT_AI: docChildren.push(createChatBubble(block.content, block.type as any)); break;
@@ -240,6 +255,9 @@ export const generateDocx = async (
   }
 
   const doc = new Document({
+    features: {
+      updateFields: true, 
+    },
     numbering: {
       config: [{
         reference: "default-numbering",

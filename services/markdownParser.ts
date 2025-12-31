@@ -79,6 +79,22 @@ export const parseMarkdown = (text: string): ParsedBlock[] => {
       continue;
     }
 
+    //1.5 Handle Table of Contents
+    if (trimmedLine.toLowerCase() === '[toc]') {
+      if (inTable) {
+        flushTable();
+        inTable = false;
+      }
+
+      flushBuffer();
+
+      blocks.push({
+        type: BlockType.TOC,
+        content: ''
+      });
+      continue;
+    }
+
     // 2. Handle Tables
     // Check if line looks like a table row (starts and ends with | usually, or just contains |)
     // Stricter check: starts with |

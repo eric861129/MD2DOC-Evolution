@@ -5,6 +5,9 @@
  * See LICENSE file in the project root for full license information.
  */
 
+import { LineChart } from "lucide-react";
+import { after, before } from "node:test";
+
 // 字體設定
 export const FONTS = {
   CJK: "Microsoft JhengHei", // 微軟正黑體
@@ -52,16 +55,16 @@ export const COLORS = {
 
 // 間距設定 (Word 單位: twips, 1pt = 20 twips)
 export const SPACING = {
-  PARAGRAPH: { BEFORE: 200, AFTER: 200 },
-  H1: { BEFORE: 480, AFTER: 240 },
-  H2: { BEFORE: 400, AFTER: 200 },
-  H3: { BEFORE: 300, AFTER: 150 },
-  CODE_BLOCK: { BEFORE: 400, AFTER: 400, LINE: 240 },
-  CHAT: { BEFORE: 300, AFTER: 300 },
-  CALLOUT: { BEFORE: 400, AFTER: 400, LINE: 360 },
-  LIST: { BEFORE: 120, AFTER: 120 },
+  PARAGRAPH: { before: 200, after: 200 },
+  H1: { before: 480, after: 240 },
+  H2: { before: 400, after: 200 },
+  H3: { before: 300, after: 150 },
+  CODE_BLOCK: { before: 400, after: 400, line: 240 },
+  CHAT: { before: 300, after: 300 },
+  CALLOUT: { before: 400, after: 400, Line: 360 },
+  LIST: { before: 120, after: 120 },
   TABLE_AFTER: 240,
-  HR: { BEFORE: 240, AFTER: 240 }
+  HR: { before: 240, after: 240 }
 };
 
 // 佈局設定 (縮排、邊框粗細等)

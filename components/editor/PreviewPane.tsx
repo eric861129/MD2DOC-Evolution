@@ -20,7 +20,8 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
   previewRef
 }) => {
   const renderPreviewContent = () => {
-    const elements: JSX.Element[] = [];
+    //const elements: JSX.Element[] = [];
+    const elements: React.ReactNode[] = [];
     let i = 0;
     while (i < parsedBlocks.length) {
       const block = parsedBlocks[i];
@@ -54,6 +55,46 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
             ))}
           </ol>
         );
+      } else if (block.type === BlockType.TOC) {
+
+        const headings = parsedBlocks.filter(b => 
+          [BlockType.HEADING_1, BlockType.HEADING_2, BlockType.HEADING_3].includes(b.type)
+        );
+
+        elements.push(
+          <div key={`toc-${i}`} className="my-8 p-6 bg-slate-50 border border-slate-200 rounded-lg select-none">
+            <p className="mb-4 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-2">
+              目錄預覽 (Table of Contents)
+            </p>
+            
+            {headings.length === 0 ? (
+              <p className="text-slate-400 text-sm italic">
+                尚未偵測到標題...
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {headings.map((h, idx) => {
+                  // 簡單的縮排邏輯
+                  let indent = "pl-0";
+                  if (h.type === BlockType.HEADING_2) indent = "pl-4";
+                  if (h.type === BlockType.HEADING_3) indent = "pl-8";
+                  
+                  return (
+                    <div key={idx} className={`${indent} text-sm text-slate-600 flex items-center`}>
+                       <span className="text-slate-300 mr-2 text-[10px]">#</span>
+                       <RenderRichText text={h.content} />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <p className="mt-4 text-[10px] text-slate-400 text-center">
+              * 此區塊匯出 Word 時將自動轉換為功能變數目錄
+            </p>
+          </div>
+        );
+        i++; 
+
       } else {
         elements.push(<PreviewBlock key={i} block={block} />);
         i++;
