@@ -29,11 +29,11 @@ jobs:
 
           # Rule 2: Merging into 'dev'
           if [[ "$TARGET_BRANCH" == "dev" ]]; then
-            if [[ "$SOURCE_BRANCH" == dev_feature_* || "$SOURCE_BRANCH" == hotfix/* ]]; then
+            if [[ "$SOURCE_BRANCH" == dev_feature_* || "$SOURCE_BRANCH" == dev_refactor_* || "$SOURCE_BRANCH" == hotfix/* ]]; then
               echo "✅ Valid flow for dev: $SOURCE_BRANCH -> dev"
               exit 0
             else
-              echo "❌ Invalid flow! 'dev' branch only accepts merges from 'dev_feature_*' or 'hotfix/*' branches."
+              echo "❌ Invalid flow! 'dev' branch only accepts merges from 'dev_feature_*', 'dev_refactor_*' or 'hotfix/*' branches."
               echo "Current source: $SOURCE_BRANCH"
               exit 1
             fi

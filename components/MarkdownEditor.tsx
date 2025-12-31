@@ -20,7 +20,9 @@ const INITIAL_CONTENT = `# 技術書稿排版範例樣式表
 
 ## 1. 基礎文字與段落樣式
 
-這是一段標準的正文。我們支援多種行內樣式，例如 **粗體強調** 以吸引讀者注意。當提到程式碼變數時，可以使用 `inline code` 樣式。
+這是一段標準的正文。我們支援多種行內樣式，例如 **粗體強調** 以吸引讀者注意。當提到程式碼變數時，可以使用 
+inline code
+ 樣式。
 
 對於書籍介面的描述，我們設計了特殊的括號樣式：點擊 【確定】 按鈕後即可完成操作。這在 Word 匯出後也會保持加粗與特殊視覺感。
 
@@ -29,7 +31,9 @@ const INITIAL_CONTENT = `# 技術書稿排版範例樣式表
 ### 1.1 列表測試
 
 - 第一項重點內容
-- 第二項重點內容，包含 `行內程式`
+- 第二項重點內容，包含 
+行內程式
+
 - 第三項內容，測試自動換行的對齊效果
 
 ## 2. 特殊文字樣式展示
@@ -59,8 +63,7 @@ User：原來阿！
 
 下面展示的是標準的程式碼區塊，匯出至 Word 時會自動加上細邊框、淺灰背景，並使用等寬字體 (Consolas)。
 
----
-typescript
+```typescript
 interface BookConfig {
   title: string;
   author: string;
@@ -72,7 +75,7 @@ const myBook: BookConfig = {
   author: "ChiYu",
   publishDate: new Date()
 };
----
+```
 
 ---
 
@@ -108,9 +111,7 @@ const myBook: BookConfig = {
 
 目前支援標準 Markdown 圖片語法，但僅供寫作參考：
 
----
-![圖片描述](https://example.com/image.jpg)
----
+`![圖片描述](https://example.com/image.jpg)`
 
 > [!NOTE]
 > **圖片匯出注意**：由於瀏覽器安全性限制 (CORS)，直接匯出包含網路圖片的 Word 檔可能會失敗或無法顯示。
