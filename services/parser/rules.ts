@@ -4,10 +4,13 @@
  * Licensed under the MIT License.
  */
 
-import { BlockType, ParsedBlock } from "../types";
-import { parserRegistry, ParserContext } from "./registry";
+import { BlockType } from "../types";
+import { parserRegistry } from "./registry";
 
 export const registerDefaultParserRules = () => {
+  // Clear
+  (parserRegistry as any).rules = [];
+
   // 1. Headers
   parserRegistry.register((line) => {
     const trimmed = line.trim();
@@ -25,28 +28,45 @@ export const registerDefaultParserRules = () => {
 
   // 3. Manual TOC
   parserRegistry.register((line, ctx) => {
-    if (line.trim().match(/^[[\]]TOC[[\]]$/i)) {
+    const trimmed = line.trim();
+    if (trimmed === '[TOC]' || trimmed === '[toc]') {
       let tocContent = "";
-      while (ctx.currentIndex + 1 < ctx.lines.length && 
-            (ctx.lines[ctx.currentIndex + 1].trim().startsWith('-') || 
-             ctx.lines[ctx.currentIndex + 1].trim().startsWith('*') || 
-             ctx.lines[ctx.currentIndex + 1].trim().match(/^\d+\./))) {
-        ctx.currentIndex++;
-        tocContent += ctx.lines[ctx.currentIndex] + "\n";
+      while (ctx.currentIndex + 1 < ctx.lines.length) {
+        const nextLine = ctx.lines[ctx.currentIndex + 1].trim();
+        if (nextLine.startsWith('-') || nextLine.startsWith('*') || nextLine.match(/^\d+\./)) {
+          ctx.currentIndex++;
+          tocContent += (tocContent ? "\n" : "") + ctx.lines[ctx.currentIndex];
+        } else {
+          break;
+        }
       }
       return { type: BlockType.TOC, content: tocContent.trim() };
     }
     return null;
   });
 
-  // 4. Chat Dialogues
+  // 4. Custom Chat Dialogues
   parserRegistry.register((line) => {
     const trimmed = line.trim();
-    if (trimmed.match(/^(User|AI)[：:]/i) || trimmed.startsWith('User（') || trimmed.startsWith('AI（')) {
-      const type = (trimmed.toLowerCase().startsWith('user')) ? BlockType.CHAT_USER : BlockType.CHAT_AI;
-      const content = line.replace(/^(User|AI)[：:]\s*|^(User|AI)（.*?）\s*/i, '').trim();
-      return { type, content };
+    
+    // Pattern Center: :":
+    const centerMatch = trimmed.match(/^(.+?)\s*:\":\s*(.*)$/);
+    if (centerMatch) {
+      return { type: BlockType.CHAT_CUSTOM, role: centerMatch[1].trim(), content: centerMatch[2].trim(), alignment: 'center' };
     }
+
+    // Pattern Right: ::"
+    const rightMatch = trimmed.match(/^(.+?)\s*::\"\s*(.*)$/);
+    if (rightMatch) {
+      return { type: BlockType.CHAT_CUSTOM, role: rightMatch[1].trim(), content: rightMatch[2].trim(), alignment: 'right' };
+    }
+
+    // Pattern Left: "::
+    const leftMatch = trimmed.match(/^(.+?)\s*\"(?:::)\s*(.*)$/);
+    if (leftMatch) {
+      return { type: BlockType.CHAT_CUSTOM, role: leftMatch[1].trim(), content: leftMatch[2].trim(), alignment: 'left' };
+    }
+
     return null;
   });
 
@@ -58,31 +78,32 @@ export const registerDefaultParserRules = () => {
     return null;
   });
 
-  // 6. Callouts (Complex multi-line)
+  // 6. Callouts
   parserRegistry.register((line, ctx) => {
     const trimmed = line.trim();
     if (trimmed.startsWith('>')) {
       let type = BlockType.CALLOUT_NOTE;
-      let rawContent = trimmed.replace(/^>\s?/, '');
-      
-      if (rawContent.match(/^[[\]]!TIP[[\]]/i)) {
+      const rawContent = trimmed.replace(/^>\s?/, '').trim();
+      let firstLineText = rawContent;
+
+      if (rawContent.startsWith('[!TIP]')) {
         type = BlockType.CALLOUT_TIP;
-        rawContent = rawContent.replace(/^[[\]]!TIP[[\]]/i, '').trim();
-      } else if (rawContent.match(/^[[\]]!WARNING[[\]]/i)) {
+        firstLineText = rawContent.replace('[!TIP]', '').trim();
+      } else if (rawContent.startsWith('[!WARNING]')) {
         type = BlockType.CALLOUT_WARNING;
-        rawContent = rawContent.replace(/^[[\]]!WARNING[[\]]/i, '').trim();
-      } else if (rawContent.match(/^[[\]]!NOTE[[\]]/i)) {
+        firstLineText = rawContent.replace('[!WARNING]', '').trim();
+      } else if (rawContent.startsWith('[!NOTE]')) {
         type = BlockType.CALLOUT_NOTE;
-        rawContent = rawContent.replace(/^[[\]]!NOTE[[\]]/i, '').trim();
+        firstLineText = rawContent.replace('[!NOTE]', '').trim();
       }
       
-      let content = rawContent;
+      let content = firstLineText;
       while (ctx.currentIndex + 1 < ctx.lines.length) {
         const nextLine = ctx.lines[ctx.currentIndex + 1];
-        if (nextLine.startsWith('>') || (nextLine.trim() !== '' && ctx.lines[ctx.currentIndex].startsWith('>'))) {
+        if (nextLine.trim().startsWith('>')) {
           ctx.currentIndex++;
-          const nextRaw = ctx.lines[ctx.currentIndex].replace(/^>\s?/, '');
-          content += '\n' + nextRaw;
+          const nextRaw = nextLine.trim().replace(/^>\s?/, '').trim();
+          content += (content ? "\n" : "") + nextRaw;
         } else {
           break;
         }

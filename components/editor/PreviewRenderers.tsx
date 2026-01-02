@@ -1,7 +1,7 @@
 /**
  * BookPublisher MD2Docx
  * Copyright (c) 2025 EricHuang
- * Licensed under the MIT License.
+ * Licensed under the MIT License. 
  */
 
 import React from 'react';
@@ -80,21 +80,22 @@ export const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
           <pre className="text-sm font-mono whitespace-pre text-slate-900 leading-relaxed overflow-x-auto">{block.content}</pre>
         </div>
       );
-    case BlockType.CHAT_USER:
+    case BlockType.CHAT_CUSTOM:
+      const isRight = block.alignment === 'right';
+      const isCenter = block.alignment === 'center';
       return (
-        <div className="flex justify-end my-12 pl-20">
-          <div className="max-w-[85%] border-2 border-dashed border-slate-900 p-6 bg-white relative text-right">
-            <div className="absolute -top-3 left-4 bg-white px-2 text-[10px] font-black tracking-widest text-indigo-600 border border-slate-200">USER</div>
+        <div className={`flex ${isRight ? 'justify-end pl-20' : isCenter ? 'justify-center px-10' : 'justify-start pr-20'} my-12`}>
+          <div className={`
+            ${isCenter ? 'max-w-[90%]' : 'max-w-[85%]'} 
+            border-2 p-6 relative 
+            ${isRight ? 'border-dashed border-slate-900 bg-white text-right' : 
+              isCenter ? 'border-double border-indigo-400 bg-indigo-50/30 text-center' : 
+              'border-dotted border-slate-900 bg-slate-100 text-left'}
+          `}>
+            <div className={`absolute -top-3 ${isRight ? 'left-4' : isCenter ? 'left-1/2 -translate-x-1/2' : 'right-4'} bg-inherit px-2 text-[10px] font-black tracking-widest text-indigo-600 border border-slate-200 uppercase`}>
+              {block.role}
+            </div>
             <div className="whitespace-pre-wrap leading-[1.8] text-slate-900"><RenderRichText text={block.content} /></div>
-          </div>
-        </div>
-      );
-    case BlockType.CHAT_AI:
-      return (
-        <div className="flex justify-start my-12 pr-20">
-          <div className="max-w-[85%] border-2 border-dotted border-slate-900 p-6 bg-slate-100 relative text-left">
-            <div className="absolute -top-3 right-4 bg-slate-100 px-2 text-[10px] font-black tracking-widest text-indigo-600 border border-slate-200">AI</div>
-            <div className="whitespace-pre-wrap leading-[1.8] text-slate-800"><RenderRichText text={block.content} /></div>
           </div>
         </div>
       );

@@ -1,27 +1,60 @@
+/**
+ * BookPublisher MD2Docx
+ * Copyright (c) 2025 EricHuang
+ * Licensed under the MIT License.
+ */
+
 import { Paragraph, TextRun, AlignmentType } from "docx";
-import { BlockType } from "../../types";
-import { WORD_THEME } from "../../../constants/theme";
+import { ParsedBlock } from "../../types";
+import { WORD_THEME, LINE_HEIGHT } from "../../../constants/theme";
 import { parseInlineStyles, FONT_CONFIG_NORMAL } from "./common";
 
-const { SPACING, COLORS, FONT_SIZES, LAYOUT } = WORD_THEME;
+const { COLORS, FONT_SIZES, LAYOUT } = WORD_THEME;
 
-export const createChatBubble = (content: string, type: BlockType.CHAT_USER | BlockType.CHAT_AI): Paragraph => {
-  const isUser = type === BlockType.CHAT_USER;
+export const createChatBubble = (block: ParsedBlock): Paragraph => {
+  const { role, content, alignment = 'left' } = block;
+  
+  const isRight = alignment === 'right';
+  const isCenter = alignment === 'center';
+
+  const docxAlignment = isRight 
+    ? AlignmentType.RIGHT 
+    : isCenter 
+      ? AlignmentType.CENTER 
+      : AlignmentType.LEFT;
+
+  const bgFill = isRight 
+    ? COLORS.WHITE 
+    : isCenter 
+      ? COLORS.BG_SHORTCUT 
+      : COLORS.BG_AI_CHAT;
+
+  const borderStyle = isRight ? "dashed" : isCenter ? "double" : "dotted";
+
   return new Paragraph({
     children: [
-        new TextRun({ text: isUser ? "User:" : "AI:", bold: true, size: FONT_SIZES.LABEL, font: FONT_CONFIG_NORMAL }),
+        new TextRun({ 
+          text: `${role}:`, 
+          bold: true, 
+          size: FONT_SIZES.LABEL, 
+          font: FONT_CONFIG_NORMAL 
+        }),
         new TextRun({ text: "", break: 1 }),
         ...parseInlineStyles(content)
     ],
     border: {
-      top: { style: isUser ? "dashed" : "dotted", space: 10, color: COLORS.CHAT_BORDER },
-      bottom: { style: isUser ? "dashed" : "dotted", space: 10, color: COLORS.CHAT_BORDER },
-      left: { style: isUser ? "dashed" : "dotted", space: 10, color: COLORS.CHAT_BORDER },
-      right: { style: isUser ? "dashed" : "dotted", space: 10, color: COLORS.CHAT_BORDER },
+      top: { style: borderStyle, space: 10, color: COLORS.CHAT_BORDER },
+      bottom: { style: borderStyle, space: 10, color: COLORS.CHAT_BORDER },
+      left: { style: borderStyle, space: 10, color: COLORS.CHAT_BORDER },
+      right: { style: borderStyle, space: 10, color: COLORS.CHAT_BORDER },
     },
-    indent: isUser ? { left: LAYOUT.INDENT.CHAT } : { right: LAYOUT.INDENT.CHAT }, 
-    alignment: isUser ? AlignmentType.RIGHT : AlignmentType.LEFT,
-    spacing: SPACING.CHAT,
-    shading: { fill: isUser ? COLORS.WHITE : COLORS.BG_AI_CHAT }
+    indent: isRight 
+      ? { left: LAYOUT.INDENT.CHAT } 
+      : isCenter 
+        ? { left: 720, right: 720 } // Slight indent for center
+        : { right: LAYOUT.INDENT.CHAT }, 
+    alignment: docxAlignment,
+    spacing: { before: 400, after: 400, line: LINE_HEIGHT.ONE_POINT_TWO },
+    shading: { fill: bgFill }
   });
 };

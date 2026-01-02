@@ -8,10 +8,15 @@ import { BlockType, ParsedBlock } from './types';
 import { parserRegistry, ParserContext } from './parser/registry';
 import { registerDefaultParserRules } from './parser/rules';
 
-// Initialize rules
+// Initialize rules ONCE
 registerDefaultParserRules();
 
 export const parseMarkdown = (text: string): ParsedBlock[] => {
+  // Ensure rules are initialized (useful for tests/HMR)
+  if ((parserRegistry as any).rules.length === 0) {
+    registerDefaultParserRules();
+  }
+
   const lines = text.split('\n');
   const blocks: ParsedBlock[] = [];
 
@@ -52,7 +57,7 @@ export const parseMarkdown = (text: string): ParsedBlock[] => {
 
   const ctx: ParserContext = { lines, currentIndex: 0 };
 
-  for (; ctx.currentIndex < lines.length; ctx.currentIndex++) {
+  while (ctx.currentIndex < lines.length) {
     const line = lines[ctx.currentIndex];
     const trimmedLine = line.trim();
 
@@ -69,19 +74,25 @@ export const parseMarkdown = (text: string): ParsedBlock[] => {
         inCodeBlock = true;
         codeBlockLang = trimmedLine.replace('```', '').trim();
       }
+      ctx.currentIndex++;
       continue;
     }
-    if (inCodeBlock) { currentBuffer.push(line); continue; }
+    if (inCodeBlock) { 
+      currentBuffer.push(line); 
+      ctx.currentIndex++;
+      continue; 
+    }
 
     // 2. Handle Tables (Stateful)
     if (trimmedLine.startsWith('|')) {
       if (!inTable) { flushBuffer(); inTable = true; }
       tableBuffer.push(trimmedLine);
+      ctx.currentIndex++;
       continue;
     }
     if (inTable) { flushTable(); inTable = false; }
 
-    // 3. Registered Rules (Stateless or specific multi-line)
+    // 3. Registered Rules
     const result = parserRegistry.parse(line, ctx);
     if (result) {
       flushBuffer();
@@ -90,14 +101,20 @@ export const parseMarkdown = (text: string): ParsedBlock[] => {
       } else {
         blocks.push(result);
       }
+      ctx.currentIndex++;
       continue;
     }
 
     // 4. Empty Lines
-    if (trimmedLine === '') { flushBuffer(); continue; }
+    if (trimmedLine === '') { 
+      flushBuffer(); 
+      ctx.currentIndex++;
+      continue; 
+    }
 
     // 5. Default: Paragraph Buffer
     currentBuffer.push(line);
+    ctx.currentIndex++;
   }
 
   // Final flush

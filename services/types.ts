@@ -1,11 +1,18 @@
+/**
+ * BookPublisher MD2Docx
+ * Copyright (c) 2025 EricHuang
+ * Licensed under the MIT License.
+ */
+
 export enum BlockType {
   PARAGRAPH = 'PARAGRAPH',
   HEADING_1 = 'HEADING_1',
   HEADING_2 = 'HEADING_2',
   HEADING_3 = 'HEADING_3',
   CODE_BLOCK = 'CODE_BLOCK',
-  CHAT_USER = 'CHAT_USER',
-  CHAT_AI = 'CHAT_AI',
+  CHAT_USER = 'CHAT_USER', // Legacy, to be removed or mapped
+  CHAT_AI = 'CHAT_AI',     // Legacy, to be removed or mapped
+  CHAT_CUSTOM = 'CHAT_CUSTOM',
   CALLOUT_TIP = 'CALLOUT_TIP',
   CALLOUT_NOTE = 'CALLOUT_NOTE',
   CALLOUT_WARNING = 'CALLOUT_WARNING',
@@ -18,7 +25,10 @@ export enum BlockType {
 
 export interface ParsedBlock {
   type: BlockType;
-  content: string; // Plain text or raw content
-  language?: string; // For code blocks
-  tableRows?: string[][]; // For tables: 2D array of cell content
+  content: string; 
+  language?: string; 
+  tableRows?: string[][]; 
+  // Custom Chat Metadata
+  role?: string;
+  alignment?: 'left' | 'right' | 'center';
 }

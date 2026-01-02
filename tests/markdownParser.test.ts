@@ -41,15 +41,29 @@ describe('markdownParser', () => {
     expect(blocks[0].language).toBe('typescript');
   });
 
-  it('should parse chat dialogues correctly', () => {
+  it('should parse custom chat dialogues correctly', () => {
     const input = [
-      'User: Hello',
-      'AI: Hi there'
+      'Gemini ":: Left message', 
+      'User ::" Right message',
+      'System :": Center message'
     ].join('\n');
     const blocks = parseMarkdown(input);
-    expect(blocks).toHaveLength(2);
-    expect(blocks[0]).toEqual({ type: BlockType.CHAT_USER, content: 'Hello' });
-    expect(blocks[1]).toEqual({ type: BlockType.CHAT_AI, content: 'Hi there' });
+    expect(blocks).toHaveLength(3);
+    
+    expect(blocks[0].type).toBe(BlockType.CHAT_CUSTOM);
+    expect(blocks[0].role).toBe('Gemini');
+    expect(blocks[0].content).toBe('Left message'); 
+    expect(blocks[0].alignment).toBe('left'); 
+
+    expect(blocks[1].type).toBe(BlockType.CHAT_CUSTOM);
+    expect(blocks[1].role).toBe('User');
+    expect(blocks[1].content).toBe('Right message');
+    expect(blocks[1].alignment).toBe('right');
+
+    expect(blocks[2].type).toBe(BlockType.CHAT_CUSTOM);
+    expect(blocks[2].role).toBe('System');
+    expect(blocks[2].content).toBe('Center message');
+    expect(blocks[2].alignment).toBe('center');
   });
 
   it('should parse callouts correctly', () => {
@@ -59,7 +73,8 @@ describe('markdownParser', () => {
     ].join('\n');
     const blocks = parseMarkdown(input);
     expect(blocks).toHaveLength(1);
-    expect(blocks[0]).toEqual({ type: BlockType.CALLOUT_TIP, content: 'This is a tip.' });
+    expect(blocks[0].type).toBe(BlockType.CALLOUT_TIP);
+    expect(blocks[0].content).toBe('This is a tip.');
   });
 
   it('should parse tables correctly', () => {

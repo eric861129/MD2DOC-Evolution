@@ -40,12 +40,11 @@ export const registerDefaultHandlers = () => {
   ]);
 
   // Chat
-  const chatHandler = (block: any) => [
-    createChatBubble(block.content, block.type),
+  const chatHandler = (block: ParsedBlock) => [
+    createChatBubble(block),
     new Paragraph({ text: "", spacing: { before: 0, after: 0 } })
   ];
-  docxRegistry.register(BlockType.CHAT_USER, chatHandler);
-  docxRegistry.register(BlockType.CHAT_AI, chatHandler);
+  docxRegistry.register(BlockType.CHAT_CUSTOM, chatHandler);
 
   // Callouts
   const calloutHandler = (block: any) => [

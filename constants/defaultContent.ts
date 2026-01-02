@@ -45,13 +45,13 @@ export const INITIAL_CONTENT_ZH = `# 技術書稿排版範例樣式表
 
 ---
 
-## 3. 角色對話框展示 (左右對齊效果)
+## 3. 角色對話框展示 (多元對齊效果)
 
-User：嘿 Gemini，請幫我示範一下這個 APP 的對話框排版效果。
+系統 :": 這是一個「置中」的對話框，適合用來顯示系統訊息或旁白說明。
 
-AI：沒問題！在這個系統中，User 的對話會靠右側顯示，並使用虛線邊框；而 AI 的回覆則會靠左側顯示，搭配點狀邊框與淺灰色背景。這種排版非常適合技術書籍中的「情境模擬」或「問答環節」。
+Gemini ":: 嘿！我是 Gemini。這是一個「左側」對話框，我使用了 ${BT}"::${BT} 語法。你可以自定義任何角色名稱！
 
-User：原來阿！
+讀者 ::" 哇！這看起來很棒。我使用的是 ${BT}::"${BT} 語法，所以我的對話會靠右對齊。
 
 ---
 
@@ -146,13 +146,13 @@ This tool supports various text formats required for professional publishing. Pl
 
 ---
 
-## 3. Chat Dialogues (Side-by-Side Alignment)
+## 3. Chat Dialogues (Multi-Alignment Support)
 
-User: Hey Gemini, please show me the layout effect of the chat dialogue in this app.
+System :": This is a "Centered" dialogue box, perfect for system messages or narrations.
 
-AI: No problem! In this system, User dialogues are displayed on the right with a dashed border, while AI responses are on the left with a dotted border and a light gray background. This layout is perfect for "Scenario Simulations" or Q&A sections in technical books.
+Gemini ":: Hey! I'm Gemini. This is a "Left-aligned" dialogue box using ${BT}"::${BT} syntax. You can customize any role name!
 
-User: That's awesome!
+Reader ::" Awesome! This looks great. I'm using ${BT}::"${BT} syntax, so my dialogue is aligned to the right.
 
 ---
 
