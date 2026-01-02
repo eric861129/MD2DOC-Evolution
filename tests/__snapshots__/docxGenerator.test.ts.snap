@@ -2022,7 +2022,7 @@ exports[`docxGenerator > should generate correct document structure for given bl
               "type": "dcterms:W3CDTF"
             }
           },
-          "2026-01-02T04:55:54.977Z"
+          "2026-01-02T00:00:00.000Z"
         ]
       },
       {
@@ -2037,7 +2037,7 @@ exports[`docxGenerator > should generate correct document structure for given bl
               "type": "dcterms:W3CDTF"
             }
           },
-          "2026-01-02T04:55:54.977Z"
+          "2026-01-02T00:00:00.000Z"
         ]
       }
     ]

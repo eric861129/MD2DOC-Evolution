@@ -16,6 +16,9 @@ vi.mock('docx', async (importOriginal) => {
 
 describe('docxGenerator', () => {
   it('should generate correct document structure for given blocks', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-02T00:00:00.000Z'));
+
     const blocks = [
       { type: BlockType.HEADING_1, content: 'Title' },
       { type: BlockType.PARAGRAPH, content: 'Hello world' },
@@ -35,5 +38,7 @@ describe('docxGenerator', () => {
     
     // Attempt to snapshot the JSON representation if possible
     expect(JSON.stringify(doc, null, 2)).toMatchSnapshot();
+    
+    vi.useRealTimers();
   });
 });
