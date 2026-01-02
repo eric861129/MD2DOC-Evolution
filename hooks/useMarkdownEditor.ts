@@ -83,6 +83,13 @@ export const useMarkdownEditor = () => {
     }
   };
 
+  const resetToDefault = () => {
+    if (confirm('確定要重置內容嗎？您目前的編輯將會遺失並恢復為預設範例。')) {
+      setContent(INITIAL_CONTENT);
+      localStorage.removeItem('draft_content');
+    }
+  };
+
   return {
     content,
     setContent,
@@ -95,6 +102,7 @@ export const useMarkdownEditor = () => {
     previewRef,
     handleScroll,
     handleDownload,
+    resetToDefault,
     pageSizes: PAGE_SIZES
   };
 };

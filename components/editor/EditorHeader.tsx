@@ -5,13 +5,14 @@
  */
 
 import React from 'react';
-import { Settings2, Download, Sun, Moon } from 'lucide-react';
+import { Settings2, Download, Sun, Moon, RotateCcw } from 'lucide-react';
 
 interface EditorHeaderProps {
   pageSizes: { name: string; width: number; height: number }[];
   selectedSizeIndex: number;
   onSizeChange: (index: number) => void;
   onDownload: () => void;
+  onReset: () => void;
   isGenerating: boolean;
   hasContent: boolean;
   isDark: boolean;
@@ -23,6 +24,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   selectedSizeIndex,
   onSizeChange,
   onDownload,
+  onReset,
   isGenerating,
   hasContent,
   isDark,
@@ -46,6 +48,15 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
       </div>
       
       <div className="flex items-center gap-4">
+        {/* Reset Button */}
+        <button
+          onClick={onReset}
+          className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/30 dark:hover:text-red-400 dark:hover:border-red-800 transition-all"
+          title="重置為範例文件"
+        >
+          <RotateCcw className="w-4 h-4" />
+        </button>
+
         {/* Theme Toggle */}
         <button
           onClick={toggleDarkMode}
