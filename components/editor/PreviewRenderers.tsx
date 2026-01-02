@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { BlockType, ParsedBlock } from '../../types';
+import { ParsedBlock, BlockType } from '../../services/types';
 import { parseInlineElements, InlineStyleType } from '../../utils/styleParser';
 
 export const RenderRichText: React.FC<{ text: string }> = ({ text }) => {

@@ -1,5 +1,5 @@
 import { Paragraph, TextRun, BorderStyle } from "docx";
-import { BlockType } from "../../../types";
+import { BlockType } from "../../types";
 import { WORD_THEME } from "../../../constants/theme";
 import { parseInlineStyles, FONT_CONFIG_NORMAL } from "./common";
 

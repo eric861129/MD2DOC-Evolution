@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { generateDocx } from '../services/docxGenerator';
-import { BlockType } from '../types';
+import { BlockType } from '../services/types';
 import { Packer } from 'docx';
 
 // Mock Packer to avoid actual generation and to capture the document

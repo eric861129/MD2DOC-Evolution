@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { Sparkles } from 'lucide-react';
-import { ParsedBlock, BlockType } from '../../types';
+import { ParsedBlock, BlockType } from '../../services/types';
 import { PreviewBlock, RenderRichText } from './PreviewRenderers';
 import { UI_THEME } from '../../constants/theme';
 

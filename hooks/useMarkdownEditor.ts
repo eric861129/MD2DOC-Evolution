@@ -7,11 +7,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import saveAs from 'file-saver';
+import { useTranslation } from 'react-i18next';
 import { parseMarkdown } from '../services/markdownParser';
 import { generateDocx } from '../services/docxGenerator';
-import { ParsedBlock } from '../types';
+import { ParsedBlock } from '../services/types';
 import { INITIAL_CONTENT_ZH, INITIAL_CONTENT_EN } from '../constants/defaultContent';
-import { TRANSLATIONS, Language } from '../constants/locales';
 
 export const PAGE_SIZES = [
   { name: "tech", width: 17, height: 23 },
@@ -21,25 +21,13 @@ export const PAGE_SIZES = [
 ];
 
 export const useMarkdownEditor = () => {
-  // 1. Language State
-  const [language, setLanguage] = useState<Language>(() => {
-    return (localStorage.getItem('app_language') as Language) || 'zh';
-  });
+  const { t, i18n } = useTranslation();
+  const language = i18n.language.split('-')[0]; // Handle cases like 'zh-TW'
 
-  // Helper for translations
-  const t = (key: string) => {
-    const keys = key.split('.');
-    let value: any = TRANSLATIONS[language];
-    for (const k of keys) {
-      value = value?.[k];
-    }
-    return value || key;
-  };
-
-  const getInitialContent = (lang: Language) => lang === 'zh' ? INITIAL_CONTENT_ZH : INITIAL_CONTENT_EN;
+  const getInitialContent = (lang: string) => lang.startsWith('zh') ? INITIAL_CONTENT_ZH : INITIAL_CONTENT_EN;
 
   const [content, setContent] = useState(() => {
-    return localStorage.getItem('draft_content') || getInitialContent(language);
+    return localStorage.getItem('draft_content') || getInitialContent(i18n.language);
   });
   const [parsedBlocks, setParsedBlocks] = useState<ParsedBlock[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -103,12 +91,11 @@ export const useMarkdownEditor = () => {
 
   // 切換語言
   const toggleLanguage = () => {
-    const nextLang = language === 'zh' ? 'en' : 'zh';
+    const nextLang = i18n.language.startsWith('zh') ? 'en' : 'zh';
     
     // 如果內容有變更，詢問使用者是否要切換範例內容
     if (confirm(t('switchLangConfirm'))) {
-      setLanguage(nextLang);
-      localStorage.setItem('app_language', nextLang);
+      i18n.changeLanguage(nextLang);
       setContent(getInitialContent(nextLang));
       localStorage.removeItem('draft_content');
     }
@@ -117,7 +104,7 @@ export const useMarkdownEditor = () => {
   // 重置內容
   const resetToDefault = () => {
     if (confirm(t('resetConfirm'))) {
-      setContent(getInitialContent(language));
+      setContent(getInitialContent(i18n.language));
       localStorage.removeItem('draft_content');
     }
   };

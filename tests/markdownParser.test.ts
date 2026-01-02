@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseMarkdown } from '../services/markdownParser';
-import { BlockType } from '../types';
+import { BlockType } from '../services/types';
 
 describe('markdownParser', () => {
   it('should parse headers correctly', () => {

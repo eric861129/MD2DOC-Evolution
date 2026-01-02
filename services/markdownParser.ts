@@ -2,10 +2,14 @@
  * BookPublisher MD2Docx
  * Copyright (c) 2025 EricHuang
  * Licensed under the MIT License.
- * See LICENSE file in the project root for full license information.
  */
 
-import { BlockType, ParsedBlock } from '../types.ts';
+import { BlockType, ParsedBlock } from './types';
+import { parserRegistry, ParserContext } from './parser/registry';
+import { registerDefaultParserRules } from './parser/rules';
+
+// Initialize rules
+registerDefaultParserRules();
 
 export const parseMarkdown = (text: string): ParsedBlock[] => {
   const lines = text.split('\n');
@@ -17,10 +21,10 @@ export const parseMarkdown = (text: string): ParsedBlock[] => {
   let inTable = false;
   let codeBlockLang = '';
 
-  const flushBuffer = (type: BlockType = BlockType.PARAGRAPH) => {
+  const flushBuffer = () => {
     if (currentBuffer.length > 0) {
       blocks.push({
-        type,
+        type: BlockType.PARAGRAPH,
         content: currentBuffer.join('\n').trim(),
       });
       currentBuffer = [];
@@ -46,11 +50,13 @@ export const parseMarkdown = (text: string): ParsedBlock[] => {
     }
   };
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  const ctx: ParserContext = { lines, currentIndex: 0 };
+
+  for (; ctx.currentIndex < lines.length; ctx.currentIndex++) {
+    const line = lines[ctx.currentIndex];
     const trimmedLine = line.trim();
 
-    // 1. Handle Code Blocks
+    // 1. Handle Code Blocks (Stateful)
     if (trimmedLine.startsWith('```')) {
       if (inTable) { flushTable(); inTable = false; }
       if (inCodeBlock) {
@@ -67,7 +73,7 @@ export const parseMarkdown = (text: string): ParsedBlock[] => {
     }
     if (inCodeBlock) { currentBuffer.push(line); continue; }
 
-    // 2. Handle Tables
+    // 2. Handle Tables (Stateful)
     if (trimmedLine.startsWith('|')) {
       if (!inTable) { flushBuffer(); inTable = true; }
       tableBuffer.push(trimmedLine);
@@ -75,72 +81,22 @@ export const parseMarkdown = (text: string): ParsedBlock[] => {
     }
     if (inTable) { flushTable(); inTable = false; }
 
-    // 3. Handle Manual TOC ([TOC])
-    if (trimmedLine.match(/^[\[]TOC[\]]$/i)) {
+    // 3. Registered Rules (Stateless or specific multi-line)
+    const result = parserRegistry.parse(line, ctx);
+    if (result) {
       flushBuffer();
-      let tocContent = "";
-      // 收集隨後的清單項
-      while (i + 1 < lines.length && (lines[i + 1].trim().startsWith('-') || lines[i + 1].trim().startsWith('*') || lines[i + 1].trim().match(/^\d+\./))) {
-        i++;
-        tocContent += lines[i] + "\n";
+      if (Array.isArray(result)) {
+        blocks.push(...result);
+      } else {
+        blocks.push(result);
       }
-      blocks.push({ type: BlockType.TOC, content: tocContent.trim() });
       continue;
     }
 
-    // 4. Handle Horizontal Rules
-    if (trimmedLine.match(/^[-*_]{3,}$/)) {
-      flushBuffer();
-      blocks.push({ type: BlockType.HORIZONTAL_RULE, content: '' });
-      continue;
-    }
-
-    // 5. Handle Chat Dialogues
-    if (trimmedLine.match(/^(User|AI)[：:]/i) || trimmedLine.startsWith('User（') || trimmedLine.startsWith('AI（')) {
-      flushBuffer();
-      const type = (trimmedLine.toLowerCase().startsWith('user')) ? BlockType.CHAT_USER : BlockType.CHAT_AI;
-      const content = line.replace(/^(User|AI)[：:]\s*|^(User|AI)（.*?）\s*/i, '').trim();
-      blocks.push({ type, content });
-      continue;
-    }
-
-    // 6. Handle Callouts
-    if (trimmedLine.startsWith('>')) {
-      flushBuffer();
-      let type = BlockType.CALLOUT_NOTE;
-      let rawContent = trimmedLine.replace(/^>\s?/, '');
-      if (rawContent.match(/^[\[]!TIP[\]]/i)) {
-        type = BlockType.CALLOUT_TIP;
-        rawContent = rawContent.replace(/^[\[]!TIP[\]]/i, '').trim();
-      } else if (rawContent.match(/^[\[]!WARNING[\]]/i)) {
-        type = BlockType.CALLOUT_WARNING;
-        rawContent = rawContent.replace(/^[\[]!WARNING[\]]/i, '').trim();
-      } else if (rawContent.match(/^[\[]!NOTE[\]]/i)) {
-        type = BlockType.CALLOUT_NOTE;
-        rawContent = rawContent.replace(/^[\[]!NOTE[\]]/i, '').trim();
-      }
-      let content = rawContent;
-      while (i + 1 < lines.length && (lines[i + 1].startsWith('>') || (lines[i+1].trim() !== '' && lines[i].startsWith('>')))) {
-        i++;
-        const nextRaw = lines[i].replace(/^>\s?/, '');
-        content += '\n' + nextRaw;
-      }
-      blocks.push({ type, content: content.trim() });
-      continue;
-    }
-
-    // 7. Headers
-    if (trimmedLine.startsWith('# ')) { flushBuffer(); blocks.push({ type: BlockType.HEADING_1, content: trimmedLine.replace('# ', '') }); continue; }
-    if (trimmedLine.startsWith('## ')) { flushBuffer(); blocks.push({ type: BlockType.HEADING_2, content: trimmedLine.replace('## ', '') }); continue; }
-    if (trimmedLine.startsWith('### ')) { flushBuffer(); blocks.push({ type: BlockType.HEADING_3, content: trimmedLine.replace('### ', '') }); continue; }
-
-    // 8. Lists
-    if (trimmedLine.match(/^\d+\.\s/)) { flushBuffer(); blocks.push({ type: BlockType.NUMBERED_LIST, content: trimmedLine.replace(/^\d+\.\s/, '') }); continue; }
-    if (trimmedLine.match(/^[-*]\s/)) { flushBuffer(); blocks.push({ type: BlockType.BULLET_LIST, content: trimmedLine.replace(/^[-*]\s/, '') }); continue; }
-
-    // 9. Empty Lines
+    // 4. Empty Lines
     if (trimmedLine === '') { flushBuffer(); continue; }
 
+    // 5. Default: Paragraph Buffer
     currentBuffer.push(line);
   }
 
