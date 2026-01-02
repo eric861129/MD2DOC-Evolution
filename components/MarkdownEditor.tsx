@@ -28,6 +28,7 @@ const MarkdownEditor: React.FC = () => {
     previewRef,
     handleScroll,
     handleDownload,
+    resetToDefault,
     pageSizes
   } = useMarkdownEditor();
 
@@ -38,6 +39,7 @@ const MarkdownEditor: React.FC = () => {
         selectedSizeIndex={selectedSizeIndex}
         onSizeChange={setSelectedSizeIndex}
         onDownload={handleDownload}
+        onReset={resetToDefault}
         isGenerating={isGenerating}
         hasContent={parsedBlocks.length > 0}
         isDark={isDark}
