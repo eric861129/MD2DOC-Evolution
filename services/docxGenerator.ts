@@ -269,12 +269,21 @@ export const generateDocx = async (
       case BlockType.HEADING_2: docChildren.push(createHeading(block.content, 2)); break;
       case BlockType.HEADING_3: docChildren.push(createHeading(block.content, 3)); break;
       case BlockType.PARAGRAPH: docChildren.push(createParagraph(block.content)); break;
-      case BlockType.CODE_BLOCK: docChildren.push(createCodeBlock(block.content)); break;
+      case BlockType.CODE_BLOCK: 
+        docChildren.push(createCodeBlock(block.content)); 
+        docChildren.push(new Paragraph({ text: "", spacing: { before: 0, after: 0 } })); // Force separation
+        break;
       case BlockType.CHAT_USER:
-      case BlockType.CHAT_AI: docChildren.push(createChatBubble(block.content, block.type as any)); break;
+      case BlockType.CHAT_AI: 
+        docChildren.push(createChatBubble(block.content, block.type as any)); 
+        docChildren.push(new Paragraph({ text: "", spacing: { before: 0, after: 0 } })); // Force separation
+        break;
       case BlockType.CALLOUT_TIP:
       case BlockType.CALLOUT_NOTE:
-      case BlockType.CALLOUT_WARNING: docChildren.push(createCallout(block.content, block.type)); break;
+      case BlockType.CALLOUT_WARNING: 
+        docChildren.push(createCallout(block.content, block.type)); 
+        docChildren.push(new Paragraph({ text: "", spacing: { before: 0, after: 0 } })); // Force separation
+        break;
       case BlockType.BULLET_LIST:
         docChildren.push(new Paragraph({ children: parseInlineStyles(block.content), bullet: { level: 0 }, spacing: SPACING.LIST }));
         break;

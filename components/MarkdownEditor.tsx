@@ -29,6 +29,9 @@ const MarkdownEditor: React.FC = () => {
     handleScroll,
     handleDownload,
     resetToDefault,
+    language,
+    toggleLanguage,
+    t,
     pageSizes
   } = useMarkdownEditor();
 
@@ -40,6 +43,9 @@ const MarkdownEditor: React.FC = () => {
         onSizeChange={setSelectedSizeIndex}
         onDownload={handleDownload}
         onReset={resetToDefault}
+        language={language}
+        toggleLanguage={toggleLanguage}
+        t={t}
         isGenerating={isGenerating}
         hasContent={parsedBlocks.length > 0}
         isDark={isDark}
