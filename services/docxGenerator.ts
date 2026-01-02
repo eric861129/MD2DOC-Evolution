@@ -4,13 +4,14 @@
  * Licensed under the MIT License.
  */
 
-import { Document, Packer, Paragraph, AlignmentType } from "docx";
+import { Document, Packer, Paragraph, AlignmentType, Table } from "docx";
 import { ParsedBlock, BlockType } from "../types";
 import { parseInlineStyles, FONT_CONFIG_NORMAL } from "./docx/builders/common";
 import { SIZES, FONT_SIZES, SPACING, LAYOUT, COLORS } from "../constants/theme";
 
 // Builders
-import { createManualTOC, DocxConfig } from "./docx/builders/toc";
+import { createManualTOC } from "./docx/builders/toc";
+import { DocxConfig } from "./docx/types";
 import { createHeading } from "./docx/builders/heading";
 import { createParagraph } from "./docx/builders/paragraph";
 import { createCodeBlock } from "./docx/builders/codeBlock";
@@ -26,7 +27,7 @@ export const generateDocx = async (
     blocks: ParsedBlock[], 
     config: DocxConfig = { widthCm: 17, heightCm: 23 }
 ): Promise<Blob> => {
-  const docChildren: any[] = [];
+  const docChildren: (Paragraph | Table)[] = [];
 
   for (const block of blocks) {
     switch (block.type) {
@@ -43,7 +44,7 @@ export const generateDocx = async (
         break;
       case BlockType.CHAT_USER:
       case BlockType.CHAT_AI: 
-        docChildren.push(createChatBubble(block.content, block.type as any)); 
+        docChildren.push(createChatBubble(block.content, block.type as BlockType.CHAT_USER | BlockType.CHAT_AI)); 
         docChildren.push(new Paragraph({ text: "", spacing: { before: 0, after: 0 } })); // Force separation
         break;
       case BlockType.CALLOUT_TIP:
