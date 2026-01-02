@@ -7,7 +7,6 @@
 
 import React from 'react';
 import MarkdownEditor from './components/MarkdownEditor';
-import Footer from './components/Footer';
 
 const App: React.FC = () => {
   return (
@@ -15,7 +14,6 @@ const App: React.FC = () => {
       <main className="flex-grow">
         <MarkdownEditor />
       </main>
-      <Footer />
     </div>
   );
 };
