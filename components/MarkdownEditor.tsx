@@ -7,6 +7,7 @@
 import React from 'react';
 import { useMarkdownEditor } from '../hooks/useMarkdownEditor';
 import { useDarkMode } from '../hooks/useDarkMode';
+import { EditorProvider } from '../contexts/EditorContext';
 
 // Components
 import { EditorHeader } from './editor/EditorHeader';
@@ -14,59 +15,40 @@ import { EditorPane } from './editor/EditorPane';
 import { PreviewPane } from './editor/PreviewPane';
 
 const MarkdownEditor: React.FC = () => {
-  const { isDark, toggleDarkMode } = useDarkMode();
+  const darkModeState = useDarkMode();
+  const editorState = useMarkdownEditor();
   
   const {
     content,
     setContent,
     parsedBlocks,
-    isGenerating,
-    selectedSizeIndex,
-    setSelectedSizeIndex,
     wordCount,
     textareaRef,
     previewRef,
     handleScroll,
-    handleDownload,
-    resetToDefault,
-    language,
-    toggleLanguage,
-    t,
-    pageSizes
-  } = useMarkdownEditor();
+  } = editorState;
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden transition-colors">
-      <EditorHeader 
-        pageSizes={pageSizes}
-        selectedSizeIndex={selectedSizeIndex}
-        onSizeChange={setSelectedSizeIndex}
-        onDownload={handleDownload}
-        onReset={resetToDefault}
-        language={language}
-        toggleLanguage={toggleLanguage}
-        t={t}
-        isGenerating={isGenerating}
-        hasContent={parsedBlocks.length > 0}
-        isDark={isDark}
-        toggleDarkMode={toggleDarkMode}
-      />
+    <EditorProvider editorState={editorState} darkModeState={darkModeState}>
+      <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden transition-colors">
+        <EditorHeader />
 
-      <main className="flex flex-1 overflow-hidden">
-        <EditorPane 
-          content={content}
-          setContent={setContent}
-          wordCount={wordCount}
-          textareaRef={textareaRef}
-          onScroll={handleScroll}
-        />
+        <main className="flex flex-1 overflow-hidden">
+          <EditorPane 
+            content={content}
+            setContent={setContent}
+            wordCount={wordCount}
+            textareaRef={textareaRef}
+            onScroll={handleScroll}
+          />
 
-        <PreviewPane 
-          parsedBlocks={parsedBlocks}
-          previewRef={previewRef}
-        />
-      </main>
-    </div>
+          <PreviewPane 
+            parsedBlocks={parsedBlocks}
+            previewRef={previewRef}
+            />
+        </main>
+      </div>
+    </EditorProvider>
   );
 };
 
