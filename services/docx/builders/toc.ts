@@ -1,12 +1,7 @@
 import { Paragraph, TextRun, AlignmentType, TabStopType } from "docx";
 import { FONT_SIZES, SIZES } from "../../../constants/theme";
 import { FONT_CONFIG_NORMAL } from "./common";
-
-// --- 版面設定介面 ---
-export interface DocxConfig {
-  widthCm: number;
-  heightCm: number;
-}
+import { DocxConfig } from "../types";
 
 export const createManualTOC = (content: string, pageConfig: DocxConfig): Paragraph[] => {
   const lines = content.split('\n');
