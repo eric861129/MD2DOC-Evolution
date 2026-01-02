@@ -1,6 +1,8 @@
 import { TextRun, ShadingType, UnderlineType } from "docx";
 import { parseInlineElements, InlineStyleType } from "../../../utils/styleParser";
-import { FONTS, COLORS, FONT_SIZES } from "../../../constants/theme";
+import { WORD_THEME } from "../../../constants/theme";
+
+const { FONTS, COLORS, FONT_SIZES } = WORD_THEME;
 
 // --- 字型配置 ---
 export const FONT_CONFIG_NORMAL = {

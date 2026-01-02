@@ -1,7 +1,9 @@
 import { Paragraph, TextRun, AlignmentType } from "docx";
 import { BlockType } from "../../../types";
-import { SPACING, COLORS, FONT_SIZES, LAYOUT } from "../../../constants/theme";
+import { WORD_THEME } from "../../../constants/theme";
 import { parseInlineStyles, FONT_CONFIG_NORMAL } from "./common";
+
+const { SPACING, COLORS, FONT_SIZES, LAYOUT } = WORD_THEME;
 
 export const createChatBubble = (content: string, type: BlockType.CHAT_USER | BlockType.CHAT_AI): Paragraph => {
   const isUser = type === BlockType.CHAT_USER;

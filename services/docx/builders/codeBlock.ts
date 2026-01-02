@@ -1,6 +1,8 @@
 import { Paragraph, TextRun } from "docx";
-import { SPACING, COLORS, FONT_SIZES, LAYOUT } from "../../../constants/theme";
+import { WORD_THEME } from "../../../constants/theme";
 import { FONT_CONFIG_NORMAL } from "./common";
+
+const { SPACING, COLORS, FONT_SIZES, LAYOUT } = WORD_THEME;
 
 export const createCodeBlock = (content: string): Paragraph => {
   const codeLines = content.split('\n');
@@ -22,4 +24,3 @@ export const createCodeBlock = (content: string): Paragraph => {
     indent: { left: LAYOUT.INDENT.CODE, right: LAYOUT.INDENT.CODE }
   });
 };
-

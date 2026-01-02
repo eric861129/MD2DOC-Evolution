@@ -1,6 +1,8 @@
 import { Paragraph, HeadingLevel } from "docx";
-import { SPACING, COLORS, LAYOUT } from "../../../constants/theme";
+import { WORD_THEME } from "../../../constants/theme";
 import { parseInlineStyles } from "./common";
+
+const { SPACING, COLORS, LAYOUT } = WORD_THEME;
 
 export const createHeading = (content: string, level: 1 | 2 | 3): Paragraph => {
   const configs = {

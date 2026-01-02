@@ -7,7 +7,7 @@
 import { Document, Packer, Paragraph, AlignmentType, Table } from "docx";
 import { ParsedBlock, BlockType } from "../types";
 import { parseInlineStyles, FONT_CONFIG_NORMAL } from "./docx/builders/common";
-import { SIZES, FONT_SIZES, SPACING, LAYOUT, COLORS } from "../constants/theme";
+import { SIZES, WORD_THEME } from "../constants/theme";
 
 // Builders
 import { createManualTOC } from "./docx/builders/toc";
@@ -21,6 +21,8 @@ import { createTable } from "./docx/builders/table";
 
 // Re-export DocxConfig for consumers
 export type { DocxConfig };
+
+const { FONT_SIZES, SPACING, LAYOUT, COLORS } = WORD_THEME;
 
 // --- 主生成函式 ---
 export const generateDocx = async (

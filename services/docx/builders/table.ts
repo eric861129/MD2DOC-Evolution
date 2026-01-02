@@ -1,6 +1,8 @@
 import { Table, TableRow, TableCell, Paragraph, WidthType, BorderStyle } from "docx";
-import { COLORS } from "../../../constants/theme";
+import { WORD_THEME } from "../../../constants/theme";
 import { parseInlineStyles } from "./common";
+
+const { COLORS } = WORD_THEME;
 
 export const createTable = (rows: string[][]): Table => {
   return new Table({

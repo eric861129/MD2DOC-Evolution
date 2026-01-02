@@ -8,7 +8,7 @@ import React from 'react';
 import { Sparkles } from 'lucide-react';
 import { ParsedBlock, BlockType } from '../../types';
 import { PreviewBlock, RenderRichText } from './PreviewRenderers';
-import { FONTS } from '../../constants/theme';
+import { UI_THEME } from '../../constants/theme';
 
 interface PreviewPaneProps {
   parsedBlocks: ParsedBlock[];
@@ -73,7 +73,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
       >
         <div 
           className="max-w-2xl mx-auto bg-white dark:bg-slate-50 shadow-2xl p-16 lg:p-20 min-h-screen text-slate-900 rounded-sm border border-slate-200 dark:border-slate-700 transition-colors"
-          style={{ fontFamily: `"${FONTS.LATIN}", "${FONTS.CJK}", sans-serif` }}
+          style={{ fontFamily: UI_THEME.FONTS.PREVIEW }}
         >
           {parsedBlocks.length > 0 ? (
             renderPreviewContent()

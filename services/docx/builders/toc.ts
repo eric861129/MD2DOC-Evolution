@@ -1,7 +1,9 @@
 import { Paragraph, TextRun, AlignmentType, TabStopType } from "docx";
-import { FONT_SIZES, SIZES } from "../../../constants/theme";
+import { SIZES, WORD_THEME, LINE_HEIGHT, TWIPS_PER_INCH } from "../../../constants/theme";
 import { FONT_CONFIG_NORMAL } from "./common";
 import { DocxConfig } from "../types";
+
+const { FONT_SIZES, SPACING } = WORD_THEME;
 
 export const createManualTOC = (content: string, pageConfig: DocxConfig): Paragraph[] => {
   const lines = content.split('\n');
@@ -11,13 +13,12 @@ export const createManualTOC = (content: string, pageConfig: DocxConfig): Paragr
   tocParagraphs.push(new Paragraph({
     children: [new TextRun({ text: "目 錄", bold: true, size: FONT_SIZES.H1, font: FONT_CONFIG_NORMAL })],
     alignment: AlignmentType.CENTER,
-    spacing: { before: 480, after: 480 }
+    spacing: { before: LINE_HEIGHT.DOUBLE, after: LINE_HEIGHT.DOUBLE }
   }));
 
   // 計算右側定位點位置 (總寬度減去邊距)
   // 假設兩邊邊距各為 1440 twips (1 inch)
-  // 1 cm = 567 twips
-  const rightPos = (pageConfig.widthCm * SIZES.CM_TO_TWIPS) - 2880;
+  const rightPos = (pageConfig.widthCm * SIZES.CM_TO_TWIPS) - (TWIPS_PER_INCH * 2);
 
   lines.forEach(line => {
     // 移除列表符號
@@ -48,7 +49,7 @@ export const createManualTOC = (content: string, pageConfig: DocxConfig): Paragr
           leader: TabStopType.DOT, // 引導點樣式
         }
       ],
-      spacing: { before: 120, after: 120 }
+      spacing: SPACING.LIST
     }));
   });
 
