@@ -10,18 +10,36 @@ import saveAs from 'file-saver';
 import { parseMarkdown } from '../services/markdownParser';
 import { generateDocx } from '../services/docxGenerator';
 import { ParsedBlock } from '../types';
-import { INITIAL_CONTENT } from '../constants/defaultContent';
+import { INITIAL_CONTENT_ZH, INITIAL_CONTENT_EN } from '../constants/defaultContent';
+import { TRANSLATIONS, Language } from '../constants/locales';
 
 export const PAGE_SIZES = [
-  { name: "技術書籍 (17x23cm)", width: 17, height: 23 },
-  { name: "A4 (21x29.7cm)", width: 21, height: 29.7 },
-  { name: "A5 (14.8x21cm)", width: 14.8, height: 21 },
-  { name: "B5 (17.6x25cm)", width: 17.6, height: 25 },
+  { name: "tech", width: 17, height: 23 },
+  { name: "a4", width: 21, height: 29.7 },
+  { name: "a5", width: 14.8, height: 21 },
+  { name: "b5", width: 17.6, height: 25 },
 ];
 
 export const useMarkdownEditor = () => {
+  // 1. Language State
+  const [language, setLanguage] = useState<Language>(() => {
+    return (localStorage.getItem('app_language') as Language) || 'zh';
+  });
+
+  // Helper for translations
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = TRANSLATIONS[language];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
+  const getInitialContent = (lang: Language) => lang === 'zh' ? INITIAL_CONTENT_ZH : INITIAL_CONTENT_EN;
+
   const [content, setContent] = useState(() => {
-    return localStorage.getItem('draft_content') || INITIAL_CONTENT;
+    return localStorage.getItem('draft_content') || getInitialContent(language);
   });
   const [parsedBlocks, setParsedBlocks] = useState<ParsedBlock[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -83,9 +101,23 @@ export const useMarkdownEditor = () => {
     }
   };
 
+  // 切換語言
+  const toggleLanguage = () => {
+    const nextLang = language === 'zh' ? 'en' : 'zh';
+    
+    // 如果內容有變更，詢問使用者是否要切換範例內容
+    if (confirm(t('switchLangConfirm'))) {
+      setLanguage(nextLang);
+      localStorage.setItem('app_language', nextLang);
+      setContent(getInitialContent(nextLang));
+      localStorage.removeItem('draft_content');
+    }
+  };
+
+  // 重置內容
   const resetToDefault = () => {
-    if (confirm('確定要重置內容嗎？您目前的編輯將會遺失並恢復為預設範例。')) {
-      setContent(INITIAL_CONTENT);
+    if (confirm(t('resetConfirm'))) {
+      setContent(getInitialContent(language));
       localStorage.removeItem('draft_content');
     }
   };
@@ -103,6 +135,9 @@ export const useMarkdownEditor = () => {
     handleScroll,
     handleDownload,
     resetToDefault,
+    language,
+    toggleLanguage,
+    t,
     pageSizes: PAGE_SIZES
   };
 };

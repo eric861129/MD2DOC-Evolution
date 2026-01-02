@@ -15,6 +15,17 @@ export default defineConfig(({ mode }) => {
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      }
+      },
+      build: {
+        chunkSizeWarningLimit: 1000, // 提高警告門檻至 1MB
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              docx: ['docx'],
+              vendor: ['react', 'react-dom', 'lucide-react', 'file-saver'],
+            },
+          },
+        },
+      },
     };
 });

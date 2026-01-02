@@ -5,7 +5,8 @@
  */
 
 import React from 'react';
-import { Settings2, Download, Sun, Moon, RotateCcw } from 'lucide-react';
+import { Settings2, Download, Sun, Moon, RotateCcw, Languages } from 'lucide-react';
+import { Language } from '../../constants/locales';
 
 interface EditorHeaderProps {
   pageSizes: { name: string; width: number; height: number }[];
@@ -13,6 +14,9 @@ interface EditorHeaderProps {
   onSizeChange: (index: number) => void;
   onDownload: () => void;
   onReset: () => void;
+  language: Language;
+  toggleLanguage: () => void;
+  t: (key: string) => string;
   isGenerating: boolean;
   hasContent: boolean;
   isDark: boolean;
@@ -25,6 +29,9 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   onSizeChange,
   onDownload,
   onReset,
+  language,
+  toggleLanguage,
+  t,
   isGenerating,
   hasContent,
   isDark,
@@ -41,9 +48,9 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
         </div>
         <div>
           <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-            BookPublisher <span className="text-slate-400 font-normal">MD2Docx</span>
+            {t('title')} <span className="text-slate-400 font-normal">MD2Docx</span>
           </h1>
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">核心引擎：Markdown -&gt; Word (v2.0)</p>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">{t('subtitle')}</p>
         </div>
       </div>
       
@@ -52,16 +59,26 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
         <button
           onClick={onReset}
           className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/30 dark:hover:text-red-400 dark:hover:border-red-800 transition-all"
-          title="重置為範例文件"
+          title={t('reset')}
         >
           <RotateCcw className="w-4 h-4" />
+        </button>
+
+        {/* Language Toggle */}
+        <button
+          onClick={toggleLanguage}
+          className="flex items-center gap-2 p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-medium text-xs"
+          title="Switch Language / 切換語言"
+        >
+          <Languages className="w-4 h-4" />
+          <span>{language === 'zh' ? 'EN' : '中'}</span>
         </button>
 
         {/* Theme Toggle */}
         <button
           onClick={toggleDarkMode}
           className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
-          title={isDark ? "切換至亮色模式" : "切換至深色模式"}
+          title={isDark ? t('theme.light') : t('theme.dark')}
         >
           {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
@@ -76,7 +93,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
           >
             {pageSizes.map((size, index) => (
               <option key={index} value={index} className="dark:bg-slate-800">
-                {size.name}
+                {t(`sizes.${size.name}`)}
               </option>
             ))}
           </select>
@@ -87,7 +104,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
           disabled={isGenerating || !hasContent}
           className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 disabled:bg-slate-300 dark:disabled:bg-slate-700"
         >
-          {isGenerating ? '正在轉換...' : '匯出 Word'}
+          {isGenerating ? t('exporting') : t('export')}
           <Download className="w-4 h-4" />
         </button>
       </div>
