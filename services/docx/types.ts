@@ -9,4 +9,5 @@
 export interface DocxConfig {
   widthCm: number;
   heightCm: number;
+  showLineNumbers?: boolean;
 }

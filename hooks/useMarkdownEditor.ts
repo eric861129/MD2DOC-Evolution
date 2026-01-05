@@ -33,6 +33,7 @@ export const useMarkdownEditor = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedSizeIndex, setSelectedSizeIndex] = useState(0);
   const [wordCount, setWordCount] = useState(0);
+  const [showLineNumbers, setShowLineNumbers] = useState(true);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -78,7 +79,8 @@ export const useMarkdownEditor = () => {
       const sizeConfig = PAGE_SIZES[selectedSizeIndex];
       const blob = await generateDocx(parsedBlocks, { 
         widthCm: sizeConfig.width, 
-        heightCm: sizeConfig.height 
+        heightCm: sizeConfig.height,
+        showLineNumbers
       });
       saveAs(blob, "Professional_Manuscript.docx");
     } catch (error) {
@@ -117,6 +119,8 @@ export const useMarkdownEditor = () => {
     selectedSizeIndex,
     setSelectedSizeIndex,
     wordCount,
+    showLineNumbers,
+    setShowLineNumbers,
     textareaRef,
     previewRef,
     handleScroll,

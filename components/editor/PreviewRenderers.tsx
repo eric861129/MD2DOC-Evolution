@@ -46,7 +46,7 @@ export const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
   );
 };
 
-export const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
+export const PreviewBlock: React.FC<{ block: ParsedBlock; showLineNumbers?: boolean }> = ({ block, showLineNumbers = true }) => {
   switch (block.type) {
     case BlockType.TOC:
       const tocLines = block.content.split('\n');
@@ -78,12 +78,14 @@ export const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
       const codeLines = block.content.split('\n');
       return (
         <div className="my-10 border border-slate-300 bg-slate-50 rounded shadow-sm overflow-hidden flex font-mono text-sm">
-          <div className="bg-slate-100/50 border-r border-slate-200 px-3 py-6 text-right select-none text-slate-400 leading-relaxed min-w-[3.5rem]">
-            {codeLines.map((_, i) => (
-              <div key={i}>{i + 1}</div>
-            ))}
-          </div>
-          <pre className="flex-1 p-6 whitespace-pre text-slate-900 leading-relaxed overflow-x-auto m-0">
+          {showLineNumbers && (
+            <div className="bg-slate-100/50 border-r border-slate-200 px-2 py-4 text-right select-none text-slate-400 leading-relaxed min-w-[2.5rem]">
+              {codeLines.map((_, i) => (
+                <div key={i}>{i + 1}</div>
+              ))}
+            </div>
+          )}
+          <pre className="flex-1 p-4 whitespace-pre text-slate-900 leading-relaxed overflow-x-auto m-0">
             {block.content}
           </pre>
         </div>

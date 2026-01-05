@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Settings2, Download, Sun, Moon, RotateCcw, Languages } from 'lucide-react';
+import { Settings2, Download, Sun, Moon, RotateCcw, Languages, Hash } from 'lucide-react';
 import { useEditor } from '../../contexts/EditorContext';
 import { Button } from '../ui/Button';
 import { IconButton } from '../ui/IconButton';
@@ -24,7 +24,9 @@ export const EditorHeader: React.FC = () => {
     isGenerating,
     parsedBlocks,
     isDark,
-    toggleDarkMode
+    toggleDarkMode,
+    showLineNumbers,
+    setShowLineNumbers
   } = useEditor();
 
   const logoPath = `${import.meta.env.BASE_URL}logo.svg`;
@@ -51,6 +53,15 @@ export const EditorHeader: React.FC = () => {
           title={t('reset')}
         >
           <RotateCcw className="w-4 h-4" />
+        </IconButton>
+
+        {/* Line Numbers Toggle */}
+        <IconButton
+          onClick={() => setShowLineNumbers(!showLineNumbers)}
+          active={showLineNumbers}
+          title={showLineNumbers ? "Hide Line Numbers" : "Show Line Numbers"}
+        >
+          <Hash className="w-4 h-4" />
         </IconButton>
 
         {/* Language Toggle */}
