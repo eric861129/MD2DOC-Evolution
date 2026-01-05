@@ -181,7 +181,8 @@ Reader ::" Awesome! This looks great. I'm using ${BT}::"${BT} syntax, so my dial
 
 ## 4. Code Blocks
 
-Below is a standard code block. When exported to Word, it will automatically have a thin border, light gray background, and use a monospaced font (Consolas).
+### 4.1 Default Style (Line Numbers)
+This is the most common format, suitable for multi-line code explanations. The language name appears in the top-right corner:
 
 ${BT}${BT}${BT}typescript
 interface BookConfig {
@@ -195,6 +196,28 @@ const myBook: BookConfig = {
   author: "ChiYu",
   publishDate: new Date()
 };
+${BT}${BT}${BT}
+
+### 4.2 Plain Text Style (Hidden Line Numbers)
+Use ${BT}json:no-ln${BT} or ${BT}:plain${BT} syntax. Ideal for short config files or examples where line numbers aren't needed:
+
+${BT}${BT}${BT}json:no-ln
+{
+  "name": "book-publisher",
+  "version": "1.0.0",
+  "private": true
+}
+${BT}${BT}${BT}
+
+### 4.3 Explicit Line Numbers
+Although enabled by default, you can use ${BT}:ln${BT} to explicitly require line numbers:
+
+${BT}${BT}${BT}bash:ln
+# Install dependencies
+npm install
+
+# Run dev server
+npm run dev
 ${BT}${BT}${BT}
 
 ---
