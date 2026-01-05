@@ -83,17 +83,24 @@ export const PreviewBlock: React.FC<{ block: ParsedBlock; showLineNumbers?: bool
     case BlockType.CODE_BLOCK:
       const codeLines = block.content.split('\n');
       return (
-        <div className="my-10 border border-slate-300 bg-slate-50 rounded shadow-sm overflow-hidden flex font-mono text-sm">
-          {showLineNumbers && (
-            <div className="bg-slate-100/50 border-r border-slate-200 px-2 py-4 text-right select-none text-slate-400 leading-relaxed min-w-[2.5rem]">
-              {codeLines.map((_, i) => (
-                <div key={i}>{i + 1}</div>
-              ))}
+        <div className="my-10 border border-slate-300 bg-slate-50 rounded shadow-sm overflow-hidden relative group text-sm">
+          {block.metadata?.language && (
+            <div className="absolute top-0 right-0 px-3 py-1 bg-slate-200 text-[10px] font-bold text-slate-500 uppercase rounded-bl border-b border-l border-slate-300 z-10">
+              {block.metadata.language}
             </div>
           )}
-          <pre className="flex-1 p-4 whitespace-pre text-slate-900 leading-relaxed overflow-x-auto m-0">
-            {block.content}
-          </pre>
+          <div className="flex font-mono">
+            {showLineNumbers && (
+              <div className="bg-slate-100/50 border-r border-slate-200 px-2 py-4 text-right select-none text-slate-400 leading-relaxed min-w-[2.5rem]">
+                {codeLines.map((_, i) => (
+                  <div key={i}>{i + 1}</div>
+                ))}
+              </div>
+            )}
+            <pre className="flex-1 p-4 whitespace-pre text-slate-900 leading-relaxed overflow-x-auto m-0 pt-8">
+              {block.content}
+            </pre>
+          </div>
         </div>
       );
     case BlockType.CHAT_CUSTOM:

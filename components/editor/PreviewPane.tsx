@@ -9,7 +9,6 @@ import { Sparkles } from 'lucide-react';
 import { ParsedBlock, BlockType } from '../../services/types';
 import { PreviewBlock, RenderRichText } from './PreviewRenderers';
 import { UI_THEME } from '../../constants/theme';
-import { useEditor } from '../../contexts/EditorContext';
 
 interface PreviewPaneProps {
   parsedBlocks: ParsedBlock[];
@@ -20,8 +19,6 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
   parsedBlocks,
   previewRef
 }) => {
-  const { showLineNumbers } = useEditor();
-
   const renderPreviewContent = () => {
     const elements: JSX.Element[] = [];
     let i = 0;
@@ -60,7 +57,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
           </ol>
         );
       } else {
-        elements.push(<PreviewBlock key={i} block={block} showLineNumbers={showLineNumbers} />);
+        elements.push(<PreviewBlock key={i} block={block} />);
         i++;
       }
     }

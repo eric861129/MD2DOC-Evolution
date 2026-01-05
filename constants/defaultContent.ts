@@ -57,7 +57,8 @@ Gemini ":: 嘿！我是 Gemini。這是一個「左側」對話框，我使用�
 
 ## 4. 程式碼區塊樣式
 
-下面展示的是標準的程式碼區塊，匯出至 Word 時會自動加上細邊框、淺灰背景，並使用等寬字體 (Consolas)。
+### 4.1 預設樣式 (顯示行號)
+這是最常用的形式，適合講解多行程式碼，右上角會自動顯示語言名稱：
 
 ${BT}${BT}${BT}typescript
 interface BookConfig {
@@ -71,6 +72,28 @@ const myBook: BookConfig = {
   author: "ChiYu",
   publishDate: new Date()
 };
+${BT}${BT}${BT}
+
+### 4.2 強制隱藏行號 (純文字模式)
+使用 ${BT}json:no-ln${BT} 或 ${BT}:plain${BT} 語法，適合短小的設定檔或不需要參照行號的範例：
+
+${BT}${BT}${BT}json:no-ln
+{
+  "name": "book-publisher",
+  "version": "1.0.0",
+  "private": true
+}
+${BT}${BT}${BT}
+
+### 4.3 強制顯示行號
+使用 ${BT}:ln${BT} 語法可強制開啟行號：
+
+${BT}${BT}${BT}bash:ln
+# 安裝依賴
+npm install
+
+# 啟動開發伺服器
+npm run dev
 ${BT}${BT}${BT}
 
 ---

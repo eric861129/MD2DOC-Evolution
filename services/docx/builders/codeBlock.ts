@@ -5,7 +5,7 @@ import { DocxConfig } from "../types";
 
 const { SPACING, COLORS, FONT_SIZES, LAYOUT } = WORD_THEME;
 
-export const createCodeBlock = (content: string, config: DocxConfig, metadata?: { showLineNumbers?: boolean }): Table => {
+export const createCodeBlock = (content: string, config: DocxConfig, metadata?: { showLineNumbers?: boolean; language?: string }): Table => {
   const codeLines = content.split('\n');
   
   // 決定是否顯示行號：Metadata 優先，否則使用 Config 設定 (預設為 true)
@@ -16,10 +16,10 @@ export const createCodeBlock = (content: string, config: DocxConfig, metadata?: 
 
   const lineNumWidth = showLineNumbers ? LAYOUT.WIDTH.LINE_NUMBER : 0;
   
-  // 計算可用寬度 (總寬度 - 邊距 - 程式碼區塊縮排)
-  // 注意：這裡我們把 Table 放在縮排內，或者讓 Table 寬度佔滿可用空間
+  // 計算可用寬度 (總寬度 - 邊距)
+  // 修正：移除額外的程式碼縮排，確保與內文對齊
   const totalWidth = config.widthCm * 567; // TWIPS_PER_CM
-  const usableWidth = totalWidth - (2 * LAYOUT.MARGIN.NORMAL) - (2 * LAYOUT.INDENT.CODE);
+  const usableWidth = totalWidth - (2 * LAYOUT.MARGIN.NORMAL);
   const codeColWidth = usableWidth - lineNumWidth;
 
   const rows = codeLines.map((line, index) => {
@@ -73,7 +73,6 @@ export const createCodeBlock = (content: string, config: DocxConfig, metadata?: 
   });
 
   // 建立頂部和底部的 Padding Row (空行)
-  // 修正：加大高度並放入內容以確保顯示
   const paddingCells = [];
   if (showLineNumbers) {
     paddingCells.push(new TableCell({ 
@@ -89,14 +88,44 @@ export const createCodeBlock = (content: string, config: DocxConfig, metadata?: 
   }));
 
   const paddingRow = new TableRow({
-    height: { value: 240, rule: "atLeast" }, // 約 12pt 高度，改用 atLeast 避免被壓縮
+    height: { value: 240, rule: "atLeast" },
     children: paddingCells
   });
+  
+  // 組合所有 Rows
+  const tableRows = [paddingRow, ...rows, paddingRow];
+
+  // 如果有語言標籤，新增 Header Row
+  if (metadata?.language) {
+    tableRows.unshift(new TableRow({
+        children: [
+          new TableCell({
+            columnSpan: showLineNumbers ? 2 : 1,
+            shading: { fill: "E2E8F0" }, // 稍微深一點的灰色 (Slate-200)
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [
+                  new TextRun({ 
+                    text: metadata.language.toUpperCase(), 
+                    font: WORD_THEME.FONTS.LATIN,
+                    size: 16, // 小字體
+                    bold: true,
+                    color: "64748B" // Slate-500
+                  })
+                ],
+                spacing: { before: 60, after: 60 }
+              })
+            ]
+          })
+        ]
+    }));
+  }
 
   return new Table({
-    rows: [paddingRow, ...rows, paddingRow], // 插入首尾 Padding
+    rows: tableRows,
     width: { size: usableWidth, type: WidthType.DXA },
-    indent: { size: LAYOUT.INDENT.CODE, type: WidthType.DXA },
+    // indent: 移除縮排
     borders: {
       top: { style: BorderStyle.SINGLE, size: LAYOUT.BORDER.CODE, color: COLORS.CODE_BORDER },
       bottom: { style: BorderStyle.SINGLE, size: LAYOUT.BORDER.CODE, color: COLORS.CODE_BORDER },
