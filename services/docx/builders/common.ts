@@ -1,6 +1,7 @@
-import { TextRun, ShadingType, UnderlineType } from "docx";
+import { TextRun, ShadingType, UnderlineType, ImageRun } from "docx";
 import { parseInlineElements, InlineStyleType } from "../../../utils/styleParser";
 import { WORD_THEME } from "../../../constants/theme";
+import { DocxConfig } from "../types";
 
 const { FONTS, COLORS, FONT_SIZES } = WORD_THEME;
 
@@ -13,43 +14,77 @@ export const FONT_CONFIG_NORMAL = {
 };
 
 // --- Helper: 行內樣式解析 ---
-export const parseInlineStyles = (text: string): TextRun[] => {
+export const parseInlineStyles = (text: string, config?: DocxConfig): (TextRun | ImageRun)[] => {
   const segments = parseInlineElements(text);
-  return segments.map(segment => {
+  const runs: (TextRun | ImageRun)[] = [];
+
+  for (const segment of segments) {
     const baseConfig = { text: segment.content, font: FONT_CONFIG_NORMAL };
     
     switch (segment.type) {
       case InlineStyleType.BOLD:
-        return new TextRun({ ...baseConfig, bold: true });
+        runs.push(new TextRun({ ...baseConfig, bold: true }));
+        break;
       case InlineStyleType.ITALIC:
-        return new TextRun({ ...baseConfig, italics: true, color: COLORS.PRIMARY_BLUE });
+        runs.push(new TextRun({ ...baseConfig, italics: true, color: COLORS.PRIMARY_BLUE }));
+        break;
       case InlineStyleType.UNDERLINE:
-        return new TextRun({
+        runs.push(new TextRun({
           ...baseConfig, 
           color: COLORS.LINK_BLUE, 
           underline: { type: UnderlineType.SINGLE, color: COLORS.LINK_BLUE } 
-        });
+        }));
+        break;
+      case InlineStyleType.LINK:
+        // 1. Link Text (藍色底線)
+        runs.push(new TextRun({
+          ...baseConfig,
+          color: COLORS.LINK_BLUE,
+          underline: { type: UnderlineType.SINGLE, color: COLORS.LINK_BLUE }
+        }));
+        // 2. QR Code (如果有)
+        if (config?.qrCodeMap && segment.url) {
+          const qrBuffer = config.qrCodeMap.get(segment.url);
+          if (qrBuffer) {
+            // 前後加個小空格避免貼太近
+            runs.push(new TextRun({ text: " ", font: FONT_CONFIG_NORMAL, size: 4 })); 
+            runs.push(new ImageRun({
+              data: qrBuffer,
+              transformation: { width: 45, height: 45 }, // 約 1.5cm，太小掃不到
+              type: "png"
+            }));
+            runs.push(new TextRun({ text: " ", font: FONT_CONFIG_NORMAL, size: 4 })); 
+          }
+        }
+        break;
       case InlineStyleType.CODE:
-        return new TextRun({
+        runs.push(new TextRun({
           ...baseConfig, 
           shading: { fill: COLORS.BG_CODE, type: ShadingType.CLEAR, color: "auto" } 
-        });
+        }));
+        break;
       case InlineStyleType.UI_BUTTON:
-        return new TextRun({
+        runs.push(new TextRun({
           ...baseConfig, 
           bold: true, 
           shading: { fill: COLORS.BG_BUTTON, type: ShadingType.CLEAR, color: "auto" } 
-        });
+        }));
+        break;
       case InlineStyleType.SHORTCUT:
-        return new TextRun({
+        runs.push(new TextRun({
           ...baseConfig, 
           size: FONT_SIZES.SHORTCUT, 
           shading: { fill: COLORS.BG_SHORTCUT, type: ShadingType.CLEAR, color: "auto" } 
-        });
+        }));
+        break;
       case InlineStyleType.BOOK:
-        return new TextRun({ ...baseConfig, bold: true });
+        runs.push(new TextRun({ ...baseConfig, bold: true }));
+        break;
       default:
-        return new TextRun(baseConfig);
+        runs.push(new TextRun(baseConfig));
+        break;
     }
-  });
+  }
+
+  return runs;
 };

@@ -39,6 +39,7 @@ export const INITIAL_CONTENT_ZH = `# 技術書稿排版範例樣式表
 - **粗體 (Bold)**：用於強調關鍵字，例如 **Vibe Coding**。
 - *斜體 (Italic)*：用於 *專有名詞定義* 或 *英文術語*。匯出 Word 時會呈現深藍色斜體。
 - <u>底線 (Underline)</u>：用於 <u>超連結文字</u> 或需要特別畫線的地方。
+- **智慧連結 (Smart Links)**：[GitHub專案](https://github.com/eric861129/BookPublisher_MD2Doc) 會自動在 Word 中生成 QR Code。
 - UI 按鈕：請點擊 【設定】 > 【進階選項】 進行調整。
 - 快捷鍵：按下 [Ctrl] + [S] 可以儲存檔案，或使用 [Cmd] + [P] 列印。
 - 書籍/專案：參考『Clean Code』一書中的概念，或是『BookPublisher』專案。
@@ -163,6 +164,7 @@ This tool supports various text formats required for professional publishing. Pl
 - **Bold**: Used for emphasizing keywords, e.g., **Vibe Coding**.
 - *Italic*: Used for *definitions* or *technical terms*. It will appear as dark blue italic text in the exported Word doc.
 - <u>Underline</u>: Used for <u>hyperlinks</u> or where special underlining is needed.
+- **Smart Links**: [GitHub Repo](https://github.com/eric861129/BookPublisher_MD2Doc) will automatically generate a QR Code in Word.
 - UI Button: Please click 【Settings】 > 【Advanced Options】 to adjust.
 - Shortcut: Press [Ctrl] + [S] to save the file, or use [Cmd] + [P] to print.
 - Books/Projects: Refer to the concept in 『Clean Code』 or the 『BookPublisher』 project.

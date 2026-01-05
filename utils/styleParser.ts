@@ -11,6 +11,7 @@ export enum InlineStyleType {
   UNDERLINE = 'UNDERLINE',
   CODE = 'CODE',
   UI_BUTTON = 'UI_BUTTON',
+  LINK = 'LINK',
   SHORTCUT = 'SHORTCUT',
   BOOK = 'BOOK',
   TEXT = 'TEXT'
@@ -20,11 +21,13 @@ export interface InlineStyleSegment {
   type: InlineStyleType;
   content: string;
   original: string;
+  url?: string;
 }
 
 export const parseInlineElements = (text: string): InlineStyleSegment[] => {
-  // Regex 順序：粗體 > 斜體 > 底線 > 程式碼 > UI按鈕 > 快捷鍵 > 書名號
-  const regex = /(\*\*.*?\*\*)|(\*.*?\*)|(<u>.*?<\/u>)|(`[^`]+`)|(【.*?】)|(\[.*?\])|(『.*?』)/g;
+  // Regex 順序：連結 (必須在 Shortcut 前) > 粗體 > 斜體 > 底線 > 程式碼 > UI按鈕 > 快捷鍵 > 書名號
+  // Link: \[.*?\]\(.*?\)
+  const regex = /(\[.*?\]\(.*?\))|(\*\*.*?\*\*)|(\*.*?\*)|(<u>.*?<\/u>)|(`[^`]+`)|(【.*?】)|(\[.*?\])|(『.*?』)/g;
   
   const segments: InlineStyleSegment[] = [];
   let lastIndex = 0;
@@ -44,8 +47,20 @@ export const parseInlineElements = (text: string): InlineStyleSegment[] => {
     const fullMatch = match[0];
     let type = InlineStyleType.TEXT;
     let content = fullMatch;
+    let url: string | undefined = undefined;
 
-    if (fullMatch.startsWith('**')) {
+    if (fullMatch.startsWith('[') && fullMatch.includes('](')) {
+      // Markdown Link: [Text](URL)
+      const linkMatch = fullMatch.match(/^\[(.*?)\]\((.*?)\)$/);
+      if (linkMatch) {
+        type = InlineStyleType.LINK;
+        content = linkMatch[1];
+        url = linkMatch[2];
+      } else {
+        // Fallback (shouldn't happen with correct regex)
+        type = InlineStyleType.TEXT;
+      }
+    } else if (fullMatch.startsWith('**')) {
       type = InlineStyleType.BOLD;
       content = fullMatch.slice(2, -2);
     } else if (fullMatch.startsWith('*')) {
@@ -68,7 +83,7 @@ export const parseInlineElements = (text: string): InlineStyleSegment[] => {
       content = fullMatch; // 保留括號
     }
 
-    segments.push({ type, content, original: fullMatch });
+    segments.push({ type, content, original: fullMatch, url });
     lastIndex = regex.lastIndex;
   }
 

@@ -1,16 +1,17 @@
 import { Table, TableRow, TableCell, Paragraph, WidthType, BorderStyle } from "docx";
 import { WORD_THEME } from "../../../constants/theme";
 import { parseInlineStyles } from "./common";
+import { DocxConfig } from "../types";
 
 const { COLORS } = WORD_THEME;
 
-export const createTable = (rows: string[][]): Table => {
+export const createTable = (rows: string[][], config?: DocxConfig): Table => {
   return new Table({
     rows: rows.map((row) => 
       new TableRow({
         children: row.map((cellText) => 
           new TableCell({
-            children: [new Paragraph({ children: parseInlineStyles(cellText) })],
+            children: [new Paragraph({ children: parseInlineStyles(cellText, config) })],
             width: { size: 100 / row.length, type: WidthType.PERCENTAGE },
             borders: {
               top: { style: BorderStyle.SINGLE, size: 4, color: COLORS.BLACK },

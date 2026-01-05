@@ -1,11 +1,13 @@
-import { Paragraph, AlignmentType } from "docx";
+import { Paragraph } from "docx";
 import { WORD_THEME } from "../../../constants/theme";
 import { parseInlineStyles } from "./common";
+import { DocxConfig } from "../types";
 
-export const createParagraph = (content: string): Paragraph => {
+const { SPACING, LAYOUT } = WORD_THEME;
+
+export const createParagraph = (content: string, config?: DocxConfig): Paragraph => {
   return new Paragraph({
-    children: parseInlineStyles(content),
-    spacing: WORD_THEME.SPACING.PARAGRAPH,
-    alignment: AlignmentType.BOTH
+    children: parseInlineStyles(content, config),
+    spacing: SPACING.PARAGRAPH
   });
 };

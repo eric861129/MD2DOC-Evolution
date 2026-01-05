@@ -31,7 +31,7 @@ export const registerDefaultHandlers = () => {
   docxRegistry.register(BlockType.HEADING_3, (block) => createHeading(block.content, 3));
 
   // Paragraph
-  docxRegistry.register(BlockType.PARAGRAPH, (block) => createParagraph(block.content));
+  docxRegistry.register(BlockType.PARAGRAPH, (block, config) => createParagraph(block.content, config));
 
   // Code Block
   docxRegistry.register(BlockType.CODE_BLOCK, (block, config) => [
@@ -47,8 +47,8 @@ export const registerDefaultHandlers = () => {
   docxRegistry.register(BlockType.CHAT_CUSTOM, chatHandler);
 
   // Callouts
-  const calloutHandler = (block: any) => [
-    createCallout(block.content, block.type),
+  const calloutHandler = (block: any, config: any) => [
+    createCallout(block.content, block.type, config),
     new Paragraph({ text: "", spacing: { before: 0, after: 0 } })
   ];
   docxRegistry.register(BlockType.CALLOUT_TIP, calloutHandler);
@@ -56,18 +56,18 @@ export const registerDefaultHandlers = () => {
   docxRegistry.register(BlockType.CALLOUT_WARNING, calloutHandler);
 
   // Lists
-  docxRegistry.register(BlockType.BULLET_LIST, (block) => 
-    new Paragraph({ children: parseInlineStyles(block.content), bullet: { level: 0 }, spacing: SPACING.LIST })
+  docxRegistry.register(BlockType.BULLET_LIST, (block, config) => 
+    new Paragraph({ children: parseInlineStyles(block.content, config), bullet: { level: 0 }, spacing: SPACING.LIST })
   );
-  docxRegistry.register(BlockType.NUMBERED_LIST, (block) => 
-    new Paragraph({ children: parseInlineStyles(block.content), numbering: { reference: "default-numbering", level: 0 }, spacing: SPACING.LIST })
+  docxRegistry.register(BlockType.NUMBERED_LIST, (block, config) => 
+    new Paragraph({ children: parseInlineStyles(block.content, config), numbering: { reference: "default-numbering", level: 0 }, spacing: SPACING.LIST })
   );
 
   // Table
-  docxRegistry.register(BlockType.TABLE, (block) => {
+  docxRegistry.register(BlockType.TABLE, (block, config) => {
     if (!block.tableRows) return [];
     return [
-      createTable(block.tableRows),
+      createTable(block.tableRows, config),
       new Paragraph({ text: "", spacing: { before: SPACING.TABLE_AFTER } })
     ];
   });

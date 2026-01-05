@@ -7,6 +7,7 @@
 import React from 'react';
 import { ParsedBlock, BlockType } from '../../services/types';
 import { parseInlineElements, InlineStyleType } from '../../utils/styleParser';
+import { QrCode } from 'lucide-react';
 
 export const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
   const segments = parseInlineElements(text);
@@ -21,6 +22,22 @@ export const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
             return <span key={i} className="italic text-blue-800">{segment.content}</span>;
           case InlineStyleType.UNDERLINE:
             return <span key={i} className="underline decoration-blue-500 text-blue-600 decoration-1 underline-offset-2">{segment.content}</span>;
+          case InlineStyleType.LINK:
+            return (
+              <span key={i} className="inline-flex items-baseline gap-1 mx-0.5 align-middle">
+                <a 
+                  href={segment.url} 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="text-blue-600 underline underline-offset-4 decoration-blue-300 hover:text-blue-800 hover:decoration-blue-600 transition-colors"
+                >
+                  {segment.content}
+                </a>
+                <span className="inline-flex items-center justify-center bg-slate-100 border border-slate-200 rounded p-[1px] -translate-y-[1px]">
+                   <QrCode className="w-3 h-3 text-slate-500" />
+                </span>
+              </span>
+            );
           case InlineStyleType.CODE:
             return <code key={i} className="bg-slate-100 px-1.5 py-0.5 rounded text-[0.9em] font-mono text-slate-700 border border-slate-200">{segment.content}</code>;
           case InlineStyleType.UI_BUTTON:
