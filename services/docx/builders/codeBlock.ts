@@ -73,8 +73,10 @@ export const createCodeBlock = (content: string, config: DocxConfig): Table => {
       insideVertical: { style: BorderStyle.NONE },
     },
     margins: {
-      top: 100,
-      bottom: 100,
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0
     }
   });
 };

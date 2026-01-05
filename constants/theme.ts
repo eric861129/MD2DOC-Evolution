@@ -69,7 +69,7 @@ export const WORD_THEME = {
     H1: { before: 480, after: 240 },
     H2: { before: 400, after: 200 },
     H3: { before: 300, after: 150 },
-    CODE_BLOCK: { before: 600, after: 600, line: 300 }, // ~1.25 lines
+    CODE_BLOCK: { before: 600, after: 600, line: LINE_HEIGHT.SINGLE }, // Single spacing (IDE style)
     CHAT: { before: 400, after: 400, line: LINE_HEIGHT.ONE_POINT_TWO },
     CALLOUT: { before: 600, after: 600, line: LINE_HEIGHT.ONE_POINT_FIVE },
     LIST: { before: 120, after: 120 },
