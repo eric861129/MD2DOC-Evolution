@@ -60,7 +60,8 @@ export const WORD_THEME = {
     
     // 特定邊框顏色
     CHAT_BORDER: "404040",
-    CODE_BORDER: "BFBFBF"
+    CODE_BORDER: "BFBFBF",
+    LINE_NUMBER_TEXT: "94A3B8" // 淺灰色
   },
 
   SPACING: {
@@ -77,6 +78,9 @@ export const WORD_THEME = {
   },
 
   LAYOUT: {
+    WIDTH: {
+      LINE_NUMBER: 450, // 約 0.8cm
+    },
     INDENT: {
       CODE: 400,
       CHAT: TWIPS_PER_INCH, // 1 inch

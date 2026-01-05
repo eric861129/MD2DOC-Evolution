@@ -75,9 +75,17 @@ export const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
     case BlockType.HEADING_3:
       return <h3 className="text-xl font-bold mb-6 mt-10 text-slate-800 underline decoration-indigo-200 underline-offset-8 decoration-4"><RenderRichText text={block.content} /></h3>;
     case BlockType.CODE_BLOCK:
+      const codeLines = block.content.split('\n');
       return (
-        <div className="my-10 border border-slate-300 bg-slate-50 p-8 rounded shadow-sm">
-          <pre className="text-sm font-mono whitespace-pre text-slate-900 leading-relaxed overflow-x-auto">{block.content}</pre>
+        <div className="my-10 border border-slate-300 bg-slate-50 rounded shadow-sm overflow-hidden flex font-mono text-sm">
+          <div className="bg-slate-100/50 border-r border-slate-200 px-3 py-6 text-right select-none text-slate-400 leading-relaxed min-w-[3.5rem]">
+            {codeLines.map((_, i) => (
+              <div key={i}>{i + 1}</div>
+            ))}
+          </div>
+          <pre className="flex-1 p-6 whitespace-pre text-slate-900 leading-relaxed overflow-x-auto m-0">
+            {block.content}
+          </pre>
         </div>
       );
     case BlockType.CHAT_CUSTOM:

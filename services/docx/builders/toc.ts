@@ -1,4 +1,4 @@
-import { Paragraph, TextRun, AlignmentType, TabStopType } from "docx";
+import { Paragraph, TextRun, AlignmentType, TabStopType, LeaderType } from "docx";
 import { SIZES, WORD_THEME, LINE_HEIGHT, TWIPS_PER_INCH } from "../../../constants/theme";
 import { FONT_CONFIG_NORMAL } from "./common";
 import { DocxConfig } from "../types";
@@ -46,7 +46,7 @@ export const createManualTOC = (content: string, pageConfig: DocxConfig): Paragr
         {
           type: TabStopType.RIGHT,
           position: rightPos,
-          leader: TabStopType.DOT, // 引導點樣式
+          leader: LeaderType.DOT, // 引導點樣式
         }
       ],
       spacing: SPACING.LIST

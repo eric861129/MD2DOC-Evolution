@@ -5,7 +5,7 @@
  */
 
 import { Paragraph } from "docx";
-import { BlockType } from "../../types";
+import { BlockType, ParsedBlock } from "../../types";
 import { docxRegistry } from "../registry";
 import { WORD_THEME } from "../../../constants/theme";
 import { parseInlineStyles } from "./common";
@@ -34,8 +34,8 @@ export const registerDefaultHandlers = () => {
   docxRegistry.register(BlockType.PARAGRAPH, (block) => createParagraph(block.content));
 
   // Code Block
-  docxRegistry.register(BlockType.CODE_BLOCK, (block) => [
-    createCodeBlock(block.content),
+  docxRegistry.register(BlockType.CODE_BLOCK, (block, config) => [
+    createCodeBlock(block.content, config),
     new Paragraph({ text: "", spacing: { before: 0, after: 0 } })
   ]);
 
