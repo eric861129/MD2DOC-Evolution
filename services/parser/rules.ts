@@ -112,4 +112,58 @@ export const registerDefaultParserRules = () => {
     }
     return null;
   });
+
+  // 7. Code Blocks
+  parserRegistry.register((line, ctx) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('```')) {
+      const language = trimmed.replace('```', '').trim();
+      let content = "";
+      
+      while (ctx.currentIndex + 1 < ctx.lines.length) {
+        ctx.currentIndex++;
+        const nextLine = ctx.lines[ctx.currentIndex];
+        if (nextLine.trim().startsWith('```')) {
+          break;
+        }
+        content += (content ? "\n" : "") + nextLine;
+      }
+      
+      return { type: BlockType.CODE_BLOCK, content: content, language };
+    }
+    return null;
+  });
+
+  // 8. Tables
+  parserRegistry.register((line, ctx) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('|')) {
+      const tableBuffer: string[] = [trimmed];
+      
+      while (ctx.currentIndex + 1 < ctx.lines.length) {
+        const nextLine = ctx.lines[ctx.currentIndex + 1].trim();
+        if (nextLine.startsWith('|')) {
+          ctx.currentIndex++;
+          tableBuffer.push(nextLine);
+        } else {
+          break;
+        }
+      }
+
+      const validRows = tableBuffer.filter(row => !/^\|[\s\-:|]+\|$/.test(row.trim()));
+      const tableRows = validRows.map(row => {
+        const content = row.trim().replace(/^\||\|$/g, '');
+        return content.split('|').map(cell => cell.trim());
+      });
+
+      if (tableRows.length > 0) {
+        return {
+          type: BlockType.TABLE,
+          content: tableBuffer.join('\n'),
+          tableRows: tableRows
+        };
+      }
+    }
+    return null;
+  });
 };
