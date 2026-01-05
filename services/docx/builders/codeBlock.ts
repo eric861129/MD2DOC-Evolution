@@ -5,9 +5,15 @@ import { DocxConfig } from "../types";
 
 const { SPACING, COLORS, FONT_SIZES, LAYOUT } = WORD_THEME;
 
-export const createCodeBlock = (content: string, config: DocxConfig): Table => {
+export const createCodeBlock = (content: string, config: DocxConfig, metadata?: { showLineNumbers?: boolean }): Table => {
   const codeLines = content.split('\n');
-  const showLineNumbers = config.showLineNumbers !== false; // Default to true
+  
+  // 決定是否顯示行號：Metadata 優先，否則使用 Config 設定 (預設為 true)
+  let showLineNumbers = config.showLineNumbers !== false;
+  if (metadata?.showLineNumbers !== undefined) {
+    showLineNumbers = metadata.showLineNumbers;
+  }
+
   const lineNumWidth = showLineNumbers ? LAYOUT.WIDTH.LINE_NUMBER : 0;
   
   // 計算可用寬度 (總寬度 - 邊距 - 程式碼區塊縮排)
@@ -67,15 +73,24 @@ export const createCodeBlock = (content: string, config: DocxConfig): Table => {
   });
 
   // 建立頂部和底部的 Padding Row (空行)
-  const paddingRowCells = [];
+  // 修正：加大高度並放入內容以確保顯示
+  const paddingCells = [];
   if (showLineNumbers) {
-    paddingRowCells.push(new TableCell({ width: { size: lineNumWidth, type: WidthType.DXA }, shading: { fill: COLORS.BG_CODE }, children: [] }));
+    paddingCells.push(new TableCell({ 
+      width: { size: lineNumWidth, type: WidthType.DXA }, 
+      shading: { fill: COLORS.BG_CODE }, 
+      children: [new Paragraph({ children: [new TextRun({ text: " ", size: 2 })], spacing: { before: 0, after: 0, line: 240 } })] 
+    }));
   }
-  paddingRowCells.push(new TableCell({ width: { size: codeColWidth, type: WidthType.DXA }, shading: { fill: COLORS.BG_CODE }, children: [] }));
+  paddingCells.push(new TableCell({ 
+    width: { size: codeColWidth, type: WidthType.DXA }, 
+    shading: { fill: COLORS.BG_CODE }, 
+    children: [new Paragraph({ children: [new TextRun({ text: " ", size: 2 })], spacing: { before: 0, after: 0, line: 240 } })] 
+  }));
 
   const paddingRow = new TableRow({
-    height: { value: 120, rule: "exact" }, // 約 6pt 高度
-    children: paddingRowCells
+    height: { value: 240, rule: "atLeast" }, // 約 12pt 高度，改用 atLeast 避免被壓縮
+    children: paddingCells
   });
 
   return new Table({

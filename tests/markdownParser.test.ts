@@ -38,7 +38,25 @@ describe('markdownParser', () => {
     expect(blocks).toHaveLength(1);
     expect(blocks[0].type).toBe(BlockType.CODE_BLOCK);
     expect(blocks[0].content).toBe('const a = 1;');
-    expect(blocks[0].language).toBe('typescript');
+    expect(blocks[0].metadata?.language).toBe('typescript');
+  });
+
+  it('should parse code block metadata (line numbers)', () => {
+    const input = [
+      '```ts:ln',
+      'line 1',
+      '```',
+      '```js:no-ln',
+      'line 2',
+      '```'
+    ].join('\n');
+    const blocks = parseMarkdown(input);
+    
+    expect(blocks[0].metadata?.showLineNumbers).toBe(true);
+    expect(blocks[0].metadata?.language).toBe('ts');
+    
+    expect(blocks[1].metadata?.showLineNumbers).toBe(false);
+    expect(blocks[1].metadata?.language).toBe('js');
   });
 
   it('should parse custom chat dialogues correctly', () => {

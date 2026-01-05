@@ -46,7 +46,13 @@ export const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
   );
 };
 
-export const PreviewBlock: React.FC<{ block: ParsedBlock; showLineNumbers?: boolean }> = ({ block, showLineNumbers = true }) => {
+export const PreviewBlock: React.FC<{ block: ParsedBlock; showLineNumbers?: boolean }> = ({ block, showLineNumbers: globalShowLineNumbers = true }) => {
+  // 決定是否顯示行號：Metadata 優先，否則使用 Global 設定
+  let showLineNumbers = globalShowLineNumbers;
+  if (block.metadata?.showLineNumbers !== undefined) {
+    showLineNumbers = block.metadata.showLineNumbers;
+  }
+
   switch (block.type) {
     case BlockType.TOC:
       const tocLines = block.content.split('\n');

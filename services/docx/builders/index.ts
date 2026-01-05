@@ -35,7 +35,7 @@ export const registerDefaultHandlers = () => {
 
   // Code Block
   docxRegistry.register(BlockType.CODE_BLOCK, (block, config) => [
-    createCodeBlock(block.content, config),
+    createCodeBlock(block.content, config, block.metadata),
     new Paragraph({ text: "", spacing: { before: 0, after: 0 } })
   ]);
 
