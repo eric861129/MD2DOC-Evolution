@@ -25,10 +25,13 @@ export enum BlockType {
 
 export interface ParsedBlock {
   type: BlockType;
-  content: string; 
-  language?: string; 
-  tableRows?: string[][]; 
-  // Custom Chat Metadata
-  role?: string;
-  alignment?: 'left' | 'right' | 'center';
+  content: string;
+  role?: string;         // For chat blocks
+  alignment?: 'left' | 'right' | 'center'; // For chat blocks
+  tableRows?: string[][]; // For table blocks
+  metadata?: {
+    showLineNumbers?: boolean;
+    language?: string;
+    [key: string]: any;
+  };
 }

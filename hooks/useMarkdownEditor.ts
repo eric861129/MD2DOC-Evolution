@@ -78,7 +78,8 @@ export const useMarkdownEditor = () => {
       const sizeConfig = PAGE_SIZES[selectedSizeIndex];
       const blob = await generateDocx(parsedBlocks, { 
         widthCm: sizeConfig.width, 
-        heightCm: sizeConfig.height 
+        heightCm: sizeConfig.height,
+        showLineNumbers: true // Default to true for technical books
       });
       saveAs(blob, "Professional_Manuscript.docx");
     } catch (error) {

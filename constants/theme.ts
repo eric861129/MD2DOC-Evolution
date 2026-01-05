@@ -60,7 +60,8 @@ export const WORD_THEME = {
     
     // 特定邊框顏色
     CHAT_BORDER: "404040",
-    CODE_BORDER: "BFBFBF"
+    CODE_BORDER: "BFBFBF",
+    LINE_NUMBER_TEXT: "94A3B8" // 淺灰色
   },
 
   SPACING: {
@@ -68,7 +69,7 @@ export const WORD_THEME = {
     H1: { before: 480, after: 240 },
     H2: { before: 400, after: 200 },
     H3: { before: 300, after: 150 },
-    CODE_BLOCK: { before: 600, after: 600, line: 300 }, // ~1.25 lines
+    CODE_BLOCK: { before: 600, after: 600, line: LINE_HEIGHT.SINGLE }, // Single spacing (IDE style)
     CHAT: { before: 400, after: 400, line: LINE_HEIGHT.ONE_POINT_TWO },
     CALLOUT: { before: 600, after: 600, line: LINE_HEIGHT.ONE_POINT_FIVE },
     LIST: { before: 120, after: 120 },
@@ -77,6 +78,9 @@ export const WORD_THEME = {
   },
 
   LAYOUT: {
+    WIDTH: {
+      LINE_NUMBER: 450, // 約 0.8cm
+    },
     INDENT: {
       CODE: 400,
       CHAT: TWIPS_PER_INCH, // 1 inch

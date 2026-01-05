@@ -46,7 +46,13 @@ export const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
   );
 };
 
-export const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
+export const PreviewBlock: React.FC<{ block: ParsedBlock; showLineNumbers?: boolean }> = ({ block, showLineNumbers: globalShowLineNumbers = true }) => {
+  // 決定是否顯示行號：Metadata 優先，否則使用 Global 設定
+  let showLineNumbers = globalShowLineNumbers;
+  if (block.metadata?.showLineNumbers !== undefined) {
+    showLineNumbers = block.metadata.showLineNumbers;
+  }
+
   switch (block.type) {
     case BlockType.TOC:
       const tocLines = block.content.split('\n');
@@ -75,9 +81,26 @@ export const PreviewBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
     case BlockType.HEADING_3:
       return <h3 className="text-xl font-bold mb-6 mt-10 text-slate-800 underline decoration-indigo-200 underline-offset-8 decoration-4"><RenderRichText text={block.content} /></h3>;
     case BlockType.CODE_BLOCK:
+      const codeLines = block.content.split('\n');
       return (
-        <div className="my-10 border border-slate-300 bg-slate-50 p-8 rounded shadow-sm">
-          <pre className="text-sm font-mono whitespace-pre text-slate-900 leading-relaxed overflow-x-auto">{block.content}</pre>
+        <div className="my-10 border border-slate-300 bg-slate-50 rounded shadow-sm overflow-hidden relative group text-sm">
+          {block.metadata?.language && (
+            <div className="absolute top-0 right-0 px-3 py-1 bg-slate-200 text-[10px] font-bold text-slate-500 uppercase rounded-bl border-b border-l border-slate-300 z-10">
+              {block.metadata.language}
+            </div>
+          )}
+          <div className="flex font-mono">
+            {showLineNumbers && (
+              <div className="bg-slate-100/50 border-r border-slate-200 px-2 py-4 text-right select-none text-slate-400 leading-relaxed min-w-[2.5rem]">
+                {codeLines.map((_, i) => (
+                  <div key={i}>{i + 1}</div>
+                ))}
+              </div>
+            )}
+            <pre className="flex-1 p-4 whitespace-pre text-slate-900 leading-relaxed overflow-x-auto m-0 pt-8">
+              {block.content}
+            </pre>
+          </div>
         </div>
       );
     case BlockType.CHAT_CUSTOM:

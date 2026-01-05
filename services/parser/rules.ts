@@ -117,7 +117,23 @@ export const registerDefaultParserRules = () => {
   parserRegistry.register((line, ctx) => {
     const trimmed = line.trim();
     if (trimmed.startsWith('```')) {
-      const language = trimmed.replace('```', '').trim();
+      const fullTag = trimmed.replace('```', '').trim();
+      let language = fullTag;
+      let showLineNumbers: boolean | undefined = undefined;
+
+      // Parse metadata from tag (e.g. "ts:ln")
+      if (fullTag.includes(':')) {
+        const parts = fullTag.split(':');
+        language = parts[0].trim();
+        const modifier = parts[1].trim().toLowerCase();
+        
+        if (['ln', 'line', 'yes'].includes(modifier)) {
+          showLineNumbers = true;
+        } else if (['no-ln', 'plain', 'no'].includes(modifier)) {
+          showLineNumbers = false;
+        }
+      }
+
       let content = "";
       
       while (ctx.currentIndex + 1 < ctx.lines.length) {
@@ -129,7 +145,14 @@ export const registerDefaultParserRules = () => {
         content += (content ? "\n" : "") + nextLine;
       }
       
-      return { type: BlockType.CODE_BLOCK, content: content, language };
+      return { 
+        type: BlockType.CODE_BLOCK, 
+        content: content, 
+        metadata: {
+          language,
+          showLineNumbers
+        }
+      };
     }
     return null;
   });

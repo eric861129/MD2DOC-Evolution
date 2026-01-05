@@ -25,6 +25,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
     while (i < parsedBlocks.length) {
       const block = parsedBlocks[i];
       if (block.type === BlockType.BULLET_LIST) {
+        // ... (省略列表邏輯)
         const listItems: ParsedBlock[] = [];
         while (i < parsedBlocks.length && parsedBlocks[i].type === BlockType.BULLET_LIST) {
           listItems.push(parsedBlocks[i]);
@@ -40,6 +41,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
           </ul>
         );
       } else if (block.type === BlockType.NUMBERED_LIST) {
+        // ... (省略列表邏輯)
         const listItems: ParsedBlock[] = [];
         while (i < parsedBlocks.length && parsedBlocks[i].type === BlockType.NUMBERED_LIST) {
           listItems.push(parsedBlocks[i]);
