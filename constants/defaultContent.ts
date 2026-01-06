@@ -87,7 +87,7 @@ ${BT}${BT}${BT}
 ${BT}${BT}${BT}json:no-ln
 {
   "name": "book-publisher",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true
 }
 ${BT}${BT}${BT}
@@ -218,7 +218,7 @@ Use ${BT}json:no-ln${BT} or ${BT}:plain${BT} syntax. Ideal for short config file
 ${BT}${BT}${BT}json:no-ln
 {
   "name": "book-publisher",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true
 }
 ${BT}${BT}${BT}

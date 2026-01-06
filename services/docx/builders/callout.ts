@@ -6,7 +6,7 @@ import { DocxConfig } from "../types";
 
 const { SPACING, COLORS, FONT_SIZES, LAYOUT } = WORD_THEME;
 
-export const createCallout = (content: string, type: BlockType, docxConfig?: DocxConfig): Paragraph => {
+export const createCallout = async (content: string, type: BlockType, docxConfig?: DocxConfig): Promise<Paragraph> => {
   const config = {
     [BlockType.CALLOUT_TIP]: { label: "TIP", color: COLORS.CALLOUT.TIP.BORDER, style: BorderStyle.SINGLE, size: LAYOUT.BORDER.CALLOUT_TIP, bg: COLORS.CALLOUT.TIP.BG },
     [BlockType.CALLOUT_WARNING]: { label: "WARNING", color: COLORS.CALLOUT.WARNING.BORDER, style: BorderStyle.SINGLE, size: LAYOUT.BORDER.CALLOUT_WARNING, bg: COLORS.CALLOUT.WARNING.BG },
@@ -17,10 +17,11 @@ export const createCallout = (content: string, type: BlockType, docxConfig?: Doc
     new TextRun({ text: `[ ${config.label} ]`, bold: true, size: FONT_SIZES.LABEL, font: FONT_CONFIG_NORMAL })
   ];
 
-  content.split('\n').forEach(line => {
+  const lines = content.split('\n');
+  for (const line of lines) {
     children.push(new TextRun({ text: "", break: 1 }));
-    children.push(...parseInlineStyles(line, docxConfig));
-  });
+    children.push(...await parseInlineStyles(line, docxConfig));
+  }
 
   return new Paragraph({
     children,

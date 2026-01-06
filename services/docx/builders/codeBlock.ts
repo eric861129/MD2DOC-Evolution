@@ -5,7 +5,7 @@ import { DocxConfig } from "../types";
 
 const { SPACING, COLORS, FONT_SIZES, LAYOUT } = WORD_THEME;
 
-export const createCodeBlock = (content: string, config: DocxConfig, metadata?: { showLineNumbers?: boolean; language?: string }): Table => {
+export const createCodeBlock = async (content: string, config: DocxConfig, metadata?: { showLineNumbers?: boolean; language?: string }): Promise<Table> => {
   const codeLines = content.split('\n');
   
   // 決定是否顯示行號：Metadata 優先，否則使用 Config 設定 (預設為 true)

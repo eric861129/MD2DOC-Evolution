@@ -26,29 +26,29 @@ export const registerDefaultHandlers = () => {
   docxRegistry.register(BlockType.TOC, (block, config) => createManualTOC(block.content, config));
 
   // Headings
-  docxRegistry.register(BlockType.HEADING_1, (block) => createHeading(block.content, 1));
-  docxRegistry.register(BlockType.HEADING_2, (block) => createHeading(block.content, 2));
-  docxRegistry.register(BlockType.HEADING_3, (block) => createHeading(block.content, 3));
+  docxRegistry.register(BlockType.HEADING_1, async (block, config) => await createHeading(block.content, 1, config));
+  docxRegistry.register(BlockType.HEADING_2, async (block, config) => await createHeading(block.content, 2, config));
+  docxRegistry.register(BlockType.HEADING_3, async (block, config) => await createHeading(block.content, 3, config));
 
   // Paragraph
-  docxRegistry.register(BlockType.PARAGRAPH, (block, config) => createParagraph(block.content, config));
+  docxRegistry.register(BlockType.PARAGRAPH, async (block, config) => await createParagraph(block.content, config));
 
   // Code Block
-  docxRegistry.register(BlockType.CODE_BLOCK, (block, config) => [
-    createCodeBlock(block.content, config, block.metadata),
+  docxRegistry.register(BlockType.CODE_BLOCK, async (block, config) => [
+    await createCodeBlock(block.content, config, block.metadata),
     new Paragraph({ text: "", spacing: { before: 0, after: 0 } })
   ]);
 
   // Chat
-  const chatHandler = (block: ParsedBlock) => [
-    createChatBubble(block),
+  const chatHandler = async (block: ParsedBlock, config: DocxConfig) => [
+    await createChatBubble(block, config),
     new Paragraph({ text: "", spacing: { before: 0, after: 0 } })
   ];
   docxRegistry.register(BlockType.CHAT_CUSTOM, chatHandler);
 
   // Callouts
-  const calloutHandler = (block: any, config: any) => [
-    createCallout(block.content, block.type, config),
+  const calloutHandler = async (block: any, config: DocxConfig) => [
+    await createCallout(block.content, block.type, config),
     new Paragraph({ text: "", spacing: { before: 0, after: 0 } })
   ];
   docxRegistry.register(BlockType.CALLOUT_TIP, calloutHandler);
@@ -56,18 +56,18 @@ export const registerDefaultHandlers = () => {
   docxRegistry.register(BlockType.CALLOUT_WARNING, calloutHandler);
 
   // Lists
-  docxRegistry.register(BlockType.BULLET_LIST, (block, config) => 
-    new Paragraph({ children: parseInlineStyles(block.content, config), bullet: { level: 0 }, spacing: SPACING.LIST })
+  docxRegistry.register(BlockType.BULLET_LIST, async (block, config) => 
+    new Paragraph({ children: await parseInlineStyles(block.content, config), bullet: { level: 0 }, spacing: SPACING.LIST })
   );
-  docxRegistry.register(BlockType.NUMBERED_LIST, (block, config) => 
-    new Paragraph({ children: parseInlineStyles(block.content, config), numbering: { reference: "default-numbering", level: 0 }, spacing: SPACING.LIST })
+  docxRegistry.register(BlockType.NUMBERED_LIST, async (block, config) => 
+    new Paragraph({ children: await parseInlineStyles(block.content, config), numbering: { reference: "default-numbering", level: 0 }, spacing: SPACING.LIST })
   );
 
   // Table
-  docxRegistry.register(BlockType.TABLE, (block, config) => {
+  docxRegistry.register(BlockType.TABLE, async (block, config) => {
     if (!block.tableRows) return [];
     return [
-      createTable(block.tableRows, config),
+      await createTable(block.tableRows, config),
       new Paragraph({ text: "", spacing: { before: SPACING.TABLE_AFTER } })
     ];
   });

@@ -2,6 +2,7 @@ import { TextRun, ShadingType, UnderlineType, ImageRun } from "docx";
 import { parseInlineElements, InlineStyleType } from "../../../utils/styleParser";
 import { WORD_THEME } from "../../../constants/theme";
 import { DocxConfig } from "../types";
+import { generateQRCode } from "../../qrCodeService";
 
 const { FONTS, COLORS, FONT_SIZES } = WORD_THEME;
 
@@ -14,7 +15,7 @@ export const FONT_CONFIG_NORMAL = {
 };
 
 // --- Helper: 行內樣式解析 ---
-export const parseInlineStyles = (text: string, config?: DocxConfig): (TextRun | ImageRun)[] => {
+export const parseInlineStyles = async (text: string, config?: DocxConfig): Promise<(TextRun | ImageRun)[]> => {
   const segments = parseInlineElements(text);
   const runs: (TextRun | ImageRun)[] = [];
 
@@ -42,18 +43,22 @@ export const parseInlineStyles = (text: string, config?: DocxConfig): (TextRun |
           color: COLORS.LINK_BLUE,
           underline: { type: UnderlineType.SINGLE, color: COLORS.LINK_BLUE }
         }));
-        // 2. QR Code (如果有)
-        if (config?.qrCodeMap && segment.url) {
-          const qrBuffer = config.qrCodeMap.get(segment.url);
-          if (qrBuffer) {
-            // 前後加個小空格避免貼太近
-            runs.push(new TextRun({ text: " ", font: FONT_CONFIG_NORMAL, size: 4 })); 
-            runs.push(new ImageRun({
-              data: qrBuffer,
-              transformation: { width: 45, height: 45 }, // 約 1.5cm，太小掃不到
-              type: "png"
-            }));
-            runs.push(new TextRun({ text: " ", font: FONT_CONFIG_NORMAL, size: 4 })); 
+        // 2. QR Code Generation (Async)
+        if (segment.url) {
+          try {
+            const qrBuffer = await generateQRCode(segment.url);
+            if (qrBuffer.byteLength > 0) {
+              // 前後加個小空格避免貼太近
+              runs.push(new TextRun({ text: " ", font: FONT_CONFIG_NORMAL, size: 4 })); 
+              runs.push(new ImageRun({
+                data: qrBuffer,
+                transformation: { width: 45, height: 45 }, // 約 1.5cm
+                type: "png"
+              }));
+              runs.push(new TextRun({ text: " ", font: FONT_CONFIG_NORMAL, size: 4 })); 
+            }
+          } catch (e) {
+            console.warn(`Failed to generate QR for ${segment.url}`, e);
           }
         }
         break;

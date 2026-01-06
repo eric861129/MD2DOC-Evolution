@@ -10,7 +10,7 @@ import { DocxConfig } from "./types";
 
 export type DocxBlockResult = Paragraph | Table | (Paragraph | Table)[];
 
-export type DocxBlockHandler = (block: ParsedBlock, config: DocxConfig) => DocxBlockResult;
+export type DocxBlockHandler = (block: ParsedBlock, config: DocxConfig) => Promise<DocxBlockResult>;
 
 class DocxHandlerRegistry {
   private handlers: Map<string, DocxBlockHandler> = new Map();
@@ -23,10 +23,10 @@ class DocxHandlerRegistry {
     return this.handlers.get(type);
   }
 
-  handle(block: ParsedBlock, config: DocxConfig): DocxBlockResult | null {
+  async handle(block: ParsedBlock, config: DocxConfig): Promise<DocxBlockResult | null> {
     const handler = this.handlers.get(block.type);
     if (handler) {
-      return handler(block, config);
+      return await handler(block, config);
     }
     return null;
   }

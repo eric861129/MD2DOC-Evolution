@@ -5,9 +5,9 @@ import { DocxConfig } from "../types";
 
 const { SPACING, LAYOUT } = WORD_THEME;
 
-export const createParagraph = (content: string, config?: DocxConfig): Paragraph => {
+export const createParagraph = async (content: string, config?: DocxConfig): Promise<Paragraph> => {
   return new Paragraph({
-    children: parseInlineStyles(content, config),
+    children: await parseInlineStyles(content, config),
     spacing: SPACING.PARAGRAPH
   });
 };

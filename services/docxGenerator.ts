@@ -8,8 +8,6 @@ import { Document, Packer, Paragraph, AlignmentType, Table, Header, Footer, Page
 import { ParsedBlock } from "./types";
 import { FONT_CONFIG_NORMAL } from "./docx/builders/common";
 import { SIZES, WORD_THEME } from "../constants/theme";
-import { parseInlineElements, InlineStyleType } from "../utils/styleParser";
-import { generateQRCode } from "./qrCodeService";
 
 // Registry & Handlers
 import { docxRegistry } from "./docx/registry";
@@ -24,67 +22,16 @@ export type { DocxConfig };
 
 const { FONT_SIZES, LAYOUT } = WORD_THEME;
 
-// Helper to extract URLs from all blocks
-const extractUrls = (blocks: ParsedBlock[]): string[] => {
-  const urls = new Set<string>();
-  for (const block of blocks) {
-    if (!block.content) continue;
-    
-    // Parse inline elements to find links
-    const segments = parseInlineElements(block.content);
-    for (const seg of segments) {
-      if (seg.type === InlineStyleType.LINK && seg.url) {
-        urls.add(seg.url);
-      }
-    }
-
-    // Also check table rows if present
-    if (block.tableRows) {
-      for (const row of block.tableRows) {
-        for (const cell of row) {
-          const cellSegments = parseInlineElements(cell);
-          for (const seg of cellSegments) {
-            if (seg.type === InlineStyleType.LINK && seg.url) {
-              urls.add(seg.url);
-            }
-          }
-        }
-      }
-    }
-  }
-  return Array.from(urls);
-};
-
 // --- 主生成函式 ---
 export const generateDocx = async (
     blocks: ParsedBlock[], 
     config: DocxConfig = { widthCm: 17, heightCm: 23 }
 ): Promise<Blob> => {
   
-  // 1. Pre-generate QR Codes for all links
-  const urls = extractUrls(blocks);
-  const qrCodeMap = new Map<string, ArrayBuffer>();
-  
-  if (urls.length > 0) {
-    await Promise.all(urls.map(async (url) => {
-      try {
-        const buffer = await generateQRCode(url);
-        if (buffer.byteLength > 0) {
-          qrCodeMap.set(url, buffer);
-        }
-      } catch (e) {
-        console.warn(`Failed to generate QR for ${url}`, e);
-      }
-    }));
-  }
-  
-  // Inject QR Map into config
-  config.qrCodeMap = qrCodeMap;
-
   const docChildren: (Paragraph | Table)[] = [];
 
   for (const block of blocks) {
-    const result = docxRegistry.handle(block, config);
+    const result = await docxRegistry.handle(block, config);
     if (result) {
       if (Array.isArray(result)) {
         docChildren.push(...result);

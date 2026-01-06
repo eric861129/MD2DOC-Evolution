@@ -8,10 +8,11 @@ import { Paragraph, TextRun, AlignmentType } from "docx";
 import { ParsedBlock } from "../../types";
 import { WORD_THEME, LINE_HEIGHT } from "../../../constants/theme";
 import { parseInlineStyles, FONT_CONFIG_NORMAL } from "./common";
+import { DocxConfig } from "../types";
 
 const { COLORS, FONT_SIZES, LAYOUT } = WORD_THEME;
 
-export const createChatBubble = (block: ParsedBlock): Paragraph => {
+export const createChatBubble = async (block: ParsedBlock, config?: DocxConfig): Promise<Paragraph> => {
   const { role, content, alignment = 'left' } = block;
   
   const isRight = alignment === 'right';
@@ -31,17 +32,19 @@ export const createChatBubble = (block: ParsedBlock): Paragraph => {
 
   const borderStyle = isRight ? "dashed" : isCenter ? "double" : "dotted";
 
+  const children = [
+      new TextRun({ 
+        text: `${role}:`, 
+        bold: true, 
+        size: FONT_SIZES.LABEL, 
+        font: FONT_CONFIG_NORMAL 
+      }),
+      new TextRun({ text: "", break: 1 }),
+      ...await parseInlineStyles(content, config)
+  ];
+
   return new Paragraph({
-    children: [
-        new TextRun({ 
-          text: `${role}:`, 
-          bold: true, 
-          size: FONT_SIZES.LABEL, 
-          font: FONT_CONFIG_NORMAL 
-        }),
-        new TextRun({ text: "", break: 1 }),
-        ...parseInlineStyles(content)
-    ],
+    children,
     border: {
       top: { style: borderStyle, space: 10, color: COLORS.CHAT_BORDER },
       bottom: { style: borderStyle, space: 10, color: COLORS.CHAT_BORDER },
