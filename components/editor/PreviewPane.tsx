@@ -25,6 +25,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
     let i = 0;
     while (i < parsedBlocks.length) {
       const block = parsedBlocks[i];
+      const currentBlockIndex = i;
       if (block.type === BlockType.BULLET_LIST) {
         const listItems: ParsedBlock[] = [];
         while (i < parsedBlocks.length && parsedBlocks[i].type === BlockType.BULLET_LIST) {
@@ -32,7 +33,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
           i++;
         }
         elements.push(
-          <ul key={`bullet-list-${i}`} className="ml-8 mb-8">
+          <ul key={`bullet-list-${i}`} id={`preview-block-${currentBlockIndex}`} className="ml-8 mb-8">
             {listItems.map((item, idx) => (
               <li key={idx} className="relative mb-2 pl-4 leading-[1.8] list-none before:content-[''] before:absolute before:left-0 before:top-[0.7em] before:w-2 before:h-2 before:bg-slate-400 before:rounded-full">
                  <RenderRichText text={item.content} />
@@ -47,7 +48,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
           i++;
         }
         elements.push(
-          <ol key={`numbered-list-${i}`} className="ml-8 mb-8 list-decimal">
+          <ol key={`numbered-list-${i}`} id={`preview-block-${currentBlockIndex}`} className="ml-8 mb-8 list-decimal">
             {listItems.map((item, idx) => (
               <li key={idx} className="mb-2 pl-2 leading-[1.8] text-slate-800">
                  <RenderRichText text={item.content} />
@@ -62,7 +63,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
         );
 
         elements.push(
-          <div key={`toc-${i}`} className="my-8 p-6 bg-slate-50 border border-slate-200 rounded-lg select-none">
+          <div key={`toc-${i}`} id={`preview-block-${currentBlockIndex}`} className="my-8 p-6 bg-slate-50 border border-slate-200 rounded-lg select-none">
             <p className="mb-4 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-2">
               目錄預覽 (Table of Contents)
             </p>
@@ -96,7 +97,11 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
         i++; 
 
       } else {
-        elements.push(<PreviewBlock key={i} block={block} />);
+        elements.push(
+          <div key={i} id={`preview-block-${currentBlockIndex}`}>
+            <PreviewBlock key={i} block={block} />
+            </div>
+        );
         i++;
       }
     }

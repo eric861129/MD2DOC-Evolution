@@ -59,7 +59,28 @@ export const useMarkdownEditor = () => {
   const handleScroll = () => {
     if (!textareaRef.current || !previewRef.current) return;
     const textarea = textareaRef.current;
-    const preview = previewRef.current;
+    const preview = previewRef.current
+
+    const maxScrollTop = textarea.scrollHeight - textarea.clientHeight;
+    if (maxScrollTop === 0) return;
+
+    const scrollRatio = textarea.scrollTop / maxScrollTop;
+    const totalTextLength = textarea.value.length;
+    const targetCharIndex = scrollRatio * totalTextLength;
+
+    let accumulatedLength = 0;
+    let targetBlockIndex = 0;
+
+     for (let i = 0; i < parsedBlocks.length; i++) {
+        const blockLength = parsedBlocks[i].content.length + 10;
+        accumulatedLength += blockLength;
+
+        if (accumulatedLength >= targetCharIndex){
+          targetBlockIndex = i;
+          break;
+        }
+     }
+
     const percentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight);
     preview.scrollTop = percentage * (preview.scrollHeight - preview.clientHeight);
   };
