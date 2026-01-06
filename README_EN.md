@@ -45,6 +45,15 @@ This project is not just a Markdown converter; it is deeply optimized for "publi
     - **Auto QR Code Generation**: Markdown links `[Text](URL)` automatically generate a QR Code next to the text in the exported file.
     - **Optimized for Physical Books**: Convenient for readers to scan and jump to resources while reading printed or e-books.
 
+- **📑 YAML Frontmatter Support**
+    - **Metadata Management**: Define book title, author, and layout preferences at the beginning of the file using YAML syntax.
+    - **Auto Document Properties**: Defined `title` and `author` are automatically written to Word document properties.
+
+- **📖 Dynamic Headers & Footers**
+    - **Professional Page Numbers**: Automatically inserts page numbers centered in the footer.
+    - **Header Navigation**: Displays the book title automatically in the header.
+    - **Flexible Toggle**: Use Frontmatter to set `header: false` or `footer: false` to enable or disable them.
+
 - **💬 Chat Dialogues**
     - Designed for "scenario simulation" or "AI conversations" common in technical books.
     - Simply type `User:` or `AI:` to generate left/right aligned, styled dialogue boxes.
