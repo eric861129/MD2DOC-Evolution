@@ -2,23 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.0] - 2026-01-02
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.1.0] - 2026-01-05
 
 ### Added
-- **Unit Testing**: Introduced Vitest for core logic testing.
-- **Snapshot Testing**: Added document structure regression testing for docx generation.
-- **Atomic UI Components**: Reusable `Button`, `IconButton`, and `Select` components.
-- **EditorContext**: Centralized state management using React Context API.
-- **Support for manual TOC**: `[TOC]` syntax for generating Word Table of Contents.
-- **Support for Chat Dialogues**: `User:` and `AI:` syntax for scenario simulations.
-- **Support for Callouts**: `[!TIP]`, `[!WARNING]`, `[!NOTE]` syntax.
+- **Enhanced Code Blocks**:
+    - Automatic line numbering (IDE style).
+    - Language label display in top-right corner.
+    - Support for `lang:ln` (force show) and `lang:no-ln` (force hide) syntax.
+    - Improved padding and border alignment for professional look.
+- **Smart Links (QR Code)**:
+    - Automatically generates QR Codes for links (`[Text](URL)`) in Word documents.
+    - Inline image placement for seamless reading experience in physical books.
+- **YAML Frontmatter Support**:
+    - Parse `title`, `author`, `header`, `footer` from file header.
+    - Auto-fill Word document properties (Title/Author).
+- **Dynamic Headers & Footers**:
+    - Automatic page numbering in footer (centered).
+    - Dynamic book title in header (right-aligned).
+    - Configurable via Frontmatter (`header: false` / `footer: false`).
+- **Documentation**:
+    - Added English README (`README_EN.md`).
+    - Added language switcher in READMEs.
 
 ### Changed
-- **Architecture Refactor**: Separated Markdown parsing, Docx generation, and UI logic.
-- **Theme Management**: Split `WORD_THEME` and `UI_THEME` in `constants/theme.ts`.
-- **Type Safety**: Centralized and refined TypeScript definitions across the project.
-- **Performance**: Optimized sync scrolling and markdown parsing with debouncing.
+- Updated `README.md` with new features and syntax guide.
+- Updated `CONTRIBUTING.md` with version control guidelines.
+- Refactored `services/docxGenerator.ts` to support async pre-generation (for QR codes).
 
-### Fixed
-- Fixed snapshot flakiness by freezing system time during tests.
-- Improved dark mode transition consistency.
+## [1.0.0] - 2025-12-31
+
+### Added
+- Initial release of **BookPublisher MD2Docx**.
+- Core Markdown to Word (DOCX) conversion.
+- Support for Chat Dialogues (`User:`, `AI:`).
+- Support for Callouts (`[!TIP]`, `[!NOTE]`, `[!WARNING]`).
+- WYSIWYG Editor with real-time preview.
