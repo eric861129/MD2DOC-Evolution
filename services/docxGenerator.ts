@@ -4,7 +4,7 @@
  * Licensed under the MIT License.
  */
 
-import { Document, Packer, Paragraph, AlignmentType, Table } from "docx";
+import { Document, Packer, Paragraph, AlignmentType, Table, Header, Footer, PageNumber, TextRun } from "docx";
 import { ParsedBlock } from "./types";
 import { FONT_CONFIG_NORMAL } from "./docx/builders/common";
 import { SIZES, WORD_THEME } from "../constants/theme";
@@ -94,7 +94,48 @@ export const generateDocx = async (
     }
   }
 
+  // 2. Prepare Headers & Footers
+  const docMeta = config.meta || {};
+  const headers: any = {};
+  const footers: any = {};
+
+  // Header: Show Title if 'header' is not false and title exists
+  if (docMeta.header !== false && docMeta.title) {
+    headers.default = new Header({
+      children: [
+        new Paragraph({
+          children: [
+            new TextRun({ text: docMeta.title, font: FONT_CONFIG_NORMAL.ascii, size: 18, color: "808080" })
+          ],
+          alignment: AlignmentType.RIGHT,
+          border: { bottom: { style: "single", size: 6, color: "E0E0E0", space: 6 } } // Slight underline
+        })
+      ]
+    });
+  }
+
+  // Footer: Show Page Number if 'footer' is not false (Default true)
+  if (docMeta.footer !== false) {
+    footers.default = new Footer({
+      children: [
+        new Paragraph({
+          children: [
+            new TextRun({
+              children: [PageNumber.CURRENT],
+              font: FONT_CONFIG_NORMAL.ascii,
+              size: 20
+            })
+          ],
+          alignment: AlignmentType.CENTER
+        })
+      ]
+    });
+  }
+
   const doc = new Document({
+    creator: docMeta.author,
+    title: docMeta.title,
+    description: docMeta.subject,
     numbering: {
       config: [{
         reference: "default-numbering",
@@ -108,6 +149,8 @@ export const generateDocx = async (
           margin: { top: LAYOUT.MARGIN.NORMAL, right: LAYOUT.MARGIN.NORMAL, bottom: LAYOUT.MARGIN.NORMAL, left: LAYOUT.MARGIN.NORMAL },
         },
       },
+      headers: headers,
+      footers: footers,
       children: docChildren
     }],
     styles: {

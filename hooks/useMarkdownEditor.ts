@@ -10,7 +10,7 @@ import saveAs from 'file-saver';
 import { useTranslation } from 'react-i18next';
 import { parseMarkdown } from '../services/markdownParser';
 import { generateDocx } from '../services/docxGenerator';
-import { ParsedBlock } from '../services/types';
+import { ParsedBlock, DocumentMeta } from '../services/types';
 import { INITIAL_CONTENT_ZH, INITIAL_CONTENT_EN } from '../constants/defaultContent';
 
 export const PAGE_SIZES = [
@@ -30,6 +30,7 @@ export const useMarkdownEditor = () => {
     return localStorage.getItem('draft_content') || getInitialContent(i18n.language);
   });
   const [parsedBlocks, setParsedBlocks] = useState<ParsedBlock[]>([]);
+  const [documentMeta, setDocumentMeta] = useState<DocumentMeta>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedSizeIndex, setSelectedSizeIndex] = useState(0);
   const [wordCount, setWordCount] = useState(0);
@@ -49,8 +50,9 @@ export const useMarkdownEditor = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        const blocks = parseMarkdown(content);
+        const { blocks, meta } = parseMarkdown(content);
         setParsedBlocks(blocks);
+        setDocumentMeta(meta);
         setWordCount(getWordCount(content));
         localStorage.setItem('draft_content', content);
       } catch (e) {
@@ -79,7 +81,8 @@ export const useMarkdownEditor = () => {
       const blob = await generateDocx(parsedBlocks, { 
         widthCm: sizeConfig.width, 
         heightCm: sizeConfig.height,
-        showLineNumbers: true // Default to true for technical books
+        showLineNumbers: true, // Default to true for technical books
+        meta: documentMeta
       });
       saveAs(blob, "Professional_Manuscript.docx");
     } catch (error) {

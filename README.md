@@ -1,7 +1,7 @@
-# BookPublisher MD2Docx | v1.0.0
+# BookPublisher MD2Docx | v1.1.0
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/eric861129/BookPublisher_MD2Doc)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/eric861129/BookPublisher_MD2Doc)
 
 [🇹🇼 中文](README.md) | [🇺🇸 English](README_EN.md)
 
@@ -44,6 +44,15 @@
 - **🔗 智慧連結 (Smart Links)**
     - **自動 QR Code 生成**：Markdown 連結 `[文字](URL)` 在轉檔後會自動在文字旁生成 QR Code。
     - **實體書優化**：方便讀者在閱讀紙本或電子書時，直接掃描手機即可跳轉參考資源。
+
+- **📑 YAML Frontmatter 支援**
+    - **後設資料管理**：支援在檔案開頭使用 YAML 語法定義書名、作者與排版偏好。
+    - **自動文件屬性**：定義的 `title` 與 `author` 會自動寫入 Word 檔案屬性。
+
+- **📖 動態頁首與頁尾**
+    - **專業頁碼**：自動在頁尾置中插入頁碼。
+    - **標題導航**：在頁首自動顯示書籍標題。
+    - **彈性開關**：可透過 Frontmatter 設定 `header: false` 或 `footer: false` 自由開啟或關閉。
 
 - **💬 角色對話框 (Chat Dialogues)**
     - 專為技術書中常見的「情境模擬」或「AI 對話」設計。

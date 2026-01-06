@@ -8,7 +8,13 @@
 // Use a variable for backticks to avoid escaping hell in template literals
 const BT = "`";
 
-export const INITIAL_CONTENT_ZH = `# 技術書稿排版範例樣式表
+export const INITIAL_CONTENT_ZH = `---
+title: "BookPublisher 使用手冊"
+author: "BookPublisher Team"
+header: true
+footer: true
+---
+# 技術書稿排版範例樣式表
 
 [TOC]
 - 第一章 基礎文字與段落樣式 1
@@ -81,7 +87,7 @@ ${BT}${BT}${BT}
 ${BT}${BT}${BT}json:no-ln
 {
   "name": "book-publisher",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true
 }
 ${BT}${BT}${BT}
@@ -133,7 +139,13 @@ ${BT}![圖片描述](https://example.com/image.jpg)${BT}
 > 建議在 Markdown 中僅標示圖片位置，匯出 Word 後再手動置入高畫質圖片以確保最佳印刷品質。
 `;
 
-export const INITIAL_CONTENT_EN = `# Technical Manuscript Style Guide
+export const INITIAL_CONTENT_EN = `---
+title: "BookPublisher Guide"
+author: "BookPublisher Team"
+header: true
+footer: true
+---
+# Technical Manuscript Style Guide
 
 [TOC]
 - Chapter 1: Basic Text & Paragraphs 1
@@ -206,7 +218,7 @@ Use ${BT}json:no-ln${BT} or ${BT}:plain${BT} syntax. Ideal for short config file
 ${BT}${BT}${BT}json:no-ln
 {
   "name": "book-publisher",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true
 }
 ${BT}${BT}${BT}

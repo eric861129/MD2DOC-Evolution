@@ -1,7 +1,7 @@
 {
   "name": "bookpublisher-md2docx",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,6 +13,7 @@
     "file-saver": "^2.0.5",
     "i18next": "^25.7.3",
     "i18next-browser-languagedetector": "^8.2.0",
+    "js-yaml": "^4.1.1",
     "lucide-react": "^0.562.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.3",
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.14.0",
     "@types/qrcode": "^1.5.6",
     "@vitejs/plugin-react": "^5.0.0",

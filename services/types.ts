@@ -35,3 +35,18 @@ export interface ParsedBlock {
     [key: string]: any;
   };
 }
+
+export interface DocumentMeta {
+  title?: string;
+  author?: string;
+  subject?: string;
+  keywords?: string;
+  header?: boolean; // Show header? Default true
+  footer?: boolean; // Show page number footer? Default true
+  [key: string]: any;
+}
+
+export interface ParseResult {
+  blocks: ParsedBlock[];
+  meta: DocumentMeta;
+}
