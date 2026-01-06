@@ -4,20 +4,44 @@
  * Licensed under the MIT License.
  */
 
-import { BlockType, ParsedBlock } from './types';
+import yaml from 'js-yaml';
+import { BlockType, ParsedBlock, ParseResult, DocumentMeta } from './types';
 import { parserRegistry, ParserContext } from './parser/registry';
 import { registerDefaultParserRules } from './parser/rules';
 
 // Initialize rules ONCE
 registerDefaultParserRules();
 
-export const parseMarkdown = (text: string): ParsedBlock[] => {
+export const parseMarkdown = (text: string): ParseResult => {
   // Ensure rules are initialized (useful for tests/HMR)
   if ((parserRegistry as any).rules.length === 0) {
     registerDefaultParserRules();
   }
 
-  const lines = text.split('\n');
+  let meta: DocumentMeta = {};
+  let contentToParse = text;
+
+  // 1. Extract Frontmatter
+  // Pattern: ^---\n([\s\S]*?)\n---
+  // 使用 trimStart() 確保即使檔案開頭有空行也能匹配，但通常 Frontmatter 必須在第一行
+  const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
+  const match = text.match(frontmatterRegex);
+  
+  if (match) {
+    try {
+      const yamlContent = match[1];
+      const parsedYaml = yaml.load(yamlContent) as object;
+      if (parsedYaml && typeof parsedYaml === 'object') {
+        meta = parsedYaml;
+      }
+      // Remove frontmatter from content
+      contentToParse = text.slice(match[0].length);
+    } catch (e) {
+      console.warn("Failed to parse YAML frontmatter", e);
+    }
+  }
+
+  const lines = contentToParse.split('\n');
   const blocks: ParsedBlock[] = [];
 
   let currentBuffer: string[] = [];
@@ -65,5 +89,5 @@ export const parseMarkdown = (text: string): ParsedBlock[] => {
 
   // Final flush
   flushBuffer();
-  return blocks;
+  return { blocks, meta };
 };
