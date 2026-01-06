@@ -3,6 +3,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/eric861129/BookPublisher_MD2Doc)
 
+[🇹🇼 中文](README.md) | [🇺🇸 English](README_EN.md)
+
 ## 喜歡的話可以幫我按星星🌟🌟🌟
 
 **BookPublisher MD2Docx** 是一個開源的 Markdown 編輯與轉檔工具，專為**技術書籍作者**與**內容創作者**設計。它填補了「工程師習慣的 Markdown 寫作」與「出版社要求的 Word 稿件」之間的鴻溝，讓你能專注於內容創作，自動完成繁瑣的排版工作。
