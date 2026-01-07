@@ -18,6 +18,7 @@ import { createCodeBlock } from "./codeBlock";
 import { createChatBubble } from "./chat";
 import { createCallout } from "./callout";
 import { createTable } from "./table";
+import { createMermaidBlock } from "./mermaid";
 
 const { SPACING, LAYOUT, COLORS } = WORD_THEME;
 
@@ -36,6 +37,12 @@ export const registerDefaultHandlers = () => {
   // Code Block
   docxRegistry.register(BlockType.CODE_BLOCK, async (block, config) => [
     await createCodeBlock(block.content, config, block.metadata),
+    new Paragraph({ text: "", spacing: { before: 0, after: 0 } })
+  ]);
+
+  // Mermaid
+  docxRegistry.register(BlockType.MERMAID, async (block, config) => [
+    await createMermaidBlock(block.content, config),
     new Paragraph({ text: "", spacing: { before: 0, after: 0 } })
   ]);
 

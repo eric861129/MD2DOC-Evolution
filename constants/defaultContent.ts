@@ -137,6 +137,19 @@ ${BT}![圖片描述](https://example.com/image.jpg)${BT}
 > [!NOTE]
 > **圖片匯出注意**：由於瀏覽器安全性限制 (CORS)，直接匯出包含網路圖片的 Word 檔可能會失敗或無法顯示。
 > 建議在 Markdown 中僅標示圖片位置，匯出 Word 後再手動置入高畫質圖片以確保最佳印刷品質。
+
+## 7. Mermaid 圖表支援
+
+我們支援直接使用 Mermaid 語法繪製圖表，並自動轉換為 Word 圖片：
+
+${BT}${BT}${BT}mermaid
+graph TD
+    A[開始] --> B{是否有 Bug?}
+    B -- Yes --> C[修復 Bug]
+    C --> D[測試]
+    D --> B
+    B -- No --> E[發布 v1.2.0]
+${BT}${BT}${BT}
 `;
 
 export const INITIAL_CONTENT_EN = `---
@@ -268,4 +281,17 @@ ${BT}![Image Description](https://example.com/image.jpg)${BT}
 > [!NOTE]
 > **Image Export Notice**: Due to browser security restrictions (CORS), directly exporting Word files with web images might fail or not display.
 > It is recommended to use placeholders in Markdown and manually insert high-quality images in Word after export for best printing quality.
+
+## 7. Mermaid Charts
+
+We support rendering Mermaid charts directly and converting them to images in Word:
+
+${BT}${BT}${BT}mermaid
+graph TD
+    A[Start] --> B{Is there a Bug?}
+    B -- Yes --> C[Fix Bug]
+    C --> D[Test]
+    D --> B
+    B -- No --> E[Release v1.2.0]
+${BT}${BT}${BT}
 `;

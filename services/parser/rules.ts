@@ -145,6 +145,13 @@ export const registerDefaultParserRules = () => {
         content += (content ? "\n" : "") + nextLine;
       }
       
+      if (language === 'mermaid') {
+        return {
+          type: BlockType.MERMAID,
+          content: content
+        };
+      }
+
       return { 
         type: BlockType.CODE_BLOCK, 
         content: content, 

@@ -8,6 +8,7 @@ import React from 'react';
 import { ParsedBlock, BlockType } from '../../services/types';
 import { parseInlineElements, InlineStyleType } from '../../utils/styleParser';
 import { QrCode } from 'lucide-react';
+import MermaidRenderer from './MermaidRenderer';
 
 export const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
   const segments = parseInlineElements(text);
@@ -120,6 +121,8 @@ export const PreviewBlock: React.FC<{ block: ParsedBlock; showLineNumbers?: bool
           </div>
         </div>
       );
+    case BlockType.MERMAID:
+      return <MermaidRenderer chart={block.content} />;
     case BlockType.CHAT_CUSTOM:
       const isRight = block.alignment === 'right';
       const isCenter = block.alignment === 'center';
