@@ -54,8 +54,7 @@ const svgToPng = (svg: string, originalWidth: number, originalHeight: number): P
         return;
       }
       
-      // Transparent background (or white if preferred, but let's stick to transparent to let item colors show)
-      // Actually, for Word readability, white background is safer than transparent
+      // White background for Word
       ctx.fillStyle = '#FFFFFF'; 
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
@@ -91,13 +90,18 @@ export const createMermaidBlock = async (chart: string, config: DocxConfig): Pro
       themeVariables: {
         fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif',
         fontSize: '16px',
-        primaryColor: '#F2F2F2',          // Node background (Light Gray)
-        primaryTextColor: '#333333',      // Node text
-        primaryBorderColor: '#666666',    // Node border
+        primaryColor: '#F9F9F9',          // Even lighter Gray background
+        primaryTextColor: '#000000',      // Pure black text
+        primaryBorderColor: '#333333',    // Darker border for contrast
         lineColor: '#333333',             // Lines
-        secondaryColor: '#E6E6E6',        // Secondary nodes
+        secondaryColor: '#EEEEEE',        // Secondary nodes
         tertiaryColor: '#FFFFFF',         // Background
       },
+      themeCSS: `
+        .node label { font-weight: bold !important; }
+        .label { font-weight: bold !important; }
+        .mermaid .label { font-weight: bold !important; }
+      `,
       flowchart: { useMaxWidth: false, htmlLabels: true },
     });
 
