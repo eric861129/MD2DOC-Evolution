@@ -2,8 +2,8 @@ import { Paragraph, ImageRun, TextRun, AlignmentType } from "docx";
 import mermaid from "mermaid";
 import { DocxConfig } from "../types";
 
-// Helper: Convert SVG string to PNG ArrayBuffer with dimensions
-const svgToPng = (svg: string): Promise<{ buffer: ArrayBuffer; width: number; height: number }> => {
+// Helper: Convert SVG string to PNG Uint8Array with dimensions
+const svgToPng = (svg: string): Promise<{ buffer: Uint8Array; width: number; height: number }> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const svg64 = btoa(unescape(encodeURIComponent(svg)));
@@ -34,8 +34,8 @@ const svgToPng = (svg: string): Promise<{ buffer: ArrayBuffer; width: number; he
       
       canvas.toBlob(async (blob) => {
         if (blob) {
-            const buffer = await blob.arrayBuffer();
-            resolve({ buffer, width, height });
+            const arrayBuffer = await blob.arrayBuffer();
+            resolve({ buffer: new Uint8Array(arrayBuffer), width, height });
         } else {
             reject(new Error("Canvas to Blob failed"));
         }
