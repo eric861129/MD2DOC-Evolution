@@ -1,7 +1,7 @@
-# BookPublisher MD2Docx | v1.1.1
+# BookPublisher MD2Docx | v1.2.1
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)](https://github.com/eric861129/BookPublisher_MD2Doc)
+[![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)](https://github.com/eric861129/BookPublisher_MD2Doc)
 
 [🇹🇼 中文](README.md) | [🇺🇸 English](README_EN.md)
 
@@ -46,6 +46,10 @@ This project is not just a Markdown converter; it is deeply optimized for "publi
     - **Language Labels**: Automatically displays language name in the top-right corner.
     - **Flexible Control**: Supports `js:ln` (force show) or `js:no-ln` (hide line numbers) syntax.
 
+- **📈 Mermaid Chart Support**
+    - Supports standard `mermaid` syntax for flowcharts, sequence diagrams, etc.
+    - **Auto-Image Conversion**: Real-time SVG preview on web, auto-converts to high-res PNG in exported Word docs.
+
 - **🔗 Smart Links (QR Code)**
     - **Auto QR Code Generation**: Markdown links `[Text](URL)` automatically generate a QR Code next to the text in the exported file.
     - **Optimized for Physical Books**: Convenient for readers to scan and jump to resources while reading printed or e-books.
@@ -84,51 +88,17 @@ This project is not just a Markdown converter; it is deeply optimized for "publi
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) (v16+ recommended)
+## ❓ Known Issues
 
-### Installation & Running
+### About Mermaid Chart Export
+When you open a Word document containing Mermaid charts, Word might pop up the following security alert:
 
-1. **Clone the Project**
-   ```bash
-   git clone https://github.com/your-username/BookPublisher_MD2Doc.git
-   cd BookPublisher_MD2Doc
-   ```
+![Word Alert](docs/images/WordAlert.jpg)
 
-2. **Install Dependencies**
-   ```bash
-   npm install
-   ```
+> "Word found unreadable content in the document. Do you want to recover the contents of this document?"
 
-3. **Run Dev Server**
-   ```bash
-   npm run dev
-   ```
-   The browser will automatically open `http://localhost:5173`.
-
-## 📝 Syntax Guide
-
-This project uses a custom Regex-based parser optimized for technical manuscript formatting needs.
-
-### Support Matrix
-
-| Type                | Status    | Example / Note                                             |
-| :------------------ | :-------- | :--------------------------------------------------------- |
-| **Headings**        | ✅ Full    | `# H1` to `### H3` (Mapped to Word Heading levels)         |
-| **Paragraphs**      | ✅ Full    | Standard text and line breaks                              |
-| **Code Blocks**     | ✅ Full    | ```lang:ln/no-ln``` (Line numbers & Language tags)         |
-| **Bullet Lists**    | ✅ Basic   | Starts with `-` or `*` (Nested lists not supported yet)    |
-| **Ordered Lists**   | ✅ Basic   | Starts with `1.` (Converts to Word numbered lists)         |
-| **Tables**          | ✅ Basic   | Standard Markdown tables (No line breaks in cells)         |
-| **Chat Dialogues**  | 🌟 Special | `Role "::` (Left), `Role ::"` (Right), `Role :":` (Center) |
-| **Callouts**        | 🌟 Special | `> [!TIP]`, `> [!NOTE]`, `> [!WARNING]`                    |
-| **Auto TOC**        | 🌟 Special | `[TOC]` syntax                                             |
-| **Smart Links**     | 🌟 Special | `[Text](URL)` (Auto-generates QR Code)                     |
-| **Inline Styles**   | ✅ Partial | `**Bold**`, `*Italic*`, `『Book』`, `【Button】`, `[Key]`  |
-| **Horizontal Rule** | ✅ Full    | `---` or `***` (Converts to Word divider)                  |
-
-> ⚠️ **Limitations**:
-> The current parser uses line-by-line scanning, so support for **complex nested structures** (e.g., tables inside lists, or code blocks inside quotes) is weak. If your manuscript contains complex nesting, it is recommended to fine-tune in Word after export. We plan to introduce AST (Abstract Syntax Tree) to solve this in the future.
+This is due to compatibility encoding issues when converting Mermaid charts to Word image formats.
+✅ **Please safely click "Yes"**. Word will automatically repair and correctly display all chart content. This does not affect the security or integrity of the document.
 
 ## 🎨 Customization
 
