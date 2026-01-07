@@ -2,6 +2,50 @@ import { Paragraph, ImageRun, TextRun, AlignmentType } from "docx";
 import mermaid from "mermaid";
 import { DocxConfig } from "../types";
 
+/**
+ * Concurrency-limited Queue for Mermaid conversions
+ * This ensures that when exporting many diagrams at once, 
+ * we don't overwhelm the browser's Canvas/rendering engine.
+ */
+class MermaidQueue {
+  private queue: (() => Promise<any>)[] = [];
+  private activeCount = 0;
+  private maxConcurrency = 2; // Limit to 2 concurrent conversions
+
+  async add<T>(task: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          const result = await task();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      });
+      this.next();
+    });
+  }
+
+  private async next() {
+    if (this.activeCount >= this.maxConcurrency || this.queue.length === 0) {
+      return;
+    }
+
+    const task = this.queue.shift();
+    if (task) {
+      this.activeCount++;
+      try {
+        await task();
+      } finally {
+        this.activeCount--;
+        this.next();
+      }
+    }
+  }
+}
+
+const mermaidQueue = new MermaidQueue();
+
 // Helper: Extract dimensions from SVG string
 const getSvgDimensions = (svg: string): { width: number; height: number } => {
   const parser = new DOMParser();
@@ -82,84 +126,86 @@ const svgToPng = (svg: string, originalWidth: number, originalHeight: number): P
 };
 
 export const createMermaidBlock = async (chart: string, config: DocxConfig): Promise<Paragraph> => {
-  try {
-    // Ensure initialized with grayscale theme and custom font
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'base',
-      themeVariables: {
-        fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif',
-        fontSize: '16px',
-        primaryColor: '#F9F9F9',          // Even lighter Gray background
-        primaryTextColor: '#000000',      // Pure black text
-        primaryBorderColor: '#333333',    // Darker border for contrast
-        lineColor: '#333333',             // Lines
-        secondaryColor: '#EEEEEE',        // Secondary nodes
-        tertiaryColor: '#FFFFFF',         // Background
-      },
-      themeCSS: `
-        .node label { font-weight: bold !important; }
-        .label { font-weight: bold !important; }
-        .mermaid .label { font-weight: bold !important; }
-      `,
-      flowchart: { useMaxWidth: false, htmlLabels: true },
-    });
+  return mermaidQueue.add(async () => {
+    try {
+      // Ensure initialized with grayscale theme and custom font
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'base',
+        themeVariables: {
+          fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif',
+          fontSize: '16px',
+          primaryColor: '#F9F9F9',          // Even lighter Gray background
+          primaryTextColor: '#000000',      // Pure black text
+          primaryBorderColor: '#333333',    // Darker border for contrast
+          lineColor: '#333333',             // Lines
+          secondaryColor: '#EEEEEE',        // Secondary nodes
+          tertiaryColor: '#FFFFFF',         // Background
+        },
+        themeCSS: `
+          .node label { font-weight: bold !important; }
+          .label { font-weight: bold !important; }
+          .mermaid .label { font-weight: bold !important; }
+        `,
+        flowchart: { useMaxWidth: false, htmlLabels: true },
+      });
 
-    const id = `mermaid-docx-${Math.random().toString(36).substr(2, 9)}`;
-    
-    // 1. Render SVG
-    const { svg } = await mermaid.render(id, chart);
+      const id = `mermaid-docx-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // 1. Render SVG
+      const { svg } = await mermaid.render(id, chart);
 
-    // 2. Get precise dimensions from SVG string directly
-    const { width: svgWidth, height: svgHeight } = getSvgDimensions(svg);
+      // 2. Get precise dimensions from SVG string directly
+      const { width: svgWidth, height: svgHeight } = getSvgDimensions(svg);
 
-    // 3. Convert to PNG Uint8Array
-    const { buffer, width: pxWidth, height: pxHeight } = await svgToPng(svg, svgWidth, svgHeight);
+      // 3. Convert to PNG Uint8Array
+      const { buffer, width: pxWidth, height: pxHeight } = await svgToPng(svg, svgWidth, svgHeight);
 
-    // 4. Calculate Word dimensions
-    const MAX_WIDTH_PX = 550; 
-    
-    let finalDisplayWidth = pxWidth / 3; 
-    let finalDisplayHeight = pxHeight / 3;
+      // 4. Calculate Word dimensions
+      const MAX_WIDTH_PX = 550; 
+      
+      let finalDisplayWidth = pxWidth / 3; 
+      let finalDisplayHeight = pxHeight / 3;
 
-    // Constrain width
-    if (finalDisplayWidth > MAX_WIDTH_PX) {
-        const ratio = MAX_WIDTH_PX / finalDisplayWidth;
-        finalDisplayWidth = MAX_WIDTH_PX;
-        finalDisplayHeight = finalDisplayHeight * ratio;
+      // Constrain width
+      if (finalDisplayWidth > MAX_WIDTH_PX) {
+          const ratio = MAX_WIDTH_PX / finalDisplayWidth;
+          finalDisplayWidth = MAX_WIDTH_PX;
+          finalDisplayHeight = finalDisplayHeight * ratio;
+      }
+
+      return new Paragraph({
+        children: [
+          new ImageRun({
+            data: buffer,
+            transformation: {
+              width: Math.round(finalDisplayWidth),
+              height: Math.round(finalDisplayHeight),
+            },
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 400, after: 400 },
+      });
+
+    } catch (error) {
+      console.warn("Mermaid generation failed for DOCX", error);
+      return new Paragraph({
+        children: [
+          new TextRun({
+            text: "[Mermaid Chart Error]",
+            color: "FF0000",
+            bold: true
+          }),
+          new TextRun({
+              text: " (Syntax might be invalid)",
+              size: 16,
+              italics: true,
+              color: "666666"
+          })
+        ],
+        spacing: { before: 200, after: 200 }
+      });
     }
-
-    return new Paragraph({
-      children: [
-        new ImageRun({
-          data: buffer,
-          transformation: {
-            width: Math.round(finalDisplayWidth),
-            height: Math.round(finalDisplayHeight),
-          },
-        }),
-      ],
-      alignment: AlignmentType.CENTER,
-      spacing: { before: 400, after: 400 },
-    });
-
-  } catch (error) {
-    console.warn("Mermaid generation failed for DOCX", error);
-    return new Paragraph({
-      children: [
-        new TextRun({
-          text: "[Mermaid Chart Error]",
-          color: "FF0000",
-          bold: true
-        }),
-        new TextRun({
-            text: " (Syntax might be invalid)",
-            size: 16,
-            italics: true,
-            color: "666666"
-        })
-      ],
-      spacing: { before: 200, after: 200 }
-    });
-  }
+  });
 };
