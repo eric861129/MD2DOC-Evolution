@@ -86,10 +86,8 @@ ${BT}${BT}${BT}
 ### 4.2 強制隱藏行號 (純文字模式)
 使用 ${BT}json:no-ln${BT} 或 ${BT}:plain${BT} 語法，適合短小的設定檔或不需要參照行號的範例：
 
-${BT}${BT}${BT}json:no-ln
-{
   "name": "book-publisher",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "private": true
 }
 ${BT}${BT}${BT}
@@ -231,10 +229,8 @@ ${BT}${BT}${BT}
 ### 4.2 Plain Text Style (Hidden Line Numbers)
 Use ${BT}json:no-ln${BT} or ${BT}:plain${BT} syntax. Ideal for short config files or examples where line numbers aren't needed:
 
-${BT}${BT}${BT}json:no-ln
-{
   "name": "book-publisher",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "private": true
 }
 ${BT}${BT}${BT}
