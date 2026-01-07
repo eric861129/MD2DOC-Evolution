@@ -17,12 +17,17 @@ You can view the exported Word document effect here:
 - [📥 Download Sample File (範例Word.docx)](samples/範例Word.docx)
 
 <div align="center">
-  <img src="docs/images/1.jpg" width="32%" alt="Cover & Header" />
-  <img src="docs/images/2.jpg" width="32%" alt="Chat Dialogues" />
-  <img src="docs/images/3.jpg" width="32%" alt="Callouts & Styles" />
+  <img src="docs/images/1.jpg" width="48%" alt="Cover & Header" />
+  <img src="docs/images/2.jpg" width="48%" alt="Chat Dialogues" />
   <br/>
+  <img src="docs/images/3.jpg" width="48%" alt="Callouts & Styles" />
   <img src="docs/images/4.jpg" width="48%" alt="Code Blocks" />
+  <br/>
   <img src="docs/images/5.jpg" width="48%" alt="Tables & Lists" />
+  <img src="docs/images/6.jpg" width="48%" alt="Tables & Lists" />
+  <br/>
+  <img src="docs/images/7.jpg" width="48%" alt="Tables & Lists" />
+  <img src="docs/images/8.jpg" width="48%" alt="Tables & Lists" />
 </div>
 *(Screenshot of actual Word output)*
 
@@ -107,20 +112,20 @@ This project uses a custom Regex-based parser optimized for technical manuscript
 
 ### Support Matrix
 
-| Type | Status | Example / Note |
-| :--- | :--- | :--- |
-| **Headings** | ✅ Full | `# H1` to `### H3` (Mapped to Word Heading levels) |
-| **Paragraphs** | ✅ Full | Standard text and line breaks |
-| **Code Blocks** | ✅ Full | ```lang:ln/no-ln``` (Line numbers & Language tags) |
-| **Bullet Lists** | ✅ Basic | Starts with `-` or `*` (Nested lists not supported yet) |
-| **Ordered Lists** | ✅ Basic | Starts with `1.` (Converts to Word numbered lists) |
-| **Tables** | ✅ Basic | Standard Markdown tables (No line breaks in cells) |
-| **Chat Dialogues** | 🌟 Special | `Role "::` (Left), `Role ::"` (Right), `Role :":` (Center) |
-| **Callouts** | 🌟 Special | `> [!TIP]`, `> [!NOTE]`, `> [!WARNING]` |
-| **Auto TOC** | 🌟 Special | `[TOC]` syntax |
-| **Smart Links** | 🌟 Special | `[Text](URL)` (Auto-generates QR Code) |
-| **Inline Styles** | ✅ Partial | `**Bold**`, `*Italic*`, `『Book』`, `【Button】`, `[Key]` |
-| **Horizontal Rule** | ✅ Full | `---` or `***` (Converts to Word divider) |
+| Type                | Status    | Example / Note                                             |
+| :------------------ | :-------- | :--------------------------------------------------------- |
+| **Headings**        | ✅ Full    | `# H1` to `### H3` (Mapped to Word Heading levels)         |
+| **Paragraphs**      | ✅ Full    | Standard text and line breaks                              |
+| **Code Blocks**     | ✅ Full    | ```lang:ln/no-ln``` (Line numbers & Language tags)         |
+| **Bullet Lists**    | ✅ Basic   | Starts with `-` or `*` (Nested lists not supported yet)    |
+| **Ordered Lists**   | ✅ Basic   | Starts with `1.` (Converts to Word numbered lists)         |
+| **Tables**          | ✅ Basic   | Standard Markdown tables (No line breaks in cells)         |
+| **Chat Dialogues**  | 🌟 Special | `Role "::` (Left), `Role ::"` (Right), `Role :":` (Center) |
+| **Callouts**        | 🌟 Special | `> [!TIP]`, `> [!NOTE]`, `> [!WARNING]`                    |
+| **Auto TOC**        | 🌟 Special | `[TOC]` syntax                                             |
+| **Smart Links**     | 🌟 Special | `[Text](URL)` (Auto-generates QR Code)                     |
+| **Inline Styles**   | ✅ Partial | `**Bold**`, `*Italic*`, `『Book』`, `【Button】`, `[Key]`  |
+| **Horizontal Rule** | ✅ Full    | `---` or `***` (Converts to Word divider)                  |
 
 > ⚠️ **Limitations**:
 > The current parser uses line-by-line scanning, so support for **complex nested structures** (e.g., tables inside lists, or code blocks inside quotes) is weak. If your manuscript contains complex nesting, it is recommended to fine-tune in Word after export. We plan to introduce AST (Abstract Syntax Tree) to solve this in the future.

@@ -145,8 +145,8 @@
 當您開啟包含 Mermaid 圖表的 Word 文件時，Word 可能會跳出以下安全提示：
 
 ![Word Alert](docs/images/WordAlert.jpg)
-
 > 「Word 找到文件中無法讀取的內容。你要復原本文件的內容嗎?」
+> 「是 (Yes)」
 
 這是由於 Mermaid 圖表在轉換為 Word 圖片格式時的編碼相容性問題。
 ✅ **請放心點擊「是 (Yes)」**，Word 會自動修復並正確顯示所有圖表內容。這不會影響文件的安全性或內容完整性。
