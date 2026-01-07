@@ -2,23 +2,51 @@ import { Paragraph, ImageRun, TextRun, AlignmentType } from "docx";
 import mermaid from "mermaid";
 import { DocxConfig } from "../types";
 
-// Helper: Convert SVG string to PNG Base64 string (without prefix) with dimensions
-const svgToPngBase64 = (svg: string): Promise<{ base64: string; width: number; height: number }> => {
+// Helper: Extract dimensions from SVG string
+const getSvgDimensions = (svg: string): { width: number; height: number } => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svg, "image/svg+xml");
+  const svgEl = doc.documentElement;
+
+  let width = parseFloat(svgEl.getAttribute("width") || "0");
+  let height = parseFloat(svgEl.getAttribute("height") || "0");
+
+  if (!width || !height) {
+    const viewBox = svgEl.getAttribute("viewBox");
+    if (viewBox) {
+      const parts = viewBox.split(/\s+|,/).filter(Boolean).map(parseFloat);
+      if (parts.length === 4) {
+        width = parts[2];
+        height = parts[3];
+      }
+    }
+  }
+  
+  // Fallback if extraction fails
+  return { width: width || 800, height: height || 600 };
+};
+
+// Helper: Convert SVG string to PNG Uint8Array
+const svgToPng = (svg: string, originalWidth: number, originalHeight: number): Promise<{ buffer: Uint8Array; width: number; height: number }> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    // Encode SVG safely
     const svg64 = btoa(unescape(encodeURIComponent(svg)));
-    const b64Start = 'data:image/svg+xml;base64,';
-    const image64 = b64Start + svg64;
+    const image64 = `data:image/svg+xml;base64,${svg64}`;
 
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      // High resolution scale
+      // Scale for print quality (3x is standard for ~300DPI feel)
       const scale = 3; 
-      const width = img.width;
-      const height = img.height;
       
-      canvas.width = Math.floor(width * scale);
-      canvas.height = Math.floor(height * scale);
+      // Ensure even dimensions to avoid compression artifacts
+      let canvasWidth = Math.ceil(originalWidth * scale);
+      let canvasHeight = Math.ceil(originalHeight * scale);
+      if (canvasWidth % 2 !== 0) canvasWidth++;
+      if (canvasHeight % 2 !== 0) canvasHeight++;
+
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
       
       const ctx = canvas.getContext('2d');
       if (!ctx) {
@@ -26,24 +54,28 @@ const svgToPngBase64 = (svg: string): Promise<{ base64: string; width: number; h
         return;
       }
       
-      // White background
-      ctx.fillStyle = 'white';
+      // Light Gray background for print (#F2F2F2)
+      ctx.fillStyle = '#F2F2F2';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      // Draw image stretched to canvas size
+      ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
       
-      const dataUrl = canvas.toDataURL('image/png');
-      // Remove the prefix "data:image/png;base64,"
-      const base64 = dataUrl.split(',')[1];
-      
-      if (base64) {
-        resolve({ base64, width, height });
-      } else {
-        reject(new Error("Canvas to DataURL failed"));
-      }
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+            try {
+                const arrayBuffer = await blob.arrayBuffer();
+                resolve({ buffer: new Uint8Array(arrayBuffer), width: canvasWidth, height: canvasHeight });
+            } catch (err) {
+                reject(err);
+            }
+        } else {
+            reject(new Error("Canvas to Blob failed"));
+        }
+      }, 'image/png');
     };
     
-    img.onerror = (e) => reject(e);
+    img.onerror = (e) => reject(new Error("Failed to load SVG Image"));
     
     img.src = image64;
   });
@@ -55,33 +87,43 @@ export const createMermaidBlock = async (chart: string, config: DocxConfig): Pro
     mermaid.initialize({
       startOnLoad: false,
       theme: 'default',
+      // Ensure SVG is generated with explicit sizes if possible
+      flowchart: { useMaxWidth: false, htmlLabels: true },
     });
 
     const id = `mermaid-docx-${Math.random().toString(36).substr(2, 9)}`;
-    // Render SVG
+    
+    // 1. Render SVG
     const { svg } = await mermaid.render(id, chart);
 
-    // Convert to PNG Base64
-    const { base64, width, height } = await svgToPngBase64(svg);
+    // 2. Get precise dimensions from SVG string directly
+    // (img.width is sometimes unreliable until fully attached to DOM)
+    const { width: svgWidth, height: svgHeight } = getSvgDimensions(svg);
 
-    // Calculate dimensions for Word (max width ~500px to fit A5/B5 margins)
-    const MAX_WIDTH = 550;
-    let finalWidth = width;
-    let finalHeight = height;
+    // 3. Convert to PNG Uint8Array
+    const { buffer, width: pxWidth, height: pxHeight } = await svgToPng(svg, svgWidth, svgHeight);
 
-    if (finalWidth > MAX_WIDTH) {
-        const ratio = MAX_WIDTH / finalWidth;
-        finalWidth = MAX_WIDTH;
-        finalHeight = height * ratio;
+    // 4. Calculate Word dimensions (Twips or pixels handled by docx)
+    // Max width in docx pixels (approx 17cm - margins)
+    const MAX_WIDTH_PX = 550; 
+    
+    let finalDisplayWidth = pxWidth / 3; // Scale back down for display size (since we upscaled 3x for quality)
+    let finalDisplayHeight = pxHeight / 3;
+
+    // Constrain width
+    if (finalDisplayWidth > MAX_WIDTH_PX) {
+        const ratio = MAX_WIDTH_PX / finalDisplayWidth;
+        finalDisplayWidth = MAX_WIDTH_PX;
+        finalDisplayHeight = finalDisplayHeight * ratio;
     }
 
     return new Paragraph({
       children: [
         new ImageRun({
-          data: base64, // Pass raw base64 string
+          data: buffer,
           transformation: {
-            width: Math.round(finalWidth),
-            height: Math.round(finalHeight),
+            width: Math.round(finalDisplayWidth),
+            height: Math.round(finalDisplayHeight),
           },
         }),
       ],
