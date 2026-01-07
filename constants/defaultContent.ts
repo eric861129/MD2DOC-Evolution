@@ -23,6 +23,8 @@ footer: true
 - 第四章 程式碼區塊樣式 4
 - 第五章 特殊提醒與警告 5
 - 第六章 表格與圖片支援 6
+- 第七章 Mermaid 圖表支援 7
+
 
 ## 1. 基礎文字與段落樣式
 
@@ -167,6 +169,7 @@ footer: true
 - Chapter 4: Code Blocks 4
 - Chapter 5: Callouts (Tips & Warnings) 5
 - Chapter 6: Tables & Images 6
+- Chapter 7: Mermaid Charts 7
 
 ## 1. Basic Text & Paragraphs
 
