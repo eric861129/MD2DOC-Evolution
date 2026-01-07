@@ -54,8 +54,9 @@ const svgToPng = (svg: string, originalWidth: number, originalHeight: number): P
         return;
       }
       
-      // Light Gray background for print (#F2F2F2)
-      ctx.fillStyle = '#F2F2F2';
+      // Transparent background (or white if preferred, but let's stick to transparent to let item colors show)
+      // Actually, for Word readability, white background is safer than transparent
+      ctx.fillStyle = '#FFFFFF'; 
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
       // Draw image stretched to canvas size
@@ -83,11 +84,20 @@ const svgToPng = (svg: string, originalWidth: number, originalHeight: number): P
 
 export const createMermaidBlock = async (chart: string, config: DocxConfig): Promise<Paragraph> => {
   try {
-    // Ensure initialized
+    // Ensure initialized with grayscale theme and custom font
     mermaid.initialize({
       startOnLoad: false,
-      theme: 'default',
-      // Ensure SVG is generated with explicit sizes if possible
+      theme: 'base',
+      themeVariables: {
+        fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif',
+        fontSize: '16px',
+        primaryColor: '#F2F2F2',          // Node background (Light Gray)
+        primaryTextColor: '#333333',      // Node text
+        primaryBorderColor: '#666666',    // Node border
+        lineColor: '#333333',             // Lines
+        secondaryColor: '#E6E6E6',        // Secondary nodes
+        tertiaryColor: '#FFFFFF',         // Background
+      },
       flowchart: { useMaxWidth: false, htmlLabels: true },
     });
 
@@ -97,17 +107,15 @@ export const createMermaidBlock = async (chart: string, config: DocxConfig): Pro
     const { svg } = await mermaid.render(id, chart);
 
     // 2. Get precise dimensions from SVG string directly
-    // (img.width is sometimes unreliable until fully attached to DOM)
     const { width: svgWidth, height: svgHeight } = getSvgDimensions(svg);
 
     // 3. Convert to PNG Uint8Array
     const { buffer, width: pxWidth, height: pxHeight } = await svgToPng(svg, svgWidth, svgHeight);
 
-    // 4. Calculate Word dimensions (Twips or pixels handled by docx)
-    // Max width in docx pixels (approx 17cm - margins)
+    // 4. Calculate Word dimensions
     const MAX_WIDTH_PX = 550; 
     
-    let finalDisplayWidth = pxWidth / 3; // Scale back down for display size (since we upscaled 3x for quality)
+    let finalDisplayWidth = pxWidth / 3; 
     let finalDisplayHeight = pxHeight / 3;
 
     // Constrain width

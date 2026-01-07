@@ -3,7 +3,17 @@ import mermaid from 'mermaid';
 
 mermaid.initialize({
   startOnLoad: false,
-  theme: 'default',
+  theme: 'base',
+  themeVariables: {
+    fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif',
+    fontSize: '16px',
+    primaryColor: '#F2F2F2',          // Node background (Light Gray)
+    primaryTextColor: '#333333',      // Node text
+    primaryBorderColor: '#666666',    // Node border
+    lineColor: '#333333',             // Lines
+    secondaryColor: '#E6E6E6',        // Secondary nodes
+    tertiaryColor: '#FFFFFF',         // Background
+  },
   securityLevel: 'loose',
 });
 
