@@ -2,8 +2,8 @@ import { Paragraph, ImageRun, TextRun, AlignmentType } from "docx";
 import mermaid from "mermaid";
 import { DocxConfig } from "../types";
 
-// Helper: Convert SVG string to PNG Blob with dimensions
-const svgToPng = (svg: string): Promise<{ blob: Blob; width: number; height: number }> => {
+// Helper: Convert SVG string to PNG ArrayBuffer with dimensions
+const svgToPng = (svg: string): Promise<{ buffer: ArrayBuffer; width: number; height: number }> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const svg64 = btoa(unescape(encodeURIComponent(svg)));
@@ -17,8 +17,8 @@ const svgToPng = (svg: string): Promise<{ blob: Blob; width: number; height: num
       const width = img.width;
       const height = img.height;
       
-      canvas.width = width * scale;
-      canvas.height = height * scale;
+      canvas.width = Math.floor(width * scale);
+      canvas.height = Math.floor(height * scale);
       
       const ctx = canvas.getContext('2d');
       if (!ctx) {
@@ -32,9 +32,10 @@ const svgToPng = (svg: string): Promise<{ blob: Blob; width: number; height: num
       
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       
-      canvas.toBlob((blob) => {
+      canvas.toBlob(async (blob) => {
         if (blob) {
-            resolve({ blob, width, height });
+            const buffer = await blob.arrayBuffer();
+            resolve({ buffer, width, height });
         } else {
             reject(new Error("Canvas to Blob failed"));
         }
@@ -59,8 +60,8 @@ export const createMermaidBlock = async (chart: string, config: DocxConfig): Pro
     // Render SVG
     const { svg } = await mermaid.render(id, chart);
 
-    // Convert to PNG
-    const { blob, width, height } = await svgToPng(svg);
+    // Convert to PNG Buffer
+    const { buffer, width, height } = await svgToPng(svg);
 
     // Calculate dimensions for Word (max width ~500px to fit A5/B5 margins)
     const MAX_WIDTH = 550;
@@ -76,10 +77,10 @@ export const createMermaidBlock = async (chart: string, config: DocxConfig): Pro
     return new Paragraph({
       children: [
         new ImageRun({
-          data: blob,
+          data: buffer,
           transformation: {
-            width: finalWidth,
-            height: finalHeight,
+            width: Math.round(finalWidth),
+            height: Math.round(finalHeight),
           },
         }),
       ],
