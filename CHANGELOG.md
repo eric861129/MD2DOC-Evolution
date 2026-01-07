@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-01-07
+
+### Refactored
+- **AST-Based Parser**:
+    - Replaced legacy Regex-based parser with **AST (Abstract Syntax Tree)** using `marked`.
+    - Significantly improved support for nested structures (e.g., code blocks inside lists, callouts inside blockquotes).
+    - Improved parsing stability and maintainability.
+
+## [1.2.1] - 2026-01-07
+
+### Changed
+- **CI/CD Optimization**:
+    - Streamlined CI workflow to focus on Node.js 20.x (LTS).
+    - Optimized build cache and trigger rules.
+- **Branch Rules**:
+    - Relaxed `dev` branch rules to accept PRs from `dev_hotfix_*` and `dev_refactor_*` branches.
+
 ## [1.2.0] - 2026-01-07
 
 ### Added
