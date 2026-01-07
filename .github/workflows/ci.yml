@@ -2,35 +2,26 @@ name: CI Build Check
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "main" ] # Only run on push to main (deployments)
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: [ "main", "dev" ] # Run on all PRs targeting main or dev
 
 jobs:
-  build-check:
+  build-and-test:
+    name: Build & Verify
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x]
-
+    
     steps:
     - uses: actions/checkout@v4
 
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Setup Node.js 20.x
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: '20.x'
         cache: 'npm'
 
-    - name: Install dependencies
+    - name: Install Dependencies
       run: npm ci
 
-    # 如果有 lint script，可以在這裡加
-    # - name: Run Lint
-    #   run: npm run lint
-
-    - name: Build Project
+    - name: Type Check & Build
       run: npm run build
-      # 這一步會觸發 tsc (TypeScript Check) 和 vite build
-      # 如果失敗，GitHub Action 就會掛紅燈，擋下 PR
