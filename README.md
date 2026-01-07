@@ -16,14 +16,21 @@
 您可以從這裡查看匯出的 Word 文件效果：
 - [📥 下載範例文件 (範例Word.docx)](samples/範例Word.docx)
 
+
 <div align="center">
-  <img src="docs/images/1.jpg" width="32%" alt="Cover & Header" />
-  <img src="docs/images/2.jpg" width="32%" alt="Chat Dialogues" />
-  <img src="docs/images/3.jpg" width="32%" alt="Callouts & Styles" />
+  <img src="docs/images/1.jpg" width="48%" alt="Cover & Header" />
+  <img src="docs/images/2.jpg" width="48%" alt="Chat Dialogues" />
   <br/>
+  <img src="docs/images/3.jpg" width="48%" alt="Callouts & Styles" />
   <img src="docs/images/4.jpg" width="48%" alt="Code Blocks" />
+  <br/>
   <img src="docs/images/5.jpg" width="48%" alt="Tables & Lists" />
+  <img src="docs/images/6.jpg" width="48%" alt="Tables & Lists" />
+  <br/>
+  <img src="docs/images/7.jpg" width="48%" alt="Tables & Lists" />
+  <img src="docs/images/8.jpg" width="48%" alt="Tables & Lists" />
 </div>
+
 *(實際 Word 輸出效果截圖)*
 
 ## ✨ 核心特色 (Features)
@@ -136,6 +143,9 @@
 
 ### 關於 Mermaid 圖表匯出
 當您開啟包含 Mermaid 圖表的 Word 文件時，Word 可能會跳出以下安全提示：
+
+![Word Alert](docs/images/WordAlert.jpg)
+
 > 「Word 找到文件中無法讀取的內容。你要復原本文件的內容嗎?」
 
 這是由於 Mermaid 圖表在轉換為 Word 圖片格式時的編碼相容性問題。
