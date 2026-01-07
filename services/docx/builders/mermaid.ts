@@ -2,8 +2,8 @@ import { Paragraph, ImageRun, TextRun, AlignmentType } from "docx";
 import mermaid from "mermaid";
 import { DocxConfig } from "../types";
 
-// Helper: Convert SVG string to PNG Uint8Array with dimensions
-const svgToPng = (svg: string): Promise<{ buffer: Uint8Array; width: number; height: number }> => {
+// Helper: Convert SVG string to PNG Base64 string (without prefix) with dimensions
+const svgToPngBase64 = (svg: string): Promise<{ base64: string; width: number; height: number }> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const svg64 = btoa(unescape(encodeURIComponent(svg)));
@@ -32,14 +32,15 @@ const svgToPng = (svg: string): Promise<{ buffer: Uint8Array; width: number; hei
       
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       
-      canvas.toBlob(async (blob) => {
-        if (blob) {
-            const arrayBuffer = await blob.arrayBuffer();
-            resolve({ buffer: new Uint8Array(arrayBuffer), width, height });
-        } else {
-            reject(new Error("Canvas to Blob failed"));
-        }
-      }, 'image/png');
+      const dataUrl = canvas.toDataURL('image/png');
+      // Remove the prefix "data:image/png;base64,"
+      const base64 = dataUrl.split(',')[1];
+      
+      if (base64) {
+        resolve({ base64, width, height });
+      } else {
+        reject(new Error("Canvas to DataURL failed"));
+      }
     };
     
     img.onerror = (e) => reject(e);
@@ -60,8 +61,8 @@ export const createMermaidBlock = async (chart: string, config: DocxConfig): Pro
     // Render SVG
     const { svg } = await mermaid.render(id, chart);
 
-    // Convert to PNG Buffer
-    const { buffer, width, height } = await svgToPng(svg);
+    // Convert to PNG Base64
+    const { base64, width, height } = await svgToPngBase64(svg);
 
     // Calculate dimensions for Word (max width ~500px to fit A5/B5 margins)
     const MAX_WIDTH = 550;
@@ -77,7 +78,7 @@ export const createMermaidBlock = async (chart: string, config: DocxConfig): Pro
     return new Paragraph({
       children: [
         new ImageRun({
-          data: buffer,
+          data: base64, // Pass raw base64 string
           transformation: {
             width: Math.round(finalWidth),
             height: Math.round(finalHeight),
