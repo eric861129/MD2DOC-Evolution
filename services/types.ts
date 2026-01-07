@@ -11,6 +11,7 @@ export enum BlockType {
   HEADING_3 = 'HEADING_3',
   CODE_BLOCK = 'CODE_BLOCK',
   MERMAID = 'MERMAID',
+  QUOTE_BLOCK = 'QUOTE_BLOCK',
   CHAT_USER = 'CHAT_USER', // Legacy, to be removed or mapped
   CHAT_AI = 'CHAT_AI',     // Legacy, to be removed or mapped
   CHAT_CUSTOM = 'CHAT_CUSTOM',
