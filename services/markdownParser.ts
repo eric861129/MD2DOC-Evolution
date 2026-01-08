@@ -11,6 +11,7 @@ import { parseMarkdownWithAST } from './parser/ast';
 export const parseMarkdown = (text: string): ParseResult => {
   let meta: DocumentMeta = {};
   let contentToParse = text;
+  let lineOffset = 0;
 
   // 1. Extract Frontmatter
   // Pattern: ^---\n([\s\S]*?)\n---
@@ -26,13 +27,15 @@ export const parseMarkdown = (text: string): ParseResult => {
       }
       // Remove frontmatter from content
       contentToParse = text.slice(match[0].length);
+      // Calculate line offset (count newlines in frontmatter)
+      lineOffset = (match[0].match(/\n/g) || []).length;
     } catch (e) {
       console.warn("Failed to parse YAML frontmatter", e);
     }
   }
 
   // 2. Parse Content using AST
-  const blocks = parseMarkdownWithAST(contentToParse);
+  const blocks = parseMarkdownWithAST(contentToParse, lineOffset);
 
   return { blocks, meta };
 };

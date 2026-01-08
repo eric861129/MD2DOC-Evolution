@@ -66,7 +66,7 @@ export const useMarkdownEditor = () => {
   /**
    * Precise Sync Scroll
    * Maps the textarea's scroll position to the corresponding block in the preview.
-   * Uses line-height estimation for the textarea.
+   * Uses normalized scroll ratio to map visual position to logical source line.
    */
   const handleScroll = useCallback(() => {
     if (!textareaRef.current || !previewRef.current) return;
@@ -74,53 +74,46 @@ export const useMarkdownEditor = () => {
     const textarea = textareaRef.current;
     const preview = previewRef.current;
     
-    // 1. Calculate the current line number at the top of the viewport
-    // Assuming standard line-height of roughly 24px (1.5rem) for the editor font
-    // Adjust this value if the CSS line-height changes
-    const lineHeight = 24; 
-    const currentLine = Math.floor(textarea.scrollTop / lineHeight);
+    // 1. Calculate global scroll percentage
+    // This handles the discrepancy between visual lines (wrapped) and logical lines (newlines)
+    // by assuming the relative position in the scrollbar roughly corresponds to the relative position in the source.
+    const scrollMax = textarea.scrollHeight - textarea.clientHeight;
+    if (scrollMax <= 0) return;
+    
+    const scrollPercentage = textarea.scrollTop / scrollMax;
+
+    // 2. Map to target logical line
     const totalLines = textarea.value.split('\n').length;
+    const targetLogicalLine = scrollPercentage * totalLines;
+
+    // 3. Find the block corresponding to this logical line
+    // We look for the last block whose sourceLine is <= targetLogicalLine
+    let targetBlockIndex = 0;
     
-    // 2. Percentage fallback for extreme ends
-    const scrollPercentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight);
-    if (scrollPercentage > 0.99) {
-        preview.scrollTop = preview.scrollHeight - preview.clientHeight;
-        return;
-    }
+    // Corner case: if at very top, force index 0
     if (scrollPercentage < 0.01) {
-        preview.scrollTop = 0;
-        return;
+        targetBlockIndex = 0;
+    } else {
+        for (let i = 0; i < parsedBlocks.length; i++) {
+            const blockStartLine = parsedBlocks[i].sourceLine;
+            // If block has a source line and it starts before our target cursor
+            if (typeof blockStartLine === 'number' && blockStartLine <= targetLogicalLine) {
+                targetBlockIndex = i;
+            } else if (typeof blockStartLine === 'number' && blockStartLine > targetLogicalLine) {
+                // We've passed the target, so the previous one (stored in targetBlockIndex) is the one
+                break;
+            }
+        }
     }
-
-    // 3. Find the block corresponding to the current line
-    // We map blocks to their approximate source lines.
-    // Note: Since we don't have source maps from the parser yet, we estimate based on block index ratio
-    // Ideally, the parser should return line numbers for each block.
-    // For now, we use a proportional block mapping which is better than raw pixel percentage
-    // because it accounts for varying block heights (images vs text).
-    
-    const blockCount = parsedBlocks.length;
-    if (blockCount === 0) return;
-
-    // Estimate block index based on line ratio
-    const estimatedBlockIndex = Math.floor((currentLine / totalLines) * blockCount);
-    const targetBlockIndex = Math.min(Math.max(0, estimatedBlockIndex), blockCount - 1);
     
     // 4. Scroll preview to that block
-    // We assume preview children match parsedBlocks 1:1 (roughly)
-    // The preview pane has a wrapper, so we look at its children.
-    // The PreviewPane component structure needs to be stable for this.
-    const previewContainer = preview.firstElementChild as HTMLElement; // The inner container
+    const previewContainer = preview.firstElementChild as HTMLElement; 
     if (previewContainer && previewContainer.children.length > targetBlockIndex) {
         const targetElement = previewContainer.children[targetBlockIndex] as HTMLElement;
         if (targetElement) {
-             // Smooth alignment
-             // We subtract a small offset so the header isn't hidden under the top edge
+             // Smooth alignment with offset
              preview.scrollTop = targetElement.offsetTop - 20;
         }
-    } else {
-        // Fallback to percentage if element matching fails
-        preview.scrollTop = scrollPercentage * (preview.scrollHeight - preview.clientHeight);
     }
   }, [parsedBlocks]); // Re-create function when blocks change to ensure index mapping is fresh
 
