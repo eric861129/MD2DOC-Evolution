@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { APP_VERSION } from '../constants/meta';
 
 const Footer: React.FC = () => {
   return (
@@ -15,7 +16,7 @@ const Footer: React.FC = () => {
           © 2025 EricHuang. All rights reserved.
         </p>
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
-Designed for Technical Book Publishing | v1.2.5
+          Designed for Technical Book Publishing | v{APP_VERSION}
         </p>
       </div>
     </footer>

@@ -7,14 +7,14 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
+import { APP_VERSION } from '../constants/meta';
 
 const resources = {
   zh: {
     translation: {
       title: 'BookPublisher',
-subtitle: '核心引擎：Markdown -> Word (v1.2.5)',
-      export: '匯出 Word',
-      exporting: '正在轉換...',
+      subtitle: `核心引擎：Markdown -> Word (v${APP_VERSION})`,
+      export: '匯出 Word',      exporting: '正在轉換...',
       reset: '重置為範例文件',
       resetConfirm: '確定要重置內容嗎？您目前的編輯將會遺失並恢復為預設範例。',
       switchLangConfirm: '切換語言將會重置當前內容為該語言的範例文件。確定要繼續嗎？',
@@ -33,7 +33,7 @@ subtitle: '核心引擎：Markdown -> Word (v1.2.5)',
   en: {
     translation: {
       title: 'BookPublisher',
-      subtitle: 'Core Engine: Markdown -> Word (v1.2.5)',
+      subtitle: `Core Engine: Markdown -> Word (v${APP_VERSION})`,
       export: 'Export DOCX',
       exporting: 'Converting...',
       reset: 'Reset to Example',
