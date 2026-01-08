@@ -64,9 +64,10 @@ export const useMarkdownEditor = () => {
   }, [content]);
 
   /**
-   * Precise Sync Scroll
-   * Maps the textarea's scroll position to the corresponding block in the preview.
-   * Uses character-index mapping which is more robust against wrapping.
+   * Sync Scroll
+   * Uses simple percentage-based synchronization.
+   * While less precise for specific blocks, it provides a stable and predictable scrolling experience
+   * without the complex offsets caused by variable line wrapping or element rendering heights.
    */
   const handleScroll = useCallback(() => {
     if (!textareaRef.current || !previewRef.current) return;
@@ -74,75 +75,17 @@ export const useMarkdownEditor = () => {
     const textarea = textareaRef.current;
     const preview = previewRef.current;
     
-    // 1. Calculate global scroll percentage
+    // Calculate scroll percentage
     const scrollMax = textarea.scrollHeight - textarea.clientHeight;
     if (scrollMax <= 0) return;
     
     const scrollPercentage = textarea.scrollTop / scrollMax;
-
-    // 2. Map to target character index
-    // Character count is a better proxy for visual height than line count 
-    // because wrapped lines consume visual space but not logical line count.
-    const totalLength = textarea.value.length;
-    const targetCharIndex = scrollPercentage * totalLength;
-
-    // 3. Find the matching block
-    let targetBlockIndex = 0;
-    let blockProgress = 0; // Progress within the block (0 to 1)
-
-    // Corner case: Top of document
-    if (scrollPercentage < 0.001) {
-        targetBlockIndex = 0;
-        blockProgress = 0;
-    } else {
-        for (let i = 0; i < parsedBlocks.length; i++) {
-            const block = parsedBlocks[i];
-            const start = block.startIndex ?? 0;
-            const end = block.endIndex ?? 0;
-            
-            if (targetCharIndex >= start && targetCharIndex < end) {
-                // Found exact match
-                targetBlockIndex = i;
-                const len = end - start;
-                if (len > 0) {
-                    blockProgress = (targetCharIndex - start) / len;
-                }
-                break;
-            } else if (targetCharIndex < start) {
-                // We are in a gap before this block (e.g., empty lines)
-                // Snap to this block's start
-                targetBlockIndex = i;
-                blockProgress = 0;
-                break;
-            }
-            // Otherwise, we are past this block. Keep searching.
-            // If we reach the end, targetBlockIndex remains at the last block.
-            targetBlockIndex = i;
-            blockProgress = 1;
-        }
-    }
     
-    // 4. Scroll preview
-    const previewContainer = preview.firstElementChild as HTMLElement; 
-    if (previewContainer && previewContainer.children.length > targetBlockIndex) {
-        const targetElement = previewContainer.children[targetBlockIndex] as HTMLElement;
-        if (targetElement) {
-             // Calculate precise position within the element
-             const elementTop = targetElement.offsetTop;
-             const elementHeight = targetElement.offsetHeight;
-             
-             // Base target position
-             let targetScrollTop = elementTop + (elementHeight * blockProgress);
-             
-             // Apply offset to keep context (e.g., 20px padding)
-             // But if we are deep in a block, center it? 
-             // For now, keep simple offset logic but respect element boundaries
-             targetScrollTop -= 20;
-
-             preview.scrollTop = targetScrollTop;
-        }
-    }
-  }, [parsedBlocks]); // Re-create function when blocks change to ensure index mapping is fresh
+    // Apply to preview
+    const previewScrollMax = preview.scrollHeight - preview.clientHeight;
+    preview.scrollTop = scrollPercentage * previewScrollMax;
+    
+  }, []); // No dependencies needed for pure percentage sync
 
   // 下載邏輯
   const handleDownload = async () => {
