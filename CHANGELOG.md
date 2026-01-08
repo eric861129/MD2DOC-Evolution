@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.6] - 2026-01-08
+
+### Added
+- **Export Markdown**:
+    - Added ability to export the raw Markdown content as a `.md` file.
+    - This ensures users can back up their source code alongside the generated Word document.
+
 ## [1.2.5] - 2026-01-08
 
 ### Added

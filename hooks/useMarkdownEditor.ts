@@ -136,12 +136,35 @@ export const useMarkdownEditor = () => {
         showLineNumbers: true, // Default to true for technical books
         meta: documentMeta
       });
-      saveAs(blob, "Professional_Manuscript.docx");
+      
+      // Use title from meta if available, sanitize it
+      const safeTitle = documentMeta.title 
+        ? documentMeta.title.replace(/[\\/:*?"<>|]/g, '_') 
+        : "Professional_Manuscript";
+        
+      saveAs(blob, `${safeTitle}.docx`);
     } catch (error) {
       console.error("Word 轉檔失敗:", error);
       alert("轉檔失敗，請確認內容格式是否正確。");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // 匯出 Markdown
+  const handleExportMarkdown = () => {
+    if (!content) return;
+    try {
+      const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+      
+      const safeTitle = documentMeta.title 
+        ? documentMeta.title.replace(/[\\/:*?"<>|]/g, '_') 
+        : "manuscript";
+        
+      saveAs(blob, `${safeTitle}.md`);
+    } catch (error) {
+      console.error("Markdown 匯出失敗:", error);
+      alert("匯出失敗");
     }
   };
 
@@ -177,6 +200,7 @@ export const useMarkdownEditor = () => {
     previewRef,
     handleScroll,
     handleDownload,
+    handleExportMarkdown,
     resetToDefault,
     language,
     toggleLanguage,
