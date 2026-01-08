@@ -42,8 +42,9 @@ This project follows a strict branching strategy to ensure stability and code qu
 We follow **Semantic Versioning (SemVer)** guidelines (MAJOR.MINOR.PATCH).
 
 ### When to Bump Version
-- **Feature Branches**: Should bump the **MINOR** version (e.g., 1.0.0 -> 1.1.0) when introducing new functionality.
-- **Bug Fixes**: Should bump the **PATCH** version (e.g., 1.1.0 -> 1.1.1).
+- **Feature Branches**: Should bump the **PATCH** version (e.g., 1.0.0 -> 1.0.1) for general features and improvements.
+- **Bug Fixes**: Should bump the **PATCH** version (e.g., 1.0.1 -> 1.0.2).
+- **Major Features**: **MINOR** version bumps (e.g., 1.0.0 -> 1.1.0) are reserved for significant feature sets and will be explicitly requested by the maintainers.
 
 ### Checklist for Version Bump
 When preparing your feature branch for merge, please ensure the following files are updated:

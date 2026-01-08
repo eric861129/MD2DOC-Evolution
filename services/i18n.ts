@@ -12,7 +12,7 @@ const resources = {
   zh: {
     translation: {
       title: 'BookPublisher',
-subtitle: '核心引擎：Markdown -> Word (v1.3.0)',
+subtitle: '核心引擎：Markdown -> Word (v1.2.5)',
       export: '匯出 Word',
       exporting: '正在轉換...',
       reset: '重置為範例文件',
@@ -33,7 +33,7 @@ subtitle: '核心引擎：Markdown -> Word (v1.3.0)',
   en: {
     translation: {
       title: 'BookPublisher',
-      subtitle: 'Core Engine: Markdown -> Word (v1.3.0)',
+      subtitle: 'Core Engine: Markdown -> Word (v1.2.5)',
       export: 'Export DOCX',
       exporting: 'Converting...',
       reset: 'Reset to Example',
