@@ -15,7 +15,7 @@ const Footer: React.FC = () => {
           © 2025 EricHuang. All rights reserved.
         </p>
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
-Designed for Technical Book Publishing | v1.2.4
+Designed for Technical Book Publishing | v1.3.0
         </p>
       </div>
     </footer>
