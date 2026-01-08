@@ -32,6 +32,8 @@ export interface ParsedBlock {
   alignment?: 'left' | 'right' | 'center'; // For chat blocks
   tableRows?: string[][]; // For table blocks
   sourceLine?: number;    // Starting line number in the original markdown
+  startIndex?: number;    // Character index start
+  endIndex?: number;      // Character index end
   metadata?: {
     showLineNumbers?: boolean;
     language?: string;

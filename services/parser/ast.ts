@@ -13,18 +13,21 @@ marked.use({
   gfm: true,
 });
 
-export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0): ParsedBlock[] => {
+export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, charOffset: number = 0): ParsedBlock[] => {
   const tokens = marked.lexer(markdown);
   const blocks: ParsedBlock[] = [];
   
   let currentLine = lineOffset;
+  let currentIndex = charOffset;
 
-  const processToken = (token: any, blockStartLine: number) => {
-    // Helper to add block with source line
+  const processToken = (token: any, blockStartLine: number, blockStartIndex: number) => {
+    // Helper to add block with source info
     const addBlock = (block: ParsedBlock) => {
         blocks.push({
             ...block,
-            sourceLine: blockStartLine
+            sourceLine: blockStartLine,
+            startIndex: blockStartIndex,
+            endIndex: blockStartIndex + token.raw.length
         });
     };
 
@@ -144,8 +147,6 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0): 
       case 'list':
         token.items.forEach((item: any) => {
           const cleanText = item.text.replace(/^\\[[ x]\\]\s*/, ''); 
-          // For list items, their source line is technically tricky in flattened view
-          // We assign the list's start line to all items for now, or we could refine if we iterate items
           addBlock({
             type: token.ordered ? BlockType.NUMBERED_LIST : BlockType.BULLET_LIST,
             content: cleanText 
@@ -179,21 +180,19 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0): 
   };
 
   tokens.forEach(token => {
-     // Calculate newlines in this token's raw representation
      const raw = token.raw;
-     // Count \n. Note: in some environments \r\n might appear, but matched regex handles \n count.
-     // If raw string has \r\n, \n is present.
      const newlines = (raw.match(/\n/g) || []).length;
+     const len = raw.length;
      
      const blockStartLine = currentLine;
+     const blockStartIndex = currentIndex;
      
-     // Advance cursor for next token
      currentLine += newlines;
+     currentIndex += len;
      
-     // Skip processing for space, but we already counted lines
      if (token.type === 'space') return;
      
-     processToken(token, blockStartLine);
+     processToken(token, blockStartLine, blockStartIndex);
   });
 
   return blocks;

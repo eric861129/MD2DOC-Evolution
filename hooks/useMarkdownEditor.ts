@@ -66,7 +66,7 @@ export const useMarkdownEditor = () => {
   /**
    * Precise Sync Scroll
    * Maps the textarea's scroll position to the corresponding block in the preview.
-   * Uses normalized scroll ratio to map visual position to logical source line.
+   * Uses character-index mapping which is more robust against wrapping.
    */
   const handleScroll = useCallback(() => {
     if (!textareaRef.current || !previewRef.current) return;
@@ -75,44 +75,71 @@ export const useMarkdownEditor = () => {
     const preview = previewRef.current;
     
     // 1. Calculate global scroll percentage
-    // This handles the discrepancy between visual lines (wrapped) and logical lines (newlines)
-    // by assuming the relative position in the scrollbar roughly corresponds to the relative position in the source.
     const scrollMax = textarea.scrollHeight - textarea.clientHeight;
     if (scrollMax <= 0) return;
     
     const scrollPercentage = textarea.scrollTop / scrollMax;
 
-    // 2. Map to target logical line
-    const totalLines = textarea.value.split('\n').length;
-    const targetLogicalLine = scrollPercentage * totalLines;
+    // 2. Map to target character index
+    // Character count is a better proxy for visual height than line count 
+    // because wrapped lines consume visual space but not logical line count.
+    const totalLength = textarea.value.length;
+    const targetCharIndex = scrollPercentage * totalLength;
 
-    // 3. Find the block corresponding to this logical line
-    // We look for the last block whose sourceLine is <= targetLogicalLine
+    // 3. Find the matching block
     let targetBlockIndex = 0;
-    
-    // Corner case: if at very top, force index 0
-    if (scrollPercentage < 0.01) {
+    let blockProgress = 0; // Progress within the block (0 to 1)
+
+    // Corner case: Top of document
+    if (scrollPercentage < 0.001) {
         targetBlockIndex = 0;
+        blockProgress = 0;
     } else {
         for (let i = 0; i < parsedBlocks.length; i++) {
-            const blockStartLine = parsedBlocks[i].sourceLine;
-            // If block has a source line and it starts before our target cursor
-            if (typeof blockStartLine === 'number' && blockStartLine <= targetLogicalLine) {
+            const block = parsedBlocks[i];
+            const start = block.startIndex ?? 0;
+            const end = block.endIndex ?? 0;
+            
+            if (targetCharIndex >= start && targetCharIndex < end) {
+                // Found exact match
                 targetBlockIndex = i;
-            } else if (typeof blockStartLine === 'number' && blockStartLine > targetLogicalLine) {
-                // We've passed the target, so the previous one (stored in targetBlockIndex) is the one
+                const len = end - start;
+                if (len > 0) {
+                    blockProgress = (targetCharIndex - start) / len;
+                }
+                break;
+            } else if (targetCharIndex < start) {
+                // We are in a gap before this block (e.g., empty lines)
+                // Snap to this block's start
+                targetBlockIndex = i;
+                blockProgress = 0;
                 break;
             }
+            // Otherwise, we are past this block. Keep searching.
+            // If we reach the end, targetBlockIndex remains at the last block.
+            targetBlockIndex = i;
+            blockProgress = 1;
         }
     }
     
-    // 4. Scroll preview to that block
+    // 4. Scroll preview
     const previewContainer = preview.firstElementChild as HTMLElement; 
     if (previewContainer && previewContainer.children.length > targetBlockIndex) {
         const targetElement = previewContainer.children[targetBlockIndex] as HTMLElement;
         if (targetElement) {
-             // Smooth alignment with offset
-             preview.scrollTop = targetElement.offsetTop - 20;
+             // Calculate precise position within the element
+             const elementTop = targetElement.offsetTop;
+             const elementHeight = targetElement.offsetHeight;
+             
+             // Base target position
+             let targetScrollTop = elementTop + (elementHeight * blockProgress);
+             
+             // Apply offset to keep context (e.g., 20px padding)
+             // But if we are deep in a block, center it? 
+             // For now, keep simple offset logic but respect element boundaries
+             targetScrollTop -= 20;
+
+             preview.scrollTop = targetScrollTop;
         }
     }
   }, [parsedBlocks]); // Re-create function when blocks change to ensure index mapping is fresh
