@@ -31,3 +31,7 @@ A Markdown to Word (DOCX) conversion tool specifically designed for technical bo
 - The project uses a custom Regex + AST approach for parsing.
 - Always check `services/types.ts` for data structures.
 - Word document styling is defined in `constants/theme.ts` and `services/docx/builders/common.ts`.
+- **Documentation**:
+    - `docs/PROJECT_OVERVIEW.md`: High-level feature summary.
+    - `docs/ARCHITECTURE.md`: Technical architecture and workflows.
+    - `docs/DEVELOPMENT_GUIDE.md`: Setup and dev workflow.

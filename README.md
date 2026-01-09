@@ -1,7 +1,7 @@
 # BookPublisher MD2Docx | v1.2.6
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.2.6-blue.svg)](https://github.com/eric861129/BookPublisher_MD2Doc)
+[![Version](https://img.shields.io/badge/version-1.2.7-blue.svg)](https://github.com/eric861129/BookPublisher_MD2Doc)
 
 [🇹🇼 中文](README.md) | [🇺🇸 English](README_EN.md)
 
@@ -10,6 +10,12 @@
 **BookPublisher MD2Docx** 是一個開源的 Markdown 編輯與轉檔工具，專為**技術書籍作者**與**內容創作者**設計。它填補了「工程師習慣的 Markdown 寫作」與「出版社要求的 Word 稿件」之間的鴻溝，讓你能專注於內容創作，自動完成繁瑣的排版工作。
 
 🔗 **線上試用 (Live Demo):** [https://eric861129.github.io/BookPublisher_MD2Doc/](https://eric861129.github.io/BookPublisher_MD2Doc/)
+
+## 📚 專案文件 (Documentation)
+
+- **[📖 專案概觀 (Project Overview)](docs/PROJECT_OVERVIEW.md)**: 了解專案的設計哲學與核心功能。
+- **[🏗️ 系統架構 (Architecture)](docs/ARCHITECTURE.md)**: 技術棧、目錄結構與核心工作流說明。
+- **[⚙️ 開發指南 (Development Guide)](docs/DEVELOPMENT_GUIDE.md)**: 環境建置、測試與除錯技巧。
 
 ## 📄 範例下載 (Sample Output)
 

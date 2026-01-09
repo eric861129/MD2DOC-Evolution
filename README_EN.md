@@ -1,7 +1,7 @@
 # BookPublisher MD2Docx | v1.2.6
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.2.6-blue.svg)](https://github.com/eric861129/BookPublisher_MD2Doc)
+[![Version](https://img.shields.io/badge/version-1.2.7-blue.svg)](https://github.com/eric861129/BookPublisher_MD2Doc)
 
 [🇹🇼 中文](README.md) | [🇺🇸 English](README_EN.md)
 
@@ -10,6 +10,12 @@
 **BookPublisher MD2Docx** is an open-source Markdown editor and converter designed specifically for **technical book authors** and **content creators**. It bridges the gap between "engineers' preferred Markdown writing" and "publishers' required Word manuscripts," allowing you to focus on content creation while automating tedious formatting work.
 
 🔗 **Live Demo:** [https://eric861129.github.io/BookPublisher_MD2Doc/](https://eric861129.github.io/BookPublisher_MD2Doc/)
+
+## 📚 Documentation
+
+- **[📖 Project Overview](docs/PROJECT_OVERVIEW.md)**: Learn about the design philosophy and core features.
+- **[🏗️ Architecture](docs/ARCHITECTURE.md)**: Tech stack, directory structure, and core workflows.
+- **[⚙️ Development Guide](docs/DEVELOPMENT_GUIDE.md)**: Setup, testing, and debugging tips.
 
 ## 📄 Sample Output
 
