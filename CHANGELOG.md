@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.8] - 2026-01-09
+
+### Refactored
+- **Hook Architecture**:
+    - Decomposed the monolithic `useMarkdownEditor` into specialized hooks for better maintainability and separation of concerns.
+    - Added `hooks/useEditorState.ts`: Manages core content and parsing state.
+    - Added `hooks/useDocxExport.ts`: Handles document generation and file IO.
+    - Added `hooks/useSyncScroll.ts`: Encapsulates scroll synchronization logic.
+    - Added `hooks/useWordCount.ts`: Optimized word counting with `useMemo`.
+
 ## [1.2.7] - 2026-01-09
 
 ### Added
