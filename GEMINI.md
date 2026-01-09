@@ -20,7 +20,12 @@ A Markdown to Word (DOCX) conversion tool specifically designed for technical bo
 - **Version Bumping:** 
     - Minor for new features.
     - Patch for bug fixes.
-- **Required Updates on Bump:** `package.json`, `README.md`, `README_EN.md`, `CHANGELOG.md`.
+- **Version Bump Checklist (MUST Update All):** 
+    1. **`package.json`**: `version` field.
+    2. **`README.md`**: Title line & Version Badge.
+    3. **`README_EN.md`**: Title line & Version Badge.
+    4. **`CHANGELOG.md`**: Add new section.
+    5. **`constants/defaultContent.ts`**: Update example version numbers in code blocks.
 
 ## Coding Standards
 - Follow existing patterns in `services/docx/builders/`.
