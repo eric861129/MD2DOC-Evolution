@@ -1,7 +1,7 @@
-# BookPublisher MD2Docx | v1.2.7
+# BookPublisher MD2Docx | v1.2.8
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.2.7-blue.svg)](https://github.com/eric861129/BookPublisher_MD2Doc)
+[![Version](https://img.shields.io/badge/version-1.2.8-blue.svg)](https://github.com/eric861129/BookPublisher_MD2Doc)
 
 [🇹🇼 中文](README.md) | [🇺🇸 English](README_EN.md)
 
