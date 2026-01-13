@@ -39,7 +39,7 @@ export const EditorHeader: React.FC = () => {
         </div>
         <div>
           <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-            {t('title')} <span className="text-slate-400 font-normal">MD2Docx</span>
+            {t('title')}
           </h1>
           <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">{t('subtitle')}</p>
         </div>

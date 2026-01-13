@@ -12,7 +12,7 @@ import { APP_VERSION } from '../constants/meta';
 const resources = {
   zh: {
     translation: {
-      title: 'BookPublisher',
+      title: 'MD2DOC-Evolution',
             subtitle: `核心引擎：Markdown -> Word (v${APP_VERSION})`,
             export: '匯出 Word',
             exportMD: '匯出 MD',
@@ -34,7 +34,7 @@ const resources = {
   },
   en: {
     translation: {
-      title: 'BookPublisher',
+      title: 'MD2DOC-Evolution',
       subtitle: `Core Engine: Markdown -> Word (v${APP_VERSION})`,
       export: 'Export DOCX',
       exportMD: 'Export MD',

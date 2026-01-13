@@ -1,4 +1,4 @@
-# BookPublisher MD2Docx - Gemini Development Context
+# MD2DOC-Evolution - Gemini Development Context
 
 ## Project Overview
 A Markdown to Word (DOCX) conversion tool specifically designed for technical book authors. It bridges the gap between Markdown writing and professional publishing requirements.

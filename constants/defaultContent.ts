@@ -1,5 +1,5 @@
 /**
- * BookPublisher MD2Docx
+ * MD2DOC-Evolution MD2Docx
  * Copyright (c) 2025 EricHuang
  * Licensed under the MIT License.
  * See LICENSE file in the project root for full license information.
@@ -9,8 +9,8 @@
 const BT = "`";
 
 export const INITIAL_CONTENT_ZH = `---
-title: "BookPublisher 使用手冊"
-author: "BookPublisher Team"
+title: "MD2DOC-Evolution 使用手冊"
+author: "MD2DOC-Evolution Team"
 header: true
 footer: true
 ---
@@ -47,10 +47,10 @@ footer: true
 - **粗體 (Bold)**：用於強調關鍵字，例如 **Vibe Coding**。
 - *斜體 (Italic)*：用於 *專有名詞定義* 或 *英文術語*。匯出 Word 時會呈現深藍色斜體。
 - <u>底線 (Underline)</u>：用於 <u>超連結文字</u> 或需要特別畫線的地方。
-- **智慧連結 (Smart Links)**：[GitHub專案](https://github.com/eric861129/BookPublisher_MD2Doc) 會自動在 Word 中生成 QR Code。
+- **智慧連結 (Smart Links)**：[GitHub專案](https://github.com/eric861129/MD2DOC-Evolution) 會自動在 Word 中生成 QR Code。
 - UI 按鈕：請點擊 【設定】 > 【進階選項】 進行調整。
 - 快捷鍵：按下 [Ctrl] + [S] 可以儲存檔案，或使用 [Cmd] + [P] 列印。
-- 書籍/專案：參考『Clean Code』一書中的概念，或是『BookPublisher』專案。
+- 書籍/專案：參考『Clean Code』一書中的概念，或是『MD2DOC-Evolution』專案。
 
 ---
 
@@ -86,8 +86,7 @@ ${BT}${BT}${BT}
 ### 4.2 強制隱藏行號 (純文字模式)
 使用 ${BT}json:no-ln${BT} 或 ${BT}:plain${BT} 語法，適合短小的設定檔或不需要參照行號的範例：
 ${BT}${BT}${BT}json:no-ln
-{
-  "name": "book-publisher",
+"name": "md2doc-evolution",
   "version": "1.2.8",
   "private": true
 }
@@ -154,8 +153,8 @@ ${BT}${BT}${BT}
 `;
 
 export const INITIAL_CONTENT_EN = `---
-title: "BookPublisher Guide"
-author: "BookPublisher Team"
+title: "MD2DOC-Evolution Guide"
+author: "MD2DOC-Evolution Team"
 header: true
 footer: true
 ---
@@ -191,10 +190,10 @@ This tool supports various text formats required for professional publishing. Pl
 - **Bold**: Used for emphasizing keywords, e.g., **Vibe Coding**.
 - *Italic*: Used for *definitions* or *technical terms*. It will appear as dark blue italic text in the exported Word doc.
 - <u>Underline</u>: Used for <u>hyperlinks</u> or where special underlining is needed.
-- **Smart Links**: [GitHub Repo](https://github.com/eric861129/BookPublisher_MD2Doc) will automatically generate a QR Code in Word.
+- **Smart Links**: [GitHub Repo](https://github.com/eric861129/MD2DOC-Evolution) will automatically generate a QR Code in Word.
 - UI Button: Please click 【Settings】 > 【Advanced Options】 to adjust.
 - Shortcut: Press [Ctrl] + [S] to save the file, or use [Cmd] + [P] to print.
-- Books/Projects: Refer to the concept in 『Clean Code』 or the 『BookPublisher』 project.
+- Books/Projects: Refer to the concept in 『Clean Code』 or the 『MD2DOC-Evolution』 project.
 
 ---
 

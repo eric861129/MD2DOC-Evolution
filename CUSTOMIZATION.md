@@ -1,6 +1,6 @@
 # 客製化指南 (Customization Guide)
 
-感謝您使用 **BookPublisher MD2Docx**！本專案採用高度模組化的架構，您可以輕鬆調整樣式、新增語法或修改 Word 輸出格式。
+感謝您使用 **MD2DOC-Evolution**！本專案採用高度模組化的架構，您可以輕鬆調整樣式、新增語法或修改 Word 輸出格式。
 
 ## 🎯 目錄
 

@@ -1,6 +1,6 @@
 # 開發指南 (Development Guide)
 
-本指南旨在協助開發者快速上手 **BookPublisher MD2Docx** 的開發環境，並理解日常開發流程。
+本指南旨在協助開發者快速上手 **MD2DOC-Evolution** 的開發環境，並理解日常開發流程。
 
 ## ⚙️ 環境建置 (Setup)
 
@@ -11,7 +11,7 @@
 ### 初次安裝
 ```bash
 # Clone 專案
-git clone https://github.com/eric861129/BookPublisher_MD2Doc.git
+git clone MD2DOC-Evolution.git
 cd BookPublisher_MD2Doc
 
 # 安裝依賴

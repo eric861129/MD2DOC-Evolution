@@ -1,5 +1,5 @@
 {
-  "name": "BookPublisher MD2Docx",
+  "name": "MD2DOC-Evolution",
   "description": "A specialized tool for converting Markdown technical manuscripts into formatted Microsoft Word documents with specific styling for code, chat dialogues, and callouts.",
   "requestFramePermissions": []
 }

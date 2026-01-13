@@ -1,15 +1,15 @@
-# BookPublisher MD2Docx | v1.2.8
+# MD2DOC-Evolution | v1.2.8
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.2.8-blue.svg)](https://github.com/eric861129/BookPublisher_MD2Doc)
+[![Version](https://img.shields.io/badge/version-1.2.8-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
 
 [🇹🇼 中文](README.md) | [🇺🇸 English](README_EN.md)
 
 ## If you like this project, please give it a star 🌟🌟🌟
 
-**BookPublisher MD2Docx** is an open-source Markdown editor and converter designed specifically for **technical book authors** and **content creators**. It bridges the gap between "engineers' preferred Markdown writing" and "publishers' required Word manuscripts," allowing you to focus on content creation while automating tedious formatting work.
+**MD2DOC-Evolution** is an open-source Markdown editor and converter designed specifically for **technical book authors** and **content creators**. It bridges the gap between "engineers' preferred Markdown writing" and "publishers' required Word manuscripts," allowing you to focus on content creation while automating tedious formatting work.
 
-🔗 **Live Demo:** [https://eric861129.github.io/BookPublisher_MD2Doc/](https://eric861129.github.io/BookPublisher_MD2Doc/)
+🔗 **Live Demo:** [https://eric861129.github.io/MD2DOC-Evolution/](https://eric861129.github.io/MD2DOC-Evolution/)
 
 ## 📚 Documentation
 
