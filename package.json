@@ -2,6 +2,10 @@
   "name": "md2doc-evolution",
   "private": true,
   "version": "1.2.8",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eric861129/MD2DOC-Evolution.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
