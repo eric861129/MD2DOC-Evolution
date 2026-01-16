@@ -11,6 +11,7 @@ import { EditorProvider } from '../contexts/EditorContext';
 
 // Components
 import { EditorHeader } from './editor/EditorHeader';
+import { QuickActionSidebar } from './editor/QuickActionSidebar';
 import { EditorPane } from './editor/EditorPane';
 import { PreviewPane } from './editor/PreviewPane';
 
@@ -34,6 +35,8 @@ const MarkdownEditor: React.FC = () => {
         <EditorHeader />
 
         <main className="flex flex-1 overflow-hidden">
+          <QuickActionSidebar />
+          
           <EditorPane 
             content={content}
             setContent={setContent}

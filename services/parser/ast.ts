@@ -169,6 +169,17 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
       case 'hr':
         addBlock({ type: BlockType.HORIZONTAL_RULE, content: '' });
         break;
+
+      case 'image':
+        addBlock({
+          type: BlockType.IMAGE,
+          content: token.href,
+          metadata: {
+            alt: token.text,
+            title: token.title
+          }
+        });
+        break;
         
       case 'space':
         break;

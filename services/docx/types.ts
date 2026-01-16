@@ -12,4 +12,5 @@ export interface DocxConfig {
   heightCm: number;
   showLineNumbers?: boolean;
   meta?: DocumentMeta;
+  imageRegistry?: Record<string, string>;
 }

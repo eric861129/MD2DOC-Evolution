@@ -62,6 +62,32 @@ export const parseInlineStyles = async (text: string, config?: DocxConfig): Prom
           }
         }
         break;
+      case InlineStyleType.IMAGE:
+        if (segment.url) {
+          try {
+            const realSrc = (config?.imageRegistry && config.imageRegistry[segment.url]) 
+              ? config.imageRegistry[segment.url] 
+              : segment.url;
+            
+            if (realSrc.startsWith('data:image/')) {
+              const base64Data = realSrc.split(',')[1];
+              const binaryData = atob(base64Data);
+              const buffer = new Uint8Array(binaryData.length);
+              for (let i = 0; i < binaryData.length; i++) {
+                buffer[i] = binaryData.charCodeAt(i);
+              }
+              
+              runs.push(new ImageRun({
+                data: buffer,
+                transformation: { width: 100, height: 100 }, // Default size for inline
+                type: "png"
+              }));
+            }
+          } catch (e) {
+            console.warn("Failed to render inline image", e);
+          }
+        }
+        break;
       case InlineStyleType.CODE:
         runs.push(new TextRun({
           ...baseConfig, 

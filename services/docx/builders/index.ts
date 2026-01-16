@@ -19,6 +19,7 @@ import { createChatBubble } from "./chat";
 import { createCallout } from "./callout";
 import { createTable } from "./table";
 import { createMermaidBlock } from "./mermaid";
+import { createImageBlock } from "./image";
 
 const { SPACING, LAYOUT, COLORS } = WORD_THEME;
 
@@ -45,6 +46,11 @@ export const registerDefaultHandlers = () => {
     await createMermaidBlock(block.content, config),
     new Paragraph({ text: "", spacing: { before: 0, after: 0 } })
   ]);
+
+  // Image
+  docxRegistry.register(BlockType.IMAGE, async (block, config) => 
+    await createImageBlock(block.content, block.metadata?.alt || '', config)
+  );
 
   // Chat
   const chatHandler = async (block: ParsedBlock, config: DocxConfig) => [
