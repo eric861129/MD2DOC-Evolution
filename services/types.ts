@@ -22,7 +22,8 @@ export enum BlockType {
   NUMBERED_LIST = 'NUMBERED_LIST',
   TABLE = 'TABLE',
   HORIZONTAL_RULE = 'HORIZONTAL_RULE',
-  TOC = 'TOC'
+  TOC = 'TOC',
+  IMAGE = 'IMAGE'
 }
 
 export interface ParsedBlock {

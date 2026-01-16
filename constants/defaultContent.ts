@@ -87,7 +87,7 @@ ${BT}${BT}${BT}
 使用 ${BT}json:no-ln${BT} 或 ${BT}:plain${BT} 語法，適合短小的設定檔或不需要參照行號的範例：
 ${BT}${BT}${BT}json:no-ln
 "name": "md2doc-evolution",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "private": true
 }
 ${BT}${BT}${BT}
@@ -148,7 +148,7 @@ graph TD
     B -- Yes --> C[修復 Bug]
     C --> D[測試]
     D --> B
-    B -- No --> E[發布 v1.2.0]
+    B -- No --> E[發布 v1.2.9]
 ${BT}${BT}${BT}
 `;
 
@@ -230,7 +230,7 @@ ${BT}${BT}${BT}
 Use ${BT}json:no-ln${BT} or ${BT}:plain${BT} syntax. Ideal for short config files or examples where line numbers aren't needed:
 
   "name": "book-publisher",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "private": true
 }
 ${BT}${BT}${BT}
@@ -291,6 +291,6 @@ graph TD
     B -- Yes --> C[Fix Bug]
     C --> D[Test]
     D --> B
-    B -- No --> E[Release v1.2.0]
+    B -- No --> E[Release v1.2.9]
 ${BT}${BT}${BT}
 `;

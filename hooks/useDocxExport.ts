@@ -8,9 +8,10 @@ interface UseDocxExportProps {
   content: string;
   parsedBlocks: ParsedBlock[];
   documentMeta: DocumentMeta;
+  imageRegistry: Record<string, string>;
 }
 
-export const useDocxExport = ({ content, parsedBlocks, documentMeta }: UseDocxExportProps) => {
+export const useDocxExport = ({ content, parsedBlocks, documentMeta, imageRegistry }: UseDocxExportProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedSizeIndex, setSelectedSizeIndex] = useState(0);
 
@@ -24,7 +25,8 @@ export const useDocxExport = ({ content, parsedBlocks, documentMeta }: UseDocxEx
         widthCm: sizeConfig.width, 
         heightCm: sizeConfig.height,
         showLineNumbers: true, // Default to true for technical books
-        meta: documentMeta
+        meta: documentMeta,
+        imageRegistry // Pass the registry here
       });
       
       const safeTitle = documentMeta.title 

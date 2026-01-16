@@ -25,6 +25,8 @@ export const useMarkdownEditor = () => {
     setContent,
     parsedBlocks,
     documentMeta,
+    imageRegistry,
+    registerImage,
     language,
     toggleLanguage,
     resetToDefault,
@@ -45,7 +47,7 @@ export const useMarkdownEditor = () => {
     handleDownload,
     handleExportMarkdown,
     pageSizes
-  } = useDocxExport({ content, parsedBlocks, documentMeta });
+  } = useDocxExport({ content, parsedBlocks, documentMeta, imageRegistry });
 
   return {
     // State
@@ -53,6 +55,8 @@ export const useMarkdownEditor = () => {
     setContent,
     parsedBlocks,
     documentMeta,
+    imageRegistry,
+    registerImage,
     isGenerating,
     selectedSizeIndex,
     setSelectedSizeIndex,

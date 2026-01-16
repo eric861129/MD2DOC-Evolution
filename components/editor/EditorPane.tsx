@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { UI_THEME } from '../../constants/theme';
+import { useEditor } from '../../contexts/EditorContext';
 
 interface EditorPaneProps {
   content: string;
@@ -22,6 +23,8 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
   textareaRef,
   onScroll
 }) => {
+  const { registerImage } = useEditor();
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Tab') {
       e.preventDefault();
@@ -40,8 +43,44 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
     }
   };
 
+  const handleDrop = async (e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) return;
+
+    const target = e.target as HTMLTextAreaElement;
+    const start = target.selectionStart;
+    const end = target.selectionEnd;
+
+    let insertedText = '';
+    
+    for (const file of imageFiles) {
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+
+      // Generate a short ID for the image
+      const imageId = `img_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      registerImage(imageId, base64);
+      
+      insertedText += `\n![${file.name}](${imageId})\n`;
+    }
+
+    const newContent = content.substring(0, start) + insertedText + content.substring(end);
+    setContent(newContent);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  };
+
   return (
-    <div className="w-1/2 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors">
+    <div className="w-[40%] flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors">
       <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-2 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
         <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Manuscript Editor (Draft)</span>
         <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
@@ -56,6 +95,8 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
         spellCheck={false}
         placeholder="在此輸入您的 Markdown 稿件..."
       />

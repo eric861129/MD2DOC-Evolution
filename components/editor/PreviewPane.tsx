@@ -65,16 +65,16 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
   };
 
   return (
-    <div className="w-1/2 flex flex-col bg-slate-100/50 dark:bg-slate-900/50 transition-colors">
+    <div className="w-[60%] flex flex-col bg-slate-100/50 dark:bg-slate-900/50 transition-colors">
       <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-2 border-b border-slate-200 dark:border-slate-800 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
         Print Layout Preview (WYSIWYG)
       </div>
       <div 
         ref={previewRef}
-        className="flex-1 overflow-y-auto p-12 lg:p-16 scroll-smooth"
+        className="flex-1 overflow-y-auto p-6 lg:p-10 scroll-smooth"
       >
         <div 
-          className="max-w-2xl mx-auto bg-white dark:bg-slate-50 shadow-2xl p-16 lg:p-20 min-h-screen text-slate-900 rounded-sm border border-slate-200 dark:border-slate-700 transition-colors"
+          className="max-w-4xl mx-auto bg-white dark:bg-slate-50 shadow-2xl p-10 lg:p-14 min-h-screen text-slate-900 rounded-sm border border-slate-200 dark:border-slate-700 transition-colors"
           style={{ fontFamily: UI_THEME.FONTS.PREVIEW }}
         >
           {parsedBlocks.length > 0 ? (

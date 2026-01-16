@@ -9,9 +9,11 @@ import { ParsedBlock, BlockType } from '../../services/types';
 import { parseInlineElements, InlineStyleType } from '../../utils/styleParser';
 import { QrCode } from 'lucide-react';
 import MermaidRenderer from './MermaidRenderer';
+import { useEditor } from '../../contexts/EditorContext';
 
 export const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
   const segments = parseInlineElements(text);
+  const { imageRegistry } = useEditor();
   
   return (
     <>
@@ -23,6 +25,9 @@ export const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
             return <span key={i} className="italic text-blue-800">{segment.content}</span>;
           case InlineStyleType.UNDERLINE:
             return <span key={i} className="underline decoration-blue-500 text-blue-600 decoration-1 underline-offset-2">{segment.content}</span>;
+          case InlineStyleType.IMAGE:
+            const imageUrl = (segment.url && imageRegistry[segment.url]) ? imageRegistry[segment.url] : segment.url;
+            return <img key={i} src={imageUrl} alt={segment.content} className="inline-block max-h-8 align-middle mx-1 rounded shadow-sm border border-slate-200" />;
           case InlineStyleType.LINK:
             return (
               <span key={i} className="inline-flex items-baseline gap-1 mx-0.5 align-middle">
@@ -65,6 +70,8 @@ export const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
 };
 
 export const PreviewBlock: React.FC<{ block: ParsedBlock; showLineNumbers?: boolean }> = ({ block, showLineNumbers: globalShowLineNumbers = true }) => {
+  const { imageRegistry } = useEditor();
+  
   // 決定是否顯示行號：Metadata 優先，否則使用 Global 設定
   let showLineNumbers = globalShowLineNumbers;
   if (block.metadata?.showLineNumbers !== undefined) {
@@ -135,7 +142,7 @@ export const PreviewBlock: React.FC<{ block: ParsedBlock; showLineNumbers?: bool
               isCenter ? 'border-double border-indigo-400 bg-indigo-50/30 text-center' : 
               'border-dotted border-slate-900 bg-slate-100 text-left'}
           `}>
-            <div className={`absolute -top-3 ${isRight ? 'left-4' : isCenter ? 'left-1/2 -translate-x-1/2' : 'right-4'} bg-inherit px-2 text-[10px] font-black tracking-widest text-indigo-600 border border-slate-200 uppercase`}>
+            <div class={`absolute -top-3 ${isRight ? 'left-4' : isCenter ? 'left-1/2 -translate-x-1/2' : 'right-4'} bg-inherit px-2 text-[10px] font-black tracking-widest text-indigo-600 border border-slate-200 uppercase`}>
               {block.role}
             </div>
             <div className="whitespace-pre-wrap leading-[1.8] text-slate-900"><RenderRichText text={block.content} /></div>
@@ -183,6 +190,22 @@ export const PreviewBlock: React.FC<{ block: ParsedBlock; showLineNumbers?: bool
       );
     case BlockType.HORIZONTAL_RULE:
       return <hr className="my-8 border-t-2 border-slate-900" />;
+    case BlockType.IMAGE:
+      const imageUrl = imageRegistry[block.content] || block.content;
+      return (
+        <div className="my-10 flex flex-col items-center">
+          <img 
+            src={imageUrl} 
+            alt={block.metadata?.alt || ''} 
+            className="max-w-full h-auto rounded shadow-lg border border-slate-200" 
+          />
+          {block.metadata?.alt && (
+            <p className="mt-4 text-sm text-slate-500 font-medium italic">
+              ▲ {block.metadata.alt}
+            </p>
+          )}
+        </div>
+      );
     default:
       return <p className="mb-8 leading-[2.1] text-justify text-slate-800 tracking-tight"><RenderRichText text={block.content} /></p>;
   }

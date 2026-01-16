@@ -16,6 +16,11 @@ export const useEditorState = () => {
   
   const [parsedBlocks, setParsedBlocks] = useState<ParsedBlock[]>([]);
   const [documentMeta, setDocumentMeta] = useState<DocumentMeta>({});
+  const [imageRegistry, setImageRegistry] = useState<Record<string, string>>({});
+
+  const registerImage = (id: string, base64: string) => {
+    setImageRegistry(prev => ({ ...prev, [id]: base64 }));
+  };
 
   // Parsing & Auto-save (Debounced)
   useEffect(() => {
@@ -41,6 +46,7 @@ export const useEditorState = () => {
       i18n.changeLanguage(nextLang);
       setContent(getInitialContent(nextLang));
       localStorage.removeItem('draft_content');
+      setImageRegistry({});
     }
   };
 
@@ -49,6 +55,7 @@ export const useEditorState = () => {
     if (confirm(t('resetConfirm'))) {
       setContent(getInitialContent(i18n.language));
       localStorage.removeItem('draft_content');
+      setImageRegistry({});
     }
   };
 
@@ -57,6 +64,8 @@ export const useEditorState = () => {
     setContent,
     parsedBlocks,
     documentMeta,
+    imageRegistry,
+    registerImage,
     language,
     toggleLanguage,
     resetToDefault,

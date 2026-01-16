@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.9] - 2026-01-16
+
+### Added
+- **Quick Action Sidebar**:
+    - Introduced a new floating sidebar for quick insertion of Markdown templates (Headings, Code blocks, Mermaid, Callouts, Chat dialogues, Tables, and TOC).
+    - Intelligent cursor positioning after insertion for immediate editing.
+- **Optimized Image Handling**:
+    - Support for dragging and dropping images directly into the editor.
+    - **Image Registry System**: Images are now stored in an internal registry and referenced by short IDs in Markdown (e.g., `![alt](img_id)`), preventing long Base64 strings from cluttering the editor while maintaining full preview and export capabilities.
+
+### Changed
+- **UI/UX Layout Optimization**:
+    - Adjusted the main editor/preview split to 40% / 60% for a better visual experience.
+    - Increased preview paper maximum width and reduced internal margins to maximize content display area.
+    - Forced images to scale to full page width in Word export while maintaining aspect ratio.
+
+### Fixed
+- **Syntax Parsing**: Fixed a conflict where image syntax (`![]()`) was being incorrectly parsed as a link (`[]()`).
+- **Runtime Stability**: Resolved critical `ReferenceError` issues related to missing imports in the preview renderer.
+
 ## [1.2.8] - 2026-01-09
 
 ### Refactored
