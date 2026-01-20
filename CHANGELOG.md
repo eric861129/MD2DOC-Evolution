@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.10] - 2026-01-20
+
+### Added
+- **Slash Command System**:
+    - Introduced a powerful slash command menu triggered by typing `/` in the editor.
+    - **Context-Aware Popup**: The menu appears right at the cursor position (and intelligently flips up if close to the bottom).
+    - **Rich Command Set**: Quickly insert Headings, Lists, Tables, Code Blocks, Mermaid Charts, Callouts, and Chat Dialogues.
+    - **Keyboard Navigation**: Full support for arrow keys and Enter to select commands.
+    - **Filtering**: Real-time filtering of commands as you type (e.g., `/table`, `/code`).
+    - **TOC Support**: Added `[TOC]` command for one-click Table of Contents insertion.
+
 ## [1.2.9] - 2026-01-16
 
 ### Added

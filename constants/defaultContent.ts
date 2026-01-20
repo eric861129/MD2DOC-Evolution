@@ -30,6 +30,10 @@ footer: true
 
 這是一段標準的正文。我們支援多種行內樣式，例如 **粗體強調** 以吸引讀者注意。當提到程式碼變數時，可以使用 ${BT}inline code${BT} 樣式。
 
+> [!TIP]
+> **新功能：斜線指令**
+> 現在您可以直接輸入 ${BT}/table${BT} 插入表格，或 ${BT}/chat${BT} 插入對話框！
+
 對於書籍介面的描述，我們設計了特殊的括號樣式：點擊 【確定】 按鈕後即可完成操作。這在 Word 匯出後也會保持加粗與特殊視覺感。
 
 ---
@@ -86,8 +90,9 @@ ${BT}${BT}${BT}
 ### 4.2 強制隱藏行號 (純文字模式)
 使用 ${BT}json:no-ln${BT} 或 ${BT}:plain${BT} 語法，適合短小的設定檔或不需要參照行號的範例：
 ${BT}${BT}${BT}json:no-ln
-"name": "md2doc-evolution",
-  "version": "1.2.9",
+{
+  "name": "md2doc-evolution",
+  "version": "1.2.10",
   "private": true
 }
 ${BT}${BT}${BT}
@@ -135,7 +140,7 @@ ${BT}${BT}${BT}
 ${BT}![圖片描述](https://example.com/image.jpg)${BT}
 
 > [!NOTE]
-> **圖片匯出注意**：由於瀏覽器安全性限制 (CORS)，直接匯出包含網路圖片的 Word 檔可能會失敗或無法顯示。
+> **圖片匯出注意**：由於瀏覽器安全性限制 (CORS) ，直接匯出包含網路圖片的 Word 檔可能會失敗或無法顯示。
 > 建議在 Markdown 中僅標示圖片位置，匯出 Word 後再手動置入高畫質圖片以確保最佳印刷品質。
 
 ## 7. Mermaid 圖表支援
@@ -148,7 +153,7 @@ graph TD
     B -- Yes --> C[修復 Bug]
     C --> D[測試]
     D --> B
-    B -- No --> E[發布 v1.2.9]
+    B -- No --> E[發布 v1.2.10]
 ${BT}${BT}${BT}
 `;
 
@@ -173,6 +178,11 @@ footer: true
 
 This is a standard paragraph. We support various inline styles, such as **Bold Emphasis** to attract the reader's attention. When referring to code variables, you can use the ${BT}inline code${BT} style.
 
+> [!TIP]
+> **New Feature: Slash Commands**
+> You can now type ${BT}/${BT} to bring up the quick menu!
+> Try typing ${BT}/table${BT} to insert a table or ${BT}/chat${BT} to insert a dialogue box.
+
 For describing user interfaces (UI), we have designed special bracket styles: Click the 【Confirm】 button to complete the operation. This will remain bold and visually distinct after exporting to Word.
 
 ---
@@ -192,7 +202,7 @@ This tool supports various text formats required for professional publishing. Pl
 - <u>Underline</u>: Used for <u>hyperlinks</u> or where special underlining is needed.
 - **Smart Links**: [GitHub Repo](https://github.com/eric861129/MD2DOC-Evolution) will automatically generate a QR Code in Word.
 - UI Button: Please click 【Settings】 > 【Advanced Options】 to adjust.
-- Shortcut: Press [Ctrl] + [S] to save the file, or use [Cmd] + [P] to print.
+- Shortcut: Press [Ctrl] + [S] can save the file, or use [Cmd] + [P] to print.
 - Books/Projects: Refer to the concept in 『Clean Code』 or the 『MD2DOC-Evolution』 project.
 
 ---
@@ -229,8 +239,10 @@ ${BT}${BT}${BT}
 ### 4.2 Plain Text Style (Hidden Line Numbers)
 Use ${BT}json:no-ln${BT} or ${BT}:plain${BT} syntax. Ideal for short config files or examples where line numbers aren't needed:
 
+${BT}${BT}${BT}json:no-ln
+{
   "name": "book-publisher",
-  "version": "1.2.9",
+  "version": "1.2.10",
   "private": true
 }
 ${BT}${BT}${BT}
@@ -291,6 +303,6 @@ graph TD
     B -- Yes --> C[Fix Bug]
     C --> D[Test]
     D --> B
-    B -- No --> E[Release v1.2.9]
+    B -- No --> E[Release v1.2.10]
 ${BT}${BT}${BT}
 `;

@@ -1,7 +1,7 @@
-# MD2DOC-Evolution | v1.2.9
+# MD2DOC-Evolution | v1.2.10
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.2.9-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
+[![Version](https://img.shields.io/badge/version-1.2.10-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
 
 [🇹🇼 中文](README.md) | [🇺🇸 English](README_EN.md)
 
@@ -88,9 +88,13 @@ This project is not just a Markdown converter; it is deeply optimized for "publi
     - **Tables**: Supports standard Markdown table syntax, auto-generating bordered Word tables.
     - **Ordered Lists**: Supports `1.` `2.` with automatic numbering.
 
-- **👁️ WYSIWYG**
-    - Dual-column mode: Writing on the left, real-time preview on the right.
-    - **Editor Optimization**: Supports `Tab` indentation (inserts spaces) without losing focus.
+- **👁️ WYSIWYG Editor**
+    - Two-column layout: Writing on the left, real-time preview on the right.
+    - **Editor Optimizations**: Supports `Tab` indentation (inserts spaces) without losing focus.
+
+- **⚡ Slash Commands**
+    - Notion-like `/` command system.
+    - Type `/` to bring up a menu for quick insertion of Headings, Tables, Mermaid charts, Dialogues, and more, significantly boosting writing efficiency.
 
 ## 🚀 Getting Started
 
