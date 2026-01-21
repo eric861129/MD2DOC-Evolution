@@ -14,6 +14,7 @@ import { EditorHeader } from './editor/EditorHeader';
 import { QuickActionSidebar } from './editor/QuickActionSidebar';
 import { EditorPane } from './editor/EditorPane';
 import { PreviewPane } from './editor/PreviewPane';
+import Footer from './Footer';
 
 const MarkdownEditor: React.FC = () => {
   const darkModeState = useDarkMode();
@@ -50,6 +51,8 @@ const MarkdownEditor: React.FC = () => {
             previewRef={previewRef}
             />
         </main>
+        
+        <Footer />
       </div>
     </EditorProvider>
   );

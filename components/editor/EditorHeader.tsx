@@ -46,31 +46,40 @@ export const EditorHeader: React.FC = () => {
       </div>
       
       <div className="flex items-center gap-4">
-        {/* Reset Button */}
-        <IconButton
-          onClick={resetToDefault}
-          title={t('reset')}
-        >
-          <RotateCcw className="w-4 h-4" />
-        </IconButton>
+        {/* Action Group: Reset, Language, Theme */}
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner">
+          {/* Reset Button */}
+          <IconButton
+            onClick={resetToDefault}
+            title={t('reset')}
+            className="bg-transparent border-none hover:bg-white dark:hover:bg-slate-700 shadow-none"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </IconButton>
 
-        {/* Language Toggle */}
-        <IconButton
-          onClick={toggleLanguage}
-          className="gap-2 px-3 w-auto"
-          title="Switch Language / 切換語言"
-        >
-          <Languages className="w-4 h-4" />
-          <span className="text-xs font-medium">{language === 'zh' ? 'EN' : '中'}</span>
-        </IconButton>
+          <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5" />
 
-        {/* Theme Toggle */}
-        <IconButton
-          onClick={toggleDarkMode}
-          title={isDark ? t('theme.light') : t('theme.dark')}
-        >
-          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </IconButton>
+          {/* Language Toggle */}
+          <IconButton
+            onClick={toggleLanguage}
+            className="bg-transparent border-none hover:bg-white dark:hover:bg-slate-700 shadow-none gap-2 px-3 w-auto"
+            title="Switch Language / 切換語言"
+          >
+            <Languages className="w-4 h-4" />
+            <span className="text-xs font-bold">{language === 'zh' ? 'EN' : '中'}</span>
+          </IconButton>
+
+          <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
+          {/* Theme Toggle */}
+          <IconButton
+            onClick={toggleDarkMode}
+            title={isDark ? t('theme.light') : t('theme.dark')}
+            className="bg-transparent border-none hover:bg-white dark:hover:bg-slate-700 shadow-none"
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </IconButton>
+        </div>
 
         {/* 版面尺寸選擇器 */}
         <Select 

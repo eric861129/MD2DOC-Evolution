@@ -8,6 +8,8 @@
 
 export const APP_VERSION = __APP_VERSION__;
 
+export const GITHUB_URL = "https://github.com/eric861129/MD2DOC-Evolution";
+
 export const PAGE_SIZES = [
   { name: "tech", width: 17, height: 23 },
   { name: "a4", width: 21, height: 29.7 },
