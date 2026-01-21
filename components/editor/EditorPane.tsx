@@ -72,6 +72,25 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
   const handleDrop = async (e: React.DragEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
     const files = Array.from(e.dataTransfer.files);
+    
+    // 1. Handle Markdown files (.md)
+    const mdFile = files.find(file => 
+      file.name.toLowerCase().endsWith('.md') || 
+      file.type === 'text/markdown' || 
+      file.type === 'text/x-markdown'
+    );
+
+    if (mdFile) {
+      const text = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsText(mdFile);
+      });
+      setContent(text);
+      return;
+    }
+
+    // 2. Handle Image files (existing logic)
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
 
     if (imageFiles.length === 0) return;
@@ -106,7 +125,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
   };
 
   return (
-    <div className="w-[40%] flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors relative">
+    <div className="w-full h-full flex flex-col bg-white dark:bg-slate-900 transition-colors relative">
       <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-2 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
         <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Manuscript Editor (Draft)</span>
         <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">

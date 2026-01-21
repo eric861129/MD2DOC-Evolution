@@ -1,7 +1,7 @@
-# MD2DOC-Evolution | v1.2.10
+# MD2DOC-Evolution | v1.3.0
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.2.10-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
 
 [🇹🇼 中文](README.md) | [🇺🇸 English](README_EN.md)
 
@@ -92,7 +92,9 @@ MD2DOC-Evolution 是一個開源的 Markdown 編輯與轉檔工具，專為**技
 
 - **👁️ 所見即所得 (WYSIWYG)**
     - 雙欄模式：左側寫作，右側即時預覽。
+    - **可調式版面**：中間分隔線可自由拖曳，隨意調整編輯器與預覽區的比例。
     - **編輯器優化**：支援 `Tab` 鍵縮排（插入空格），不跳失焦點。
+    - **快速匯入**：支援直接將 `.md` 檔案拖入編輯器，自動讀取並寫入內容。
 
 - **⚡ 斜線指令 (Slash Commands)**
     - 支援類似 Notion 的 `/` 指令系統。

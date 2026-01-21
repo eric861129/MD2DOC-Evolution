@@ -1,7 +1,7 @@
 {
   "name": "md2doc-evolution",
   "private": true,
-  "version": "1.2.10",
+  "version": "1.3.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/eric861129/MD2DOC-Evolution.git"
