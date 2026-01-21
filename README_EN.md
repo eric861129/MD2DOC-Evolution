@@ -14,6 +14,7 @@
 ## 📚 Documentation
 
 - **[📖 Project Overview](docs/PROJECT_OVERVIEW.md)**: Learn about the design philosophy and core features.
+- **[🤖 AI Generation Guide](docs/AI_GENERATION_GUIDE.md)**: How to quickly convert your existing manuscripts to this project's format using AI.
 - **[🏗️ Architecture](docs/ARCHITECTURE.md)**: Tech stack, directory structure, and core workflows.
 - **[⚙️ Development Guide](docs/DEVELOPMENT_GUIDE.md)**: Setup, testing, and debugging tips.
 
@@ -36,6 +37,27 @@ You can view the exported Word document effect here:
   <img src="docs/images/8.jpg" width="48%" alt="Tables & Lists" />
 </div>
 *(Screenshot of actual Word output)*
+
+## 🤖 AI Assisted Generation
+
+If you have existing Markdown manuscripts, you can use AI tools (like ChatGPT or Claude) to quickly convert them to the optimized format for this project.
+
+### Recommended Prompt
+Copy the following command to your AI assistant along with your content:
+
+> I want to convert this Markdown content into the format for the "MD2DOC-Evolution" project.
+> Please refer to this guide: https://github.com/eric861129/MD2DOC-Evolution/blob/main/docs/AI_GENERATION_GUIDE.md
+> 
+> Please help me:
+> 1. Add YAML Frontmatter (title, author).
+> 2. Convert standard tips/notes into specialized Callouts (e.g., `> [!TIP]`).
+> 3. Convert UI operations (buttons, shortcuts) into `【】` and `[]` styles.
+> 4. Ensure all code blocks have language labels.
+> 
+> Here is my content:
+> [Paste your content here]
+
+---
 
 ## ✨ Features
 

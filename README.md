@@ -14,6 +14,7 @@ MD2DOC-Evolution 是一個開源的 Markdown 編輯與轉檔工具，專為**技
 ## 📚 專案文件 (Documentation)
 
 - **[📖 專案概觀 (Project Overview)](docs/PROJECT_OVERVIEW.md)**: 了解專案的設計哲學與核心功能。
+- **[🤖 AI 輔助生成指南 (AI Generation Guide)](docs/AI_GENERATION_GUIDE.md)**: 如何利用 AI 將您的舊稿件快速轉換為本專案格式。
 - **[🏗️ 系統架構 (Architecture)](docs/ARCHITECTURE.md)**: 技術棧、目錄結構與核心工作流說明。
 - **[⚙️ 開發指南 (Development Guide)](docs/DEVELOPMENT_GUIDE.md)**: 環境建置、測試與除錯技巧。
 
@@ -38,6 +39,27 @@ MD2DOC-Evolution 是一個開源的 Markdown 編輯與轉檔工具，專為**技
 </div>
 
 *(實際 Word 輸出效果截圖)*
+
+## 🤖 AI 輔助生成 (AI Assisted Generation)
+
+如果您已經有現成的 Markdown 稿件，可以利用 AI 工具（如 ChatGPT、Claude）快速將其轉換為本專案的最佳化格式。
+
+### 推薦 Prompt
+請將以下指令複製給 AI，並附上您的稿件內容：
+
+> 我想將這段 Markdown 內容轉換為符合「MD2DOC-Evolution」專案格式的內容。
+> 請參考此規範：https://github.com/eric861129/MD2DOC-Evolution/blob/main/docs/AI_GENERATION_GUIDE.md
+> 
+> 請幫我：
+> 1. 加入 YAML Frontmatter (title, author)。
+> 2. 將普通提示文字轉換為 `> [!TIP]` 等專用 Callouts。
+> 3. 將操作說明（如按鈕、快捷鍵）轉換為 `【】` 與 `[]` 樣式。
+> 4. 確保程式碼區塊都有語言標籤。
+> 
+> 以下是我的內容：
+> [貼上您的內容]
+
+---
 
 ## ✨ 核心特色 (Features)
 
