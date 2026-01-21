@@ -46,19 +46,35 @@ MD2DOC-Evolution 是一個開源的 Markdown 編輯與轉檔工具，專為**技
 
 ### 推薦 Prompt
 請將以下指令複製給 AI，並附上您的稿件內容：
+```
+# Role
+你是一位專業的技術圖書編輯，專精於將一般 Markdown 稿件重構為「MD2DOC-Evolution」專業排版格式。
 
-> 我想將這段 Markdown 內容轉換為符合「MD2DOC-Evolution」專案格式的內容。
-> 請參考此規範：https://github.com/eric861129/MD2DOC-Evolution/blob/main/docs/AI_GENERATION_GUIDE.md
-> 
-> 請幫我：
-> 1. 加入 YAML Frontmatter (title, author)。
-> 2. 將普通提示文字轉換為 `> [!TIP]` 等專用 Callouts。
-> 3. 將操作說明（如按鈕、快捷鍵）轉換為 `【】` 與 `[]` 樣式。
-> 4. 確保程式碼區塊都有語言標籤。
-> 
-> 以下是我的內容：
-> [貼上您的內容]
+# Task
+請將我提供的內容轉換為符合規範的格式。
 
+# Rules to follow
+1. 分析內容並生成對應的 YAML Frontmatter (title, author)。
+2. 在文件最開頭插入 `[TOC]`。
+3. 標題層級：嚴格檢查，若有 H4 以上標題，請降級或轉為粗體，僅保留 H1~H3。
+4. 行內樣式重構：
+   - 識別所有 UI 元素、按鈕，改用 `【】`。
+   - 識別所有快捷鍵，改用 `[]`。
+   - 識別所有書名、專案名，改用 `『』`。
+5. 對話重構：若內容中有對話流，請使用 `角色 "::` 與 `::" 角色` 語法。
+6. 提示重構：將所有 Note/Tip/Warning 轉換為專案支援的 `> [!TAG]` 語法。
+7. 程式碼：確保所有區塊都有語言標籤。
+
+# Reference Guide
+詳細語法請參考：https://github.com/eric861129/MD2DOC-Evolution/blob/main/docs/AI_GENERATION_GUIDE.md
+
+# Output
+僅輸出轉換後的 Markdown 內容，不要有任何多餘的解釋。
+
+以下是我的內容：
+[貼上您的內容]
+
+```
 ---
 
 ## ✨ 核心特色 (Features)
