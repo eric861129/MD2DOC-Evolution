@@ -72,6 +72,25 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
   const handleDrop = async (e: React.DragEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
     const files = Array.from(e.dataTransfer.files);
+    
+    // 1. Handle Markdown files (.md)
+    const mdFile = files.find(file => 
+      file.name.toLowerCase().endsWith('.md') || 
+      file.type === 'text/markdown' || 
+      file.type === 'text/x-markdown'
+    );
+
+    if (mdFile) {
+      const text = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsText(mdFile);
+      });
+      setContent(text);
+      return;
+    }
+
+    // 2. Handle Image files (existing logic)
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
 
     if (imageFiles.length === 0) return;
