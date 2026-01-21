@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-01-21
+
+### Added
+- **Resizable Layout**:
+    - Implemented a draggable divider between the Markdown editor and the Preview pane.
+    - Users can now customize the split ratio (default 50/50) to optimize their workspace.
+- **Direct File Import via Drag-and-Drop**:
+    - Support for dragging and dropping `.md` files directly into the editor.
+    - Automatically reads and populates the editor with the file's content, streamlining the import process.
+
+### Changed
+- **UI Evolution (v2 Style)**:
+    - Redesigned the **Header** to group "Reset", "Language", and "Theme" buttons into a single, cohesive action bar.
+    - Introduced an **Ultra-Flat Footer** (VS Code style) that displays project info and a GitHub link in a single, non-intrusive line.
+    - Improved overall visual balance with refined padding and typography.
+
 ## [1.2.10] - 2026-01-20
 
 ### Added

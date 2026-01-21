@@ -34,6 +34,10 @@ footer: true
 > **新功能：斜線指令**
 > 現在您可以直接輸入 ${BT}/來選取指令，例如: ${BT}/table${BT} 插入表格，或 ${BT}/chat${BT} 插入對話框！
 
+> [!TIP]
+> **新功能：檔案拖放匯入**
+> 您可以直接將電腦上的 ${BT}.md${BT} 檔案拖入此編輯區域，系統會自動讀取並載入內容！
+
 對於書籍介面的描述，我們設計了特殊的括號樣式：點擊 【確定】 按鈕後即可完成操作。這在 Word 匯出後也會保持加粗與特殊視覺感。
 
 ---
@@ -92,7 +96,7 @@ ${BT}${BT}${BT}
 ${BT}${BT}${BT}json:no-ln
 {
   "name": "md2doc-evolution",
-  "version": "1.2.10",
+  "version": "1.3.0",
   "private": true
 }
 ${BT}${BT}${BT}
@@ -153,7 +157,7 @@ graph TD
     B -- Yes --> C[修復 Bug]
     C --> D[測試]
     D --> B
-    B -- No --> E[發布 v1.2.10]
+    B -- No --> E[發布 v1.3.0]
 ${BT}${BT}${BT}
 `;
 
@@ -182,6 +186,10 @@ This is a standard paragraph. We support various inline styles, such as **Bold E
 > **New Feature: Slash Commands**
 > You can now type ${BT}/${BT} to bring up the quick menu!
 > Try typing ${BT}/table${BT} to insert a table or ${BT}/chat${BT} to insert a dialogue box.
+
+> [!TIP]
+> **New Feature: Drag-and-Drop Import**
+> You can now drag and drop ${BT}.md${BT} files directly from your computer into this editor to quickly load your manuscripts!
 
 For describing user interfaces (UI), we have designed special bracket styles: Click the 【Confirm】 button to complete the operation. This will remain bold and visually distinct after exporting to Word.
 
@@ -242,7 +250,7 @@ Use ${BT}json:no-ln${BT} or ${BT}:plain${BT} syntax. Ideal for short config file
 ${BT}${BT}${BT}json:no-ln
 {
   "name": "book-publisher",
-  "version": "1.2.10",
+  "version": "1.3.0",
   "private": true
 }
 ${BT}${BT}${BT}
@@ -303,6 +311,6 @@ graph TD
     B -- Yes --> C[Fix Bug]
     C --> D[Test]
     D --> B
-    B -- No --> E[Release v1.2.10]
+    B -- No --> E[Release v1.3.0]
 ${BT}${BT}${BT}
 `;
