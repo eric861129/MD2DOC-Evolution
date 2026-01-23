@@ -4,12 +4,13 @@
  * Licensed under the MIT License.
  */
 
-import React from 'react';
-import { Settings2, Download, Sun, Moon, RotateCcw, Languages, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings2, Download, Sun, Moon, RotateCcw, Languages, FileText, Bot } from 'lucide-react';
 import { useEditor } from '../../contexts/EditorContext';
 import { Button } from '../ui/Button';
 import { IconButton } from '../ui/IconButton';
 import { Select } from '../ui/Select';
+import { AIPromptModal } from '../AIPromptModal';
 
 export const EditorHeader: React.FC = () => {
   const {
@@ -27,6 +28,8 @@ export const EditorHeader: React.FC = () => {
     isDark,
     toggleDarkMode
   } = useEditor();
+
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
 
   const logoPath = `${import.meta.env.BASE_URL}logo.svg`;
   const hasContent = parsedBlocks.length > 0;
@@ -48,6 +51,17 @@ export const EditorHeader: React.FC = () => {
       <div className="flex items-center gap-4">
         {/* Action Group: Reset, Language, Theme */}
         <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner">
+          {/* AI Prompt Button */}
+          <IconButton
+            onClick={() => setIsAIModalOpen(true)}
+            title={t('aiPrompt')}
+            className="bg-transparent border-none hover:bg-white dark:hover:bg-slate-700 shadow-none text-indigo-600 dark:text-indigo-400"
+          >
+            <Bot className="w-4 h-4" />
+          </IconButton>
+
+          <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
           {/* Reset Button */}
           <IconButton
             onClick={resetToDefault}
@@ -113,6 +127,11 @@ export const EditorHeader: React.FC = () => {
           <Download className="w-4 h-4" />
         </Button>
       </div>
+
+      <AIPromptModal 
+        isOpen={isAIModalOpen} 
+        onClose={() => setIsAIModalOpen(false)} 
+      />
     </header>
   );
 };
