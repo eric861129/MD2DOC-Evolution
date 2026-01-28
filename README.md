@@ -11,7 +11,7 @@
 
 MD2DOC-Evolution 是一個開源的 Markdown 編輯與轉檔工具，專為**技術書籍作者**與**內容創作者**設計。它填補了「工程師習慣的 Markdown 寫作」與「出版社要求的 Word 稿件」之間的鴻溝，讓你能專注於內容創作，自動完成繁瑣的排版工作。
 
-🔗 **線上試用 (Live Demo):** [https://eric861129.github.io/MD2DOC-Evolution/](https://eric861129.github.io/MD2DOC-Evolution/)
+🔗 **線上試用 (Live Demo):** [https://huangchiyu.com/MD2DOC-Evolution/](https://huangchiyu.com/MD2DOC-Evolution/)
 
 ## 📚 專案文件 (Documentation)
 

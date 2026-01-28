@@ -21,10 +21,6 @@ const Footer: React.FC = () => {
           <span className="text-slate-400 dark:text-slate-500 uppercase tracking-widest">
             Designed for Technical Book Publishing | v{APP_VERSION}
           </span>
-          <div className="w-px h-2 bg-slate-300 dark:bg-slate-700" />
-          <span id="busuanzi_container_site_pv" className="text-slate-400 dark:text-slate-500 tracking-widest hidden">
-             Views: <span id="busuanzi_value_site_pv"></span>
-          </span>
         </div>
         
         <a 

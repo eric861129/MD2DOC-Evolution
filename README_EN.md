@@ -7,9 +7,9 @@
 
 ## If you like this project, please give it a star 🌟🌟🌟
 
-**MD2DOC-Evolution** is an open-source Markdown editor and converter designed specifically for **technical book authors** and **content creators**. It bridges the gap between "engineers' preferred Markdown writing" and "publishers' required Word manuscripts," allowing you to focus on content creation while automating tedious formatting work.
+MD2DOC-Evolution is an open-source Markdown editing and conversion tool designed specifically for **technical book authors** and **content creators**. It bridges the gap between "engineer-friendly Markdown writing" and "publisher-required Word manuscripts," allowing you to focus on content creation while automating tedious layout tasks.
 
-🔗 **Live Demo:** [https://eric861129.github.io/MD2DOC-Evolution/](https://eric861129.github.io/MD2DOC-Evolution/)
+🔗 **Live Demo:** [https://huangchiyu.com/MD2DOC-Evolution/](https://huangchiyu.com/MD2DOC-Evolution/)
 
 ## 📚 Documentation
 
