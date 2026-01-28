@@ -15,7 +15,7 @@ const Footer: React.FC = () => {
       <div className="container mx-auto px-8 flex justify-between items-center">
         <div className="flex items-center gap-3 text-[10px] font-bold tracking-tight">
           <span className="text-slate-500 dark:text-slate-400">
-            © 2025 EricHuang
+            © 2025 <span style={{ color: 'var(--brand-primary)' }}>EricHuang</span>
           </span>
           <div className="w-px h-2 bg-slate-300 dark:bg-slate-700" />
           <span className="text-slate-400 dark:text-slate-500 uppercase tracking-widest">
@@ -27,7 +27,7 @@ const Footer: React.FC = () => {
           href={GITHUB_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors text-[10px] font-bold"
+          className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover-brand transition-colors text-[10px] font-bold"
         >
           <Github className="w-3 h-3" />
           <span>GitHub</span>

@@ -102,9 +102,9 @@ export const PreviewBlock: React.FC<{ block: ParsedBlock; showLineNumbers?: bool
     case BlockType.HEADING_1:
       return <h1 className="text-4xl font-black mb-12 mt-16 pb-4 border-b-4 border-slate-900 tracking-tight leading-tight"><RenderRichText text={block.content} /></h1>;
     case BlockType.HEADING_2:
-      return <h2 className="text-2xl font-black mb-8 mt-12 tracking-tight flex items-center gap-3 before:w-2 before:h-8 before:bg-indigo-600"><RenderRichText text={block.content} /></h2>;
+      return <h2 className="text-2xl font-black mb-8 mt-12 tracking-tight flex items-center gap-3 before:w-2 before:h-8 before-bg-product"><RenderRichText text={block.content} /></h2>;
     case BlockType.HEADING_3:
-      return <h3 className="text-xl font-bold mb-6 mt-10 text-slate-800 underline decoration-indigo-200 underline-offset-8 decoration-4"><RenderRichText text={block.content} /></h3>;
+      return <h3 className="text-xl font-bold mb-6 mt-10 text-slate-800 dark:text-slate-200 underline decoration-product underline-offset-8 decoration-4"><RenderRichText text={block.content} /></h3>;
     case BlockType.CODE_BLOCK:
       const codeLines = block.content.split('\n');
       return (
@@ -138,14 +138,17 @@ export const PreviewBlock: React.FC<{ block: ParsedBlock; showLineNumbers?: bool
           <div className={`
             ${isCenter ? 'max-w-[90%]' : 'max-w-[85%]'} 
             border-2 p-6 relative 
-            ${isRight ? 'border-dashed border-slate-900 bg-white text-right' : 
-              isCenter ? 'border-double border-indigo-400 bg-indigo-50/30 text-center' : 
-              'border-dotted border-slate-900 bg-slate-100 text-left'}
+            ${isRight ? 'border-dashed border-slate-900 dark:border-slate-400 bg-white dark:bg-slate-900 text-right' : 
+              isCenter ? 'border-double border-product bg-product-glow text-center' : 
+              'border-dotted border-slate-900 dark:border-slate-400 bg-slate-100 dark:bg-slate-800 text-left'}
           `}>
-            <div class={`absolute -top-3 ${isRight ? 'left-4' : isCenter ? 'left-1/2 -translate-x-1/2' : 'right-4'} bg-inherit px-2 text-[10px] font-black tracking-widest text-indigo-600 border border-slate-200 uppercase`}>
+            <div 
+              class={`absolute -top-3 ${isRight ? 'left-4' : isCenter ? 'left-1/2 -translate-x-1/2' : 'right-4'} bg-inherit px-2 text-[10px] font-black tracking-widest border border-slate-200 dark:border-slate-700 uppercase`}
+              style={{ color: 'var(--product-primary)' }}
+            >
               {block.role}
             </div>
-            <div className="whitespace-pre-wrap leading-[1.8] text-slate-900"><RenderRichText text={block.content} /></div>
+            <div className="whitespace-pre-wrap leading-[1.8] text-slate-900 dark:text-slate-100"><RenderRichText text={block.content} /></div>
           </div>
         </div>
       );

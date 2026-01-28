@@ -87,14 +87,13 @@ const MarkdownEditor: React.FC = () => {
             />
           </div>
 
-          {/* Resizable Divider */}
-          <div 
-            onMouseDown={startResizing}
-            className="w-1.5 h-full cursor-col-resize hover:bg-indigo-500/30 active:bg-indigo-500/50 transition-colors z-10 flex items-center justify-center group"
-          >
-            <div className="w-0.5 h-8 bg-slate-300 dark:bg-slate-700 group-hover:bg-indigo-500 rounded-full transition-colors" />
-          </div>
-
+                    {/* Resizable Divider */}
+                    <div 
+                      onMouseDown={startResizing}
+                      className="w-1.5 h-full cursor-col-resize resizer-product transition-colors z-10 flex items-center justify-center group"
+                    >
+                      <div className="w-0.5 h-8 bg-slate-300 dark:bg-slate-700 group-hover:bg-product rounded-full transition-colors" />
+                    </div>
           <div style={{ width: `${100 - splitPercent}%` }} className="flex flex-col h-full">
             <PreviewPane 
               parsedBlocks={parsedBlocks}

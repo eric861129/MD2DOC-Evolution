@@ -106,25 +106,33 @@ export const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
             const Icon = item.icon;
             
             return (
-              <button
-                key={item.id}
-                ref={isSelected ? selectedItemRef : null}
-                className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm rounded-md transition-colors
-                  ${isSelected 
-                    ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' 
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50'
-                  }
+            <button
+              key={command.id}
+              onClick={() => {
+                onSelect(command.id);
+              }}
+              className={`
+                w-full flex items-center gap-3 px-3 py-2 text-sm text-left transition-all
+                ${idx === selectedIndex 
+                  ? 'bg-product-glow' 
+                  : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'}
+              `}
+              style={idx === selectedIndex ? { color: 'var(--product-primary)' } : {}}
+            >
+              <div 
+                className={`
+                  p-1.5 rounded-lg border transition-colors
+                  ${idx === selectedIndex 
+                    ? 'bg-white dark:bg-slate-900' 
+                    : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}
                 `}
-                onClick={() => onSelect(item)}
+                style={idx === selectedIndex ? { borderColor: 'var(--product-primary)' } : {}}
               >
-                <div className={`flex items-center justify-center w-8 h-8 rounded border 
-                  ${isSelected 
-                    ? 'bg-white dark:bg-indigo-900/50 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400' 
-                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
-                  }`}
-                >
-                  <Icon size={16} />
-                </div>
+                {React.cloneElement(command.icon as React.ReactElement, { 
+                  className: "w-4 h-4",
+                  style: idx === selectedIndex ? { color: 'var(--product-primary)' } : {}
+                })}
+              </div>
                 <div className="flex flex-col flex-1 min-w-0">
                   <span className="font-medium truncate">{item.label}</span>
                   {item.description && (

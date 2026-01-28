@@ -64,37 +64,21 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class'
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-primary': 'var(--brand-primary)',
+                        'product-primary': 'var(--product-primary)',
+                        'product-hover': 'var(--product-hover)',
+                        'product-glow': 'var(--product-glow)',
+                        'bg-base': 'var(--bg-base)',
+                        'text-high': 'var(--text-high)',
+                    }
+                }
+            }
         }
     </script>
-    <style>
-        /* 核心排版策略：英數強制 Consolas，中文微軟正黑體 */
-        :root {
-            --font-main: "Consolas", "Microsoft JhengHei", "微軟正黑體", sans-serif;
-        }
-
-        body {
-            font-family: var(--font-main);
-            background-color: #f1f5f9;
-            margin: 0;
-            color: #1e293b;
-        }
-
-        .manuscript-font {
-            font-family: var(--font-main);
-        }
-
-        /* 程式碼塊強制等寬 */
-        code, pre, .font-mono {
-            font-family: "Consolas", monospace !important;
-        }
-
-        /* 自定義捲軸 */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f8fafc; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
     <script>
         // 關鍵：將 Buffer 掛載到全局，docx 庫才能運作

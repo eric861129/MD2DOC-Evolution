@@ -1,0 +1,93 @@
+/* --- 設計系統核心變數 (Amber Anthracite v2.0 + Scholarly Blue) --- */
+:root {
+  --font-main: "Consolas", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+
+  /* Master Brand: Amber Anthracite v2.0 */
+  --bg-base: #FCF9F5;
+  --text-high: #2D2926;
+  --brand-primary: #A86434; /* Amber */
+
+  /* MD2DOC Product Layer: Scholarly Blue */
+  --product-primary: #3E5C76; 
+  --product-hover: #527491;
+  --product-glow: rgba(62, 92, 118, 0.12);
+}
+
+[data-theme='dark'] {
+  --bg-base: #1A1816;
+  --text-high: #E0E0E0;
+  --brand-primary: #EFC69B; /* Soft Amber */
+
+  --product-primary: #6D9DC5;
+  --product-hover: #8AB3D6;
+  --product-glow: rgba(109, 157, 197, 0.2);
+}
+
+/* --- 基礎頁面樣式 --- */
+body {
+  font-family: var(--font-main);
+  background-color: var(--bg-base);
+  color: var(--text-high);
+  margin: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.manuscript-font {
+  font-family: var(--font-main);
+}
+
+code, pre, .font-mono {
+  font-family: "Consolas", monospace !important;
+}
+
+/* --- 自定義捲軸樣式 --- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { 
+  background: #cbd5e1; 
+  border-radius: 4px; 
+}
+[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* --- 產品功能性 Helper Classes --- */
+
+/* 按鈕主色調 */
+.btn-product-primary {
+  background-color: var(--product-primary);
+  transition: all 0.2s ease;
+}
+
+.btn-product-primary:hover:not(:disabled) {
+  background-color: var(--product-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px var(--product-glow);
+}
+
+/* 文字選取顏色 */
+.selection-product::selection {
+  background-color: var(--product-glow);
+}
+
+/* 預覽區 H2 裝飾線 */
+.before-bg-product::before {
+  content: "";
+  display: block;
+  background-color: var(--product-primary) !important;
+}
+
+/* 分隔線調整工具 */
+.resizer-product:hover {
+  background-color: var(--product-glow);
+}
+
+.resizer-product:active {
+  background-color: rgba(109, 157, 197, 0.4);
+}
+
+/* 品牌簽名 Hover */
+.hover-brand:hover {
+  color: var(--brand-primary) !important;
+}
