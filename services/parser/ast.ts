@@ -6,6 +6,7 @@
 
 import { marked } from 'marked';
 import { BlockType, ParsedBlock } from '../types';
+import { cleanTextForPublishing } from '../../utils/textProcessor';
 
 // Configure marked options if needed
 marked.use({
@@ -27,7 +28,7 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
             ...block,
             sourceLine: blockStartLine,
             startIndex: blockStartIndex,
-            endIndex: blockStartIndex + token.raw.length
+            endIndex: blockStartIndex + (token.raw?.length || 0)
         });
     };
 
@@ -39,39 +40,62 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
           BlockType.HEADING_3;
         addBlock({
           type: headingType,
-          content: token.text
+          content: cleanTextForPublishing(token.text)
         });
         break;
 
       case 'paragraph':
         const text = token.text;
 
-        // 1. TOC
-        if (text.trim() === '[TOC]' || text.trim() === '[toc]') {
-          addBlock({ type: BlockType.TOC, content: '' });
+        // 1. TOC (Can be [TOC] followed by manual list in the same paragraph)
+        if (text.trim().startsWith('[TOC]') || text.trim().startsWith('[toc]')) {
+          addBlock({ 
+            type: BlockType.TOC, 
+            content: cleanTextForPublishing(text.replace(/\[TOC\]|\[toc\]/i, '').trim()) 
+          });
           break;
         }
 
-        // 2. Chat Dialogues
-        const centerMatch = text.match(/^(.+?)\s*:\":\s*(.*)$/);
-        if (centerMatch) {
-            addBlock({ type: BlockType.CHAT_CUSTOM, role: centerMatch[1].trim(), content: centerMatch[2].trim(), alignment: 'center' });
+        // 2. Chat Dialogues (Handle multi-line if they are grouped by marked)
+        const lines = text.split('\n');
+        let allChat = true;
+        const chatBlocks: ParsedBlock[] = [];
+        
+        for (const line of lines) {
+            const centerMatch = line.match(/^(.+?)\s*:\":\s*(.*)$/);
+            if (centerMatch) {
+                chatBlocks.push({ type: BlockType.CHAT_CUSTOM, role: centerMatch[1].trim(), content: cleanTextForPublishing(centerMatch[2].trim()), alignment: 'center' });
+                continue;
+            }
+            const rightMatch = line.match(/^(.+?)\s*::\"\s*(.*)$/);
+            if (rightMatch) {
+                chatBlocks.push({ type: BlockType.CHAT_CUSTOM, role: rightMatch[1].trim(), content: cleanTextForPublishing(rightMatch[2].trim()), alignment: 'right' });
+                continue;
+            }
+            const leftMatch = line.match(/^(.+?)\s*\"(?:::)\s*(.*)$/);
+            if (leftMatch) {
+                chatBlocks.push({ type: BlockType.CHAT_CUSTOM, role: leftMatch[1].trim(), content: cleanTextForPublishing(leftMatch[2].trim()), alignment: 'left' });
+                continue;
+            }
+            allChat = false;
             break;
         }
-        const rightMatch = text.match(/^(.+?)\s*::\"\s*(.*)$/);
-        if (rightMatch) {
-            addBlock({ type: BlockType.CHAT_CUSTOM, role: rightMatch[1].trim(), content: rightMatch[2].trim(), alignment: 'right' });
-            break;
-        }
-        const leftMatch = text.match(/^(.+?)\s*\"(?:::)\s*(.*)$/);
-        if (leftMatch) {
-            addBlock({ type: BlockType.CHAT_CUSTOM, role: leftMatch[1].trim(), content: leftMatch[2].trim(), alignment: 'left' });
+
+        if (allChat && chatBlocks.length > 0) {
+            chatBlocks.forEach((cb, idx) => {
+                blocks.push({
+                    ...cb,
+                    sourceLine: blockStartLine + idx,
+                    startIndex: blockStartIndex,
+                    endIndex: blockStartIndex + token.raw.length
+                });
+            });
             break;
         }
 
         addBlock({
           type: BlockType.PARAGRAPH,
-          content: token.text
+          content: cleanTextForPublishing(token.text)
         });
         break;
 
@@ -117,30 +141,33 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
            const firstLine = firstToken.text.trim();
            if (firstLine.startsWith('[!TIP]')) {
              calloutType = BlockType.CALLOUT_TIP;
-             content = rawBlockquote.replace(/^\\[!TIP\\]\s*/m, '').trim(); 
-             // Simplified stripping for now, matching previous logic roughly
-             // Re-implementing specific stripping if needed
              const lines = rawBlockquote.split('\n');
-             if (lines[0].includes('[!TIP]')) lines[0] = lines[0].replace('[!TIP]', '').trim();
-             content = lines.join('\n');
+             if (lines[0].includes('[!TIP]')) {
+                 lines.shift();
+             }
+             content = lines.join('\n').trim();
 
            } else if (firstLine.startsWith('[!WARNING]')) {
              calloutType = BlockType.CALLOUT_WARNING;
              const lines = rawBlockquote.split('\n');
-             if (lines[0].includes('[!WARNING]')) lines[0] = lines[0].replace('[!WARNING]', '').trim();
-             content = lines.join('\n');
+             if (lines[0].includes('[!WARNING]')) {
+                 lines.shift();
+             }
+             content = lines.join('\n').trim();
 
            } else if (firstLine.startsWith('[!NOTE]')) {
              calloutType = BlockType.CALLOUT_NOTE;
              const lines = rawBlockquote.split('\n');
-             if (lines[0].includes('[!NOTE]')) lines[0] = lines[0].replace('[!NOTE]', '').trim();
-             content = lines.join('\n');
+             if (lines[0].includes('[!NOTE]')) {
+                 lines.shift();
+             }
+             content = lines.join('\n').trim();
            }
         }
         
         addBlock({
              type: calloutType,
-             content: content
+             content: cleanTextForPublishing(content)
         });
         break;
 
@@ -172,7 +199,7 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
 
             addBlock({
               type: ordered ? BlockType.NUMBERED_LIST : BlockType.BULLET_LIST,
-              content: cleanText,
+              content: cleanTextForPublishing(cleanText),
               nestingLevel: level
             });
 
@@ -238,5 +265,33 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
      processToken(token, blockStartLine, blockStartIndex);
   });
 
-  return blocks;
+  // Post-processing: Merge adjacent TOC and List blocks if they are intended to be a manual TOC
+  const mergedBlocks: ParsedBlock[] = [];
+  for (let i = 0; i < blocks.length; i++) {
+    const current = blocks[i];
+    if (current.type === BlockType.TOC && i + 1 < blocks.length) {
+      let nextIndex = i + 1;
+      let manualContent = current.content || '';
+      
+      while (nextIndex < blocks.length && 
+             (blocks[nextIndex].type === BlockType.BULLET_LIST || 
+              blocks[nextIndex].type === BlockType.NUMBERED_LIST)) {
+        
+        const listBlock = blocks[nextIndex];
+        // Reconstruct manual TOC line
+        const prefix = listBlock.type === BlockType.BULLET_LIST ? '- ' : '1. ';
+        manualContent += (manualContent ? '\n' : '') + prefix + listBlock.content;
+        nextIndex++;
+      }
+      
+      if (nextIndex > i + 1) {
+        mergedBlocks.push({ ...current, content: manualContent });
+        i = nextIndex - 1;
+        continue;
+      }
+    }
+    mergedBlocks.push(current);
+  }
+
+  return mergedBlocks;
 };

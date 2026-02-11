@@ -4,7 +4,7 @@
  * Licensed under the MIT License.
  */
 
-import { Paragraph, ImageRun, AlignmentType } from "docx";
+import { Paragraph, ImageRun, AlignmentType, TextRun } from "docx";
 import { DocxConfig } from "../types";
 import { WORD_THEME } from "../../../constants/theme";
 
@@ -60,13 +60,39 @@ export const createImageBlock = async (src: string, alt: string, config: DocxCon
     const dims = await getImageDimensions(realSrc);
     if (dims.width === 0) return [];
 
-    // Force image to fill the maximum page width
-    const maxWidthPx = (config.widthCm - 4) * 37.8; // Use slightly larger width (less margin)
+    // Increment Figure Counter
+    if (config.counters) {
+        config.counters.figure++;
+    }
+    const figNum = config.counters ? config.counters.figure : 0;
+
+    // Publisher Requirement 09 & 10
+    // Max width is 13cm. Full page is 13x18cm.
+    const isFullPage = alt.includes('full-page');
+    const cleanAlt = alt.replace('full-page', '').trim();
     
-    // Calculate target height to maintain aspect ratio
-    const ratio = maxWidthPx / dims.width;
-    const targetWidth = maxWidthPx;
-    const targetHeight = dims.height * ratio;
+    const MAX_WIDTH_CM = 13;
+    const MAX_HEIGHT_CM = isFullPage ? 18 : 20; // Limit height too to avoid breaking layout
+
+    const maxWidthPx = MAX_WIDTH_CM * 37.8; // 1cm approx 37.8px (96dpi)
+    const maxHeightPx = MAX_HEIGHT_CM * 37.8;
+
+    let targetWidth = dims.width;
+    let targetHeight = dims.height;
+
+    // Scale to fit max width
+    if (targetWidth > maxWidthPx) {
+        const ratio = maxWidthPx / targetWidth;
+        targetWidth = maxWidthPx;
+        targetHeight = targetHeight * ratio;
+    }
+
+    // Scale to fit max height if still too large
+    if (targetHeight > maxHeightPx) {
+        const ratio = maxHeightPx / targetHeight;
+        targetHeight = maxHeightPx;
+        targetWidth = targetWidth * ratio;
+    }
 
     // 4. Create Paragraphs
     const imagePara = new Paragraph({
@@ -86,21 +112,18 @@ export const createImageBlock = async (src: string, alt: string, config: DocxCon
 
     const result = [imagePara];
 
-    // 4. Add Caption if Alt text exists
-    if (alt) {
-      result.push(new Paragraph({
-        alignment: AlignmentType.CENTER,
-        children: [
-            new TextRun({
-                text: ` ▲ ${alt}`,
-                italics: true,
-                size: 18, // 9pt
-                color: "666666"
-            })
-        ],
-        spacing: { before: 0, after: 200 },
-      }));
-    }
+    // 4. Add Caption with Figure Number (Requirement 05)
+    result.push(new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [
+          new TextRun({
+              text: `圖 ${figNum} ${cleanAlt}`,
+              bold: true,
+              size: 20, // 10pt
+          })
+      ],
+      spacing: { before: 0, after: 200 },
+    }));
 
     return result;
   } catch (e) {

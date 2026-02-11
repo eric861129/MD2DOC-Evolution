@@ -101,6 +101,12 @@ export const parseInlineStyles = async (text: string, config?: DocxConfig): Prom
           shading: { fill: COLORS.BG_BUTTON, type: ShadingType.CLEAR, color: "auto" } 
         }));
         break;
+      case InlineStyleType.UI_EMPHASIS:
+        runs.push(new TextRun({
+          ...baseConfig, 
+          bold: true
+        }));
+        break;
       case InlineStyleType.SHORTCUT:
         runs.push(new TextRun({
           ...baseConfig, 

@@ -26,9 +26,9 @@ describe('markdownParser', () => {
     ].join('\n');
     const { blocks } = parseMarkdown(input);
     expect(blocks).toHaveLength(3);
-    expect(blocks[0]).toEqual({ type: BlockType.HEADING_1, content: 'Heading 1' });
-    expect(blocks[1]).toEqual({ type: BlockType.HEADING_2, content: 'Heading 2' });
-    expect(blocks[2]).toEqual({ type: BlockType.HEADING_3, content: 'Heading 3' });
+    expect(blocks[0]).toMatchObject({ type: BlockType.HEADING_1, content: 'Heading 1' });
+    expect(blocks[1]).toMatchObject({ type: BlockType.HEADING_2, content: 'Heading 2' });
+    expect(blocks[2]).toMatchObject({ type: BlockType.HEADING_3, content: 'Heading 3' });
   });
 
   it('should parse paragraphs correctly', () => {
@@ -39,8 +39,8 @@ describe('markdownParser', () => {
     ].join('\n');
     const { blocks } = parseMarkdown(input);
     expect(blocks).toHaveLength(2);
-    expect(blocks[0]).toEqual({ type: BlockType.PARAGRAPH, content: 'Paragraph 1' });
-    expect(blocks[1]).toEqual({ type: BlockType.PARAGRAPH, content: 'Paragraph 2' });
+    expect(blocks[0]).toMatchObject({ type: BlockType.PARAGRAPH, content: 'Paragraph 1' });
+    expect(blocks[1]).toMatchObject({ type: BlockType.PARAGRAPH, content: 'Paragraph 2' });
   });
 
   it('should parse code blocks correctly', () => {
