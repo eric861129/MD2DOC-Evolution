@@ -28,6 +28,12 @@ export const generateDocx = async (
     config: DocxConfig = { widthCm: 17, heightCm: 23 }
 ): Promise<Blob> => {
   
+  // Initialize counters for automatic numbering (Figures, QRs)
+  config.counters = {
+    figure: 0,
+    qr: 0
+  };
+
   const docChildren: (Paragraph | Table)[] = [];
 
   for (const block of blocks) {

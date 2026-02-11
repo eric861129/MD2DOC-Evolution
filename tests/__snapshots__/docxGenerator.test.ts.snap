@@ -587,7 +587,7 @@ exports[`docxGenerator > should generate correct document structure for given bl
                                 "pos": "w:pos"
                               },
                               "root": {
-                                "val": 1
+                                "val": "{default-bullet-0}"
                               }
                             }
                           ]
@@ -615,7 +615,12 @@ exports[`docxGenerator > should generate correct document structure for given bl
                       ]
                     }
                   ],
-                  "numberingReferences": []
+                  "numberingReferences": [
+                    {
+                      "reference": "default-bullet",
+                      "instance": 0
+                    }
+                  ]
                 },
                 {
                   "rootKey": "w:r",
@@ -790,7 +795,7 @@ exports[`docxGenerator > should generate correct document structure for given bl
                               "pos": "w:pos"
                             },
                             "root": {
-                              "val": 1
+                              "val": "{default-bullet-0}"
                             }
                           }
                         ]
@@ -818,7 +823,12 @@ exports[`docxGenerator > should generate correct document structure for given bl
                     ]
                   }
                 ],
-                "numberingReferences": []
+                "numberingReferences": [
+                  {
+                    "reference": "default-bullet",
+                    "instance": 0
+                  }
+                ]
               }
             }
           ],
@@ -1446,7 +1456,7 @@ exports[`docxGenerator > should generate correct document structure for given bl
                               "pos": "w:pos"
                             },
                             "root": {
-                              "val": 1
+                              "val": "{default-bullet-0}"
                             }
                           }
                         ]
@@ -1474,7 +1484,12 @@ exports[`docxGenerator > should generate correct document structure for given bl
                     ]
                   }
                 ],
-                "numberingReferences": []
+                "numberingReferences": [
+                  {
+                    "reference": "default-bullet",
+                    "instance": 0
+                  }
+                ]
               },
               {
                 "rootKey": "w:r",
@@ -1649,7 +1664,7 @@ exports[`docxGenerator > should generate correct document structure for given bl
                             "pos": "w:pos"
                           },
                           "root": {
-                            "val": 1
+                            "val": "{default-bullet-0}"
                           }
                         }
                       ]
@@ -1677,7 +1692,12 @@ exports[`docxGenerator > should generate correct document structure for given bl
                   ]
                 }
               ],
-              "numberingReferences": []
+              "numberingReferences": [
+                {
+                  "reference": "default-bullet",
+                  "instance": 0
+                }
+              ]
             }
           }
         ],
