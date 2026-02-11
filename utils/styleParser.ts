@@ -11,6 +11,7 @@ export enum InlineStyleType {
   UNDERLINE = 'UNDERLINE',
   CODE = 'CODE',
   UI_BUTTON = 'UI_BUTTON',
+  UI_EMPHASIS = 'UI_EMPHASIS',
   LINK = 'LINK',
   IMAGE = 'IMAGE',
   SHORTCUT = 'SHORTCUT',
@@ -26,10 +27,10 @@ export interface InlineStyleSegment {
 }
 
 export const parseInlineElements = (text: string): InlineStyleSegment[] => {
-  // Regex 順序：圖片 > 連結 > 粗體 > 斜體 > 底線 > 程式碼 > UI按鈕 > 快捷鍵 > 書名號
+  // Regex 順序：圖片 > 連結 > 粗體 > 斜體 > 底線 > 程式碼 > UI按鈕 > UI強調 > 快捷鍵 > 書名號
   // Image: !\[.*?\]\(.*?\)
   // Link: \[.*?\]\(.*?\)
-  const regex = /(!\[.*?\]\(.*?\))|(\[.*?\]\(.*?\))|(\*\*.*?\*\*)|(\*.*?\*)|(<u>.*?<\/u>)|(`[^`]+`)|(【.*?】)|(\[.*?\])|(『.*?』)/g;
+  const regex = /(!\[.*?\]\(.*?\))|(\[.*?\]\(.*?\))|(\*\*.*?\*\*)|(\*.*?\*)|(<u>.*?<\/u>)|(`[^`]+`)|(【.*?】)|(「.*?」)|(\[.*?\])|(『.*?』)/g;
   
   const segments: InlineStyleSegment[] = [];
   let lastIndex = 0;
@@ -81,6 +82,9 @@ export const parseInlineElements = (text: string): InlineStyleSegment[] => {
       content = fullMatch.slice(1, -1);
     } else if (fullMatch.startsWith('【')) {
       type = InlineStyleType.UI_BUTTON;
+      content = fullMatch; // 保留括號
+    } else if (fullMatch.startsWith('「')) {
+      type = InlineStyleType.UI_EMPHASIS;
       content = fullMatch; // 保留括號
     } else if (fullMatch.startsWith('[')) {
       type = InlineStyleType.SHORTCUT;

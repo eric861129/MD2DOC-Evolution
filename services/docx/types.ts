@@ -13,4 +13,8 @@ export interface DocxConfig {
   showLineNumbers?: boolean;
   meta?: DocumentMeta;
   imageRegistry?: Record<string, string>;
+  counters?: {
+    figure: number;
+    qr: number;
+  };
 }
