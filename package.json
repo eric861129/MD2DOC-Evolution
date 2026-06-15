@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm run test:run && npm run build"
   },
   "dependencies": {
     "@fontsource/geist": "^5.2.9",

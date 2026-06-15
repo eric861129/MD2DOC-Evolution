@@ -25,20 +25,29 @@ describe('docxGenerator', () => {
       { type: BlockType.BULLET_LIST, content: 'Item 1' },
     ];
 
-    await generateDocx(blocks);
+    await generateDocx(blocks, {
+      widthCm: 17,
+      heightCm: 23,
+      meta: {
+        title: '技術書稿',
+        author: 'Eric',
+        header: true,
+        footer: true,
+      },
+    });
 
     expect(Packer.toBlob).toHaveBeenCalledTimes(1);
     const doc = vi.mocked(Packer.toBlob).mock.calls[0][0];
-    
-    // We can't easily snapshot the whole Document instance as it might be huge and contain internal state.
-    // Instead, we can verify that the structure passed to Document constructor was correct.
-    // But since we didn't mock Document, we have the real instance.
-    // We can try to serialize it or check specific properties if they are public.
-    // docx `Document` usually has public properties mirroring the input options or a `root` array.
-    
-    // Attempt to snapshot the JSON representation if possible
-    expect(JSON.stringify(doc, null, 2)).toMatchSnapshot();
-    
+
+    const serialized = JSON.stringify(doc);
+    expect(serialized).toContain('Title');
+    expect(serialized).toContain('Hello world');
+    expect(serialized).toContain('Item 1');
+    expect(serialized).toContain('技術書稿');
+    expect(serialized).toContain('Eric');
+    expect(serialized).toContain('default-bullet');
+    expect(serialized).toContain('Microsoft JhengHei');
+
     vi.useRealTimers();
   });
 });

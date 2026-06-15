@@ -1,319 +1,136 @@
-# MD2DOC-Evolution | v1.3.0
+# MD2DOC-Evolution | v1.4.0
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
+[![CI](https://github.com/eric861129/MD2DOC-Evolution/actions/workflows/ci.yml/badge.svg)](https://github.com/eric861129/MD2DOC-Evolution/actions/workflows/ci.yml)
 
-[🇹🇼 中文](README.md) | [🇺🇸 English](README_EN.md)
+[中文](README.md) | [English](README_EN.md)
 
 ![功能演示](docs/images/MD2DOC-角色對話-GIF.gif)
 
-## 喜歡的話可以幫我按星星🌟🌟🌟
+MD2DOC-Evolution 是一個開源的 Markdown 到 Word DOCX 技術書稿工作台，專為技術書作者、工程師與內容創作者設計。它把工程師熟悉的 Markdown 寫作流程，轉成出版社、審稿或交付常用的 Word 書稿格式。
 
-MD2DOC-Evolution 是一個開源的 Markdown 編輯與轉檔工具，專為**技術書籍作者**與**內容創作者**設計。它填補了「工程師習慣的 Markdown 寫作」與「出版社要求的 Word 稿件」之間的鴻溝，讓你能專注於內容創作，自動完成繁瑣的排版工作。
+線上試用：[https://huangchiyu.com/MD2DOC-Evolution/](https://huangchiyu.com/MD2DOC-Evolution/)
 
-🔗 **線上試用 (Live Demo):** [https://huangchiyu.com/MD2DOC-Evolution/](https://huangchiyu.com/MD2DOC-Evolution/)
+## v1.4.0 Highlights
 
-## 📚 專案文件 (Documentation)
+- 專業工具台 UI：上方 command bar、左側 Markdown 快速鍵、中間 editor、右側 Word print preview。
+- 更穩定的工具鏈：Tailwind 改為 Vite plugin、Buffer 改為 npm polyfill、GSAP 改為正式依賴。
+- 共用 command model：左側快速鍵與 slash command 使用同一份指令資料。
+- Registry-style preview renderer：Preview renderer 與 DOCX builder 的擴充方向一致。
+- AI Agent Prompt：Header 內建 prompt 會附上 GitHub repo，讓外部 AI Agent 更容易產出符合格式的 Markdown。
+- 匯出前狀態提示：顯示字數、block 數、Frontmatter 狀態與 DOCX 匯出狀態。
+- Mobile editor/preview tabs：行動版不再擠壓左右分欄。
 
-- **[📖 專案概觀 (Project Overview)](docs/PROJECT_OVERVIEW.md)**: 了解專案的設計哲學與核心功能。
-- **[🤖 AI 輔助生成指南 (AI Generation Guide)](docs/AI_GENERATION_GUIDE.md)**: 如何利用 AI 將您的舊稿件快速轉換為本專案格式。
-- **[🏗️ 系統架構 (Architecture)](docs/ARCHITECTURE.md)**: 技術棧、目錄結構與核心工作流說明。
-- **[⚙️ 開發指南 (Development Guide)](docs/DEVELOPMENT_GUIDE.md)**: 環境建置、測試與除錯技巧。
+## Supported Syntax
 
-## 📄 範例下載 (Sample Output)
+| 功能 | 語法 | 說明 |
+| :--- | :--- | :--- |
+| Frontmatter | `---` YAML block | 支援 `title`、`author`、`header`、`footer` 等 metadata |
+| 目錄 | `[TOC]` | 可產生 Word 目錄區塊 |
+| 標題 | `#` 到 `###` | 對應 H1 到 H3 |
+| 程式碼 | <code>```ts:ln</code> / <code>```json:no-ln</code> | 支援語言標籤與行號開關 |
+| Mermaid | <code>```mermaid</code> | Preview 與 DOCX 匯出支援圖表 |
+| Callout | `> [!NOTE]` / `> [!TIP]` / `> [!WARNING]` | 支援提示、筆記、警告區塊 |
+| 對話 | `User "::` / `AI ::"` / `System :":` | 支援左、右、置中對話泡泡 |
+| 表格 | Markdown table | 匯出成 Word 表格 |
+| 圖片 | `![alt](image-id-or-url)` | 支援拖放圖片與 Markdown 圖片語法 |
+| 連結 | `[text](url)` | 匯出時可附 QR Code |
 
-您可以從這裡查看匯出的 Word 文件效果：
-- [📥 下載範例文件 (範例Word.docx)](samples/範例Word.docx)
+## AI Assisted Generation
 
+如果你要把既有筆記、逐字稿或草稿轉成 MD2DOC-Evolution 格式，可以點擊 Header 的 AI Prompt 按鈕，複製內建提示詞給 ChatGPT、Claude 或其他 AI Agent。
+
+內建 prompt 會提供：
+
+- GitHub repo 參考連結：`https://github.com/eric861129/MD2DOC-Evolution`
+- Frontmatter、TOC、標題、code block、callout、table、dialogue 的格式要求
+- 「只輸出 Markdown 原稿」的輸出契約
+- 轉換前的 silent quality check
+
+完整規格可參考：[AI Generation Guide](docs/AI_GENERATION_GUIDE.md)
+
+## Documentation
+
+- [Project Overview](docs/PROJECT_OVERVIEW.md)：設計哲學與核心功能。
+- [AI Generation Guide](docs/AI_GENERATION_GUIDE.md)：給 AI Agent 與使用者的格式轉換規則。
+- [Architecture](docs/ARCHITECTURE.md)：技術棧、目錄結構與核心工作流。
+- [Development Guide](docs/DEVELOPMENT_GUIDE.md)：開發環境、測試與除錯技巧。
+- [Customization](CUSTOMIZATION.md)：版面、樣式與輸出格式調整方式。
+
+## Sample Output
+
+範例 Word 文件：
+
+- [下載範例文件](samples/範例Word.docx)
 
 <div align="center">
-  <img src="docs/images/1.jpg" width="48%" alt="Cover & Header" />
-  <img src="docs/images/2.jpg" width="48%" alt="Chat Dialogues" />
+  <img src="docs/images/1.jpg" width="48%" alt="Cover and header" />
+  <img src="docs/images/2.jpg" width="48%" alt="Chat dialogues" />
   <br/>
-  <img src="docs/images/3.jpg" width="48%" alt="Callouts & Styles" />
-  <img src="docs/images/4.jpg" width="48%" alt="Code Blocks" />
+  <img src="docs/images/3.jpg" width="48%" alt="Callouts and styles" />
+  <img src="docs/images/4.jpg" width="48%" alt="Code blocks" />
   <br/>
-  <img src="docs/images/5.jpg" width="48%" alt="Tables & Lists" />
-  <img src="docs/images/6.jpg" width="48%" alt="Tables & Lists" />
-  <br/>
-  <img src="docs/images/7.jpg" width="48%" alt="Tables & Lists" />
-  <img src="docs/images/8.jpg" width="48%" alt="Tables & Lists" />
+  <img src="docs/images/5.jpg" width="48%" alt="Tables and lists" />
+  <img src="docs/images/6.jpg" width="48%" alt="Tables and lists" />
 </div>
 
-*(實際 Word 輸出效果截圖)*
+## Getting Started
 
-## 🤖 AI 輔助生成 (AI Assisted Generation)
+### Requirements
 
-如果您已經有現成的 Markdown 稿件，可以利用 AI 工具（如 ChatGPT、Claude）快速將其轉換為本專案的最佳化格式。
+- Node.js 20+
+- npm
 
-### 推薦 Prompt
-請將以下指令複製給 AI，並附上您的稿件內容：
-````
-# Role
-你是由「MD2DOC-Evolution」專案開發的技術文件重構專家。你的核心任務是將使用者提供的原始 Markdown 內容，轉換為符合該專案 AST 解析器規範的「嚴格格式 Markdown」。
+### Local Development
 
-# Objective
-產出一份**機器可讀性完美**的文件，確保轉換後的檔案能直接生成無格式錯誤的 Word 書稿。
-
-# Workflow
-1. **分析**：閱讀原始文本，識別標題結構、對話情境、程式碼類型與特殊樣式。
-2. **重構**：應用下列七大核心規範進行轉換。
-3. **檢查**：自我審查是否違反「禁止事項」。
-4. **輸出**：僅輸出轉換後的 Markdown 代碼。
-
-# Reference Guide
-完整規範請參考：[https://github.com/eric861129/MD2DOC-Evolution/blob/main/docs/AI_GENERATION_GUIDE.md](https://github.com/eric861129/MD2DOC-Evolution/blob/main/docs/AI_GENERATION_GUIDE.md)
-
----
-
-# Core Rules (核心規範)
-
-### 1. 檔案結構 (Document Structure)
-- **Frontmatter (YAML)**：
-    - 必須位於檔案**第一行**，用 `---` 包裹。
-    - **必要欄位**：`title` (標題), `author` (作者)。
-    - **禁止事項**：YAML 區塊內**嚴禁**出現 `#` 符號（請直接寫字串，不要加井號）。
-- **目錄 (TOC)**：
-    - 在 Frontmatter 結束後的**下一行**，強制插入 `[TOC]`。
-- **標題層級 (Heading Levels)**：
-    - 僅允許 **H1 (#)** 到 **H3 (###)**。
-    - **降級處理**：若遇到 H4 (####) 或更深層標題，請依語意改為 **粗體文字** 或 **列表項目**。
-
-### 2. 對話模式 (Chat Syntax) [極重要]
-解析器依賴特殊符號來決定對話框的左右位置，請依語意嚴格執行：
-- **靠左 (AI / 他人 / 受訪者)**：使用 `角色 "::` (引號在冒號**前**)。
-- **靠右 (User / 作者 / 主角)**：使用 `角色 ::"` (引號在冒號**後**)。
-- **置中 (System / 旁白)**：使用 `角色 :":` (引號在**中間**)。
-- *規則*：角色名稱必須位於符號左側，內容位於符號右側並換行。
-
-### 3. 程式碼區塊 (Code Blocks)
-所有 \`\`\` 區塊必須標註語言。請根據內容類型決定是否顯示行號：
-- **一般程式碼 (顯示行號)**：
-    - 適用：Python, C#, Java, TS, JS 等程式邏輯。
-    - 語法：` ```language ` (例：` ```python `)
-- **設定檔/純文本 (隱藏行號)**：
-    - 適用：JSON, YAML, Bash, Output Log, Config, 純文字。
-    - 語法：` ```language:no-ln ` (例：` ```json:no-ln `)
-
-### 4. 提示與引用 (Callouts)
-將所有 Markdown 引用符號 (`>`) 轉換為 GitHub Alert 風格：
-- 一般引用/備註 → `> [!NOTE]`
-- 技巧/建議 → `> [!TIP]`
-- 警告/錯誤 → `> [!WARNING]`
-- *注意*：標籤後必須換行再寫內容。
-
-### 5. 行內樣式 (Inline Elements)
-- **UI 互動元素**：按鈕、選單、畫面上看到的文字 → 使用 `【文字】`。
-- **鍵盤快捷鍵**：組合鍵、按鍵 → 使用 `[Key]` (例：`[Ctrl] + [C]`)。
-- **專有名詞**：書名、專案名、強調的術語 → 使用 `『文字』`。
-
-### 6. 列表縮排 (Indentation)
-- **嚴格縮排**：巢狀列表 (Nested List) 的子層級，必須比父層級多 **2 個空白 (Spaces)**。
-- **禁止扁平化**：請保留原始內容的層級結構，不要將子項目拉平。
-
----
-
-# Transformation Examples (轉換範例)
-
-### 範例 1：對話與提示
-**Input:**
-User 問：怎麼存檔？
-AI 答：按 Ctrl+S 就可以了。
-(注意：要先選取檔案)
-
-**Output:**
-User ::"
-怎麼存檔？
-
-AI "::
-按 [Ctrl] + [S] 就可以了。
-
-> [!NOTE]
-> 注意：要先選取檔案
-
-### 範例 2：程式碼與設定檔
-**Input:**
-這是 app.json 設定：
-
-```json
-{"version": "1.0"}
+```bash
+git clone https://github.com/eric861129/MD2DOC-Evolution.git
+cd MD2DOC-Evolution
+npm install
+npm run dev
 ```
 
-下面是 Python 程式：
+本機開發站台：
 
-```python
-print("Hello")
+```text
+http://localhost:3000/MD2DOC-Evolution/
 ```
 
-### 範例 3：標題降級
+## Verification
 
-**Input:**
+```bash
+npm run typecheck
+npm run test:run
+npm run build
+npm run verify
+```
 
-### 第三章
+`npm run verify` 會依序執行 typecheck、unit/component tests 與 production build，GitHub Actions 也使用同一組驗證流程。
 
-#### 小節重點
+## Tech Stack
 
-內容...
+- React 19
+- TypeScript
+- Vite 6
+- Tailwind CSS via `@tailwindcss/vite`
+- docx
+- Mermaid
+- Vitest + Testing Library
 
-**Output:**
+## Contributing
 
-### 第三章
+歡迎 issue、建議與 PR。此專案目前保留 branch flow 規則：
 
-**小節重點**
-內容...
+- `main` 只接受 `dev` 或 `hotfix/*`
+- `dev` 接受 `dev_feature_*`、`dev_refactor_*`、`dev_hotfix_*` 或 `hotfix/*`
 
-[在此貼上您的內容]
-````
----
+送出 PR 前請先執行：
 
-## ✨ 核心特色 (Features)
+```bash
+npm run verify
+```
 
-這個專案不僅僅是一個 Markdown 轉換器，它針對「出版」需求做了深度優化：
+## License
 
-- **📚 專業出版級 Word (DOCX) 匯出**
-    - 自動配置標題、段落、行距與邊框。
-    - 內建字體設定：中文使用 **Microsoft JhengHei (微軟正黑體)**，英文/程式碼使用 **Consolas**。
-    - 支援多種版面尺寸：技術書籍 (17x23cm)、A4、A5、B5。
-    - **自動生成目錄**：支援使用 `[TOC]` 語法自動產生可點擊的目錄頁（Word 中為標準目錄域）。
-
-- **💻 增強型程式碼區塊 (Enhanced Code Blocks)**
-    - **自動行號**：預設顯示行號，並與 IDE 風格保持一致（單行間距）。
-    - **語言標籤**：自動在區塊右上方顯示語言名稱。
-    - **靈活控制**：支援 `js:ln` (強制顯示) 或 `js:no-ln` (隱藏行號) 語法。
-
-- **📈 Mermaid 圖表支援 (Mermaid Charts)**
-    - 支援 `mermaid` 語法繪製流程圖、時序圖等。
-    - **自動轉圖**：網頁端即時預覽 SVG，匯出 Word 時自動轉換為高解析度 PNG 圖片。
-
-- **🔗 智慧連結 (Smart Links)**
-    - **自動 QR Code 生成**：Markdown 連結 `[文字](URL)` 在轉檔後會自動在文字旁生成 QR Code。
-    - **實體書優化**：方便讀者在閱讀紙本或電子書時，直接掃描手機即可跳轉參考資源。
-
-- **📑 YAML Frontmatter 支援**
-    - **後設資料管理**：支援在檔案開頭使用 YAML 語法定義書名、作者與排版偏好。
-    - **自動文件屬性**：定義的 `title` 與 `author` 會自動寫入 Word 檔案屬性。
-
-- **📖 動態頁首與頁尾**
-    - **專業頁碼**：自動在頁尾置中插入頁碼。
-    - **標題導航**：在頁首自動顯示書籍標題。
-    - **彈性開關**：可透過 Frontmatter 設定 `header: false` 或 `footer: false` 自由開啟或關閉。
-
-- **💬 角色對話框 (Chat Dialogues)**
-    - 專為技術書中常見的「情境模擬」或「AI 對話」設計。
-    - 寫作時只需輸入 `User:` 或 `AI:`，轉檔後自動生成左右對齊、風格區隔的對話盒。
-
-- **⚠️ 豐富的提示區塊 (Callouts)**
-    - 支援 GitHub/Obsidian 風格的提示語法：
-    - `[!TIP]` 提示：實線邊框
-    - `[!NOTE]` 筆記：虛線邊框
-    - `[!WARNING]` 警告：粗框強調
-
-- **⌨️ 特殊行內樣式**
-    - **UI 按鈕**：使用 `【設定】` 自動生成按鈕樣式。
-    - **快捷鍵**：使用 `[Ctrl]` 生成鍵盤按鍵樣式。
-    - **書名號**：使用 `『Clean Code』` 自動加粗。
-
-- **📊 豐富的區塊支援**
-    - **表格 (Tables)**：支援 Markdown 標準表格語法，自動生成帶邊框的 Word 表格。
-    - **有序列表**：支援 `1.` `2.` 自動編號功能。
-
-- **👁️ 所見即所得 (WYSIWYG)**
-    - 雙欄模式：左側寫作，右側即時預覽。
-    - **可調式版面**：中間分隔線可自由拖曳，隨意調整編輯器與預覽區的比例。
-    - **編輯器優化**：支援 `Tab` 鍵縮排（插入空格），不跳失焦點。
-    - **快速匯入**：支援直接將 `.md` 檔案拖入編輯器，自動讀取並寫入內容。
-
-- **⚡ 斜線指令 (Slash Commands)**
-    - 支援類似 Notion 的 `/` 指令系統。
-    - 輸入 `/` 即可喚出選單，快速插入標題、表格、Mermaid 圖表、對話框等所有功能，大幅提升寫作效率。
-
-## 🚀 快速開始 (Getting Started)
-
-### 前置需求
-- [Node.js](https://nodejs.org/) (建議 v16 以上)
-
-### 安裝與執行
-
-1. **複製專案 (Clone)**
-   ```bash
-   git clone https://github.com/your-username/MD2DOC-Evolution.git
-   cd MD2DOC-Evolution
-   ```
-
-2. **安裝依賴 (Install Dependencies)**
-   ```bash
-   npm install
-   ```
-
-3. **啟動開發伺服器 (Run Dev Server)**
-   ```bash
-   npm run dev
-   ```
-   瀏覽器將會自動開啟 `http://localhost:5173`。
-
-## 📝 寫作語法指南 (Syntax Guide)
-
-本專案使用自研的 Regex 型解析器，優化了技術書稿常見的排版需求。
-
-### 支援語法矩陣 (Support Matrix)
-
-| 語法類型       | 支援狀態   | 範例 / 備註                                              |
-| :------------- | :--------- | :------------------------------------------------------- |
-| **標準標題**   | ✅ 完全支援 | `# H1` 到 `### H3` (對應 Word 標題層級)                  |
-| **段落文本**   | ✅ 完全支援 | 一般文字與換行處理                                       |
-| **程式碼區塊** | ✅ 完全支援 | ```lang:ln/no-ln``` (支援行號切換與語言標籤)             |
-| **Mermaid**    | 🌟 特色支援 | ```mermaid``` 區塊 (自動轉為 Word 圖片)                  |
-| **無序清單**   | ✅ 基本支援 | `-` 或 `*` 開頭 (暫不支援多層級巢狀)                     |
-| **有序清單**   | ✅ 基本支援 | `1.` 開頭 (自動轉為 Word 編號列表)                       |
-| **表格**       | ✅ 基本支援 | 標準 Markdown 表格 (不支援儲存格內換行)                  |
-| **角色對話**   | 🌟 特色支援 | `角色 "::` (左)、`角色 ::"` (右)、`角色 :":` (中)        |
-| **提示區塊**   | 🌟 特色支援 | `> [!TIP]`、`> [!NOTE]`、`> [!WARNING]`                  |
-| **自動目錄**   | 🌟 特色支援 | `[TOC]` 語法                                             |
-| **智慧連結**   | 🌟 特色支援 | `[Text](URL)` (自動生成 QR Code)                         |
-| **行內樣式**   | ✅ 部分支援 | `**粗體**`、`*斜體*`、`『書名號』`、`【按鈕】`、`[鍵盤]` |
-| **水平線**     | ✅ 完全支援 | `---` 或 `***` (轉為 Word 分隔線)                        |
-
-> ⚠️ **解析限制說明 (Limitations)**:
-> 由於目前的解析器採用逐行掃描技術，對於**複雜的巢狀結構**（例如：在清單中插入表格，或在引用區塊中插入多個程式碼區塊）支援度較弱。若您的稿件包含大量複雜巢狀邏輯，建議在產出後於 Word 中做微調。未來我們計畫引入 AST (抽象語法樹) 以解決此問題。
-
-## 🚀 快速開始 (Getting Started)
-
-## ❓ 常見問題 (Known Issues)
-
-### 關於 Mermaid 圖表匯出
-當您開啟包含 Mermaid 圖表的 Word 文件時，Word 可能會跳出以下安全提示：
-
-![Word Alert](docs/images/WordAlert.jpg)
-> 「Word 找到文件中無法讀取的內容。你要復原本文件的內容嗎?」
-> 「是 (Yes)」
-
-這是由於 Mermaid 圖表在轉換為 Word 圖片格式時的編碼相容性問題。
-✅ **請放心點擊「是 (Yes)」**，Word 會自動修復並正確顯示所有圖表內容。這不會影響文件的安全性或內容完整性。
-
-## 🎨 客製化指南 (Customization)
-
-本專案支援高度客製化，您可以根據需求調整字體、顏色或新增 Markdown 語法。詳細說明請參考：
-- [📘 客製化指南 (CUSTOMIZATION.md)](CUSTOMIZATION.md)
-
-## 🛠️ 技術棧 (Tech Stack)
-
-- **Frontend Framework**: [React 19](https://react.dev/) (Hooks-based Modular Architecture)
-- **Build Tool**: [Vite 6](https://vitejs.dev/)
-- **Design System**: Centralized Theming System (`theme.ts`)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Document Generation**: [docx](https://docx.js.org/)
-- **UI Icons**: [Lucide React](https://lucide.dev/)
-
-## 🤝 貢獻 (Contributing)
-
-歡迎任何形式的貢獻！如果你發現 Bug 或有新功能建議：
-
-1. Fork 這個專案
-2. 建立你的 Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. 提交變更 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 開啟 Pull Request
-
-## 📄 授權 (License)
-
-本專案採用 MIT License 開源授權，詳見 [LICENSE](LICENSE) 文件。
+MIT License. See [LICENSE](LICENSE) for details.

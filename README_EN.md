@@ -1,163 +1,136 @@
-# MD2DOC-Evolution | v1.3.0
+# MD2DOC-Evolution | v1.4.0
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
+[![CI](https://github.com/eric861129/MD2DOC-Evolution/actions/workflows/ci.yml/badge.svg)](https://github.com/eric861129/MD2DOC-Evolution/actions/workflows/ci.yml)
 
-[🇹🇼 中文](README.md) | [🇺🇸 English](README_EN.md)
+[中文](README.md) | [English](README_EN.md)
 
-## If you like this project, please give it a star 🌟🌟🌟
+![Feature demo](docs/images/MD2DOC-角色對話-GIF.gif)
 
-MD2DOC-Evolution is an open-source Markdown editing and conversion tool designed specifically for **technical book authors** and **content creators**. It bridges the gap between "engineer-friendly Markdown writing" and "publisher-required Word manuscripts," allowing you to focus on content creation while automating tedious layout tasks.
+MD2DOC-Evolution is an open-source Markdown-to-Word DOCX manuscript workspace for technical book authors, engineers, and professional content creators. It keeps the writing flow close to Markdown while producing Word manuscripts suitable for review, publishing, and handoff.
 
-🔗 **Live Demo:** [https://huangchiyu.com/MD2DOC-Evolution/](https://huangchiyu.com/MD2DOC-Evolution/)
+Live demo: [https://huangchiyu.com/MD2DOC-Evolution/](https://huangchiyu.com/MD2DOC-Evolution/)
 
-## 📚 Documentation
+## v1.4.0 Highlights
 
-- **[📖 Project Overview](docs/PROJECT_OVERVIEW.md)**: Learn about the design philosophy and core features.
-- **[🤖 AI Generation Guide](docs/AI_GENERATION_GUIDE.md)**: How to quickly convert your existing manuscripts to this project's format using AI.
-- **[🏗️ Architecture](docs/ARCHITECTURE.md)**: Tech stack, directory structure, and core workflows.
-- **[⚙️ Development Guide](docs/DEVELOPMENT_GUIDE.md)**: Setup, testing, and debugging tips.
+- Professional workspace UI: compact command bar, Markdown quick-action rail, editor, and Word print preview.
+- More stable build stack: Tailwind through the Vite plugin, npm Buffer polyfill, and packaged GSAP dependencies.
+- Shared command model: the quick-action rail and slash commands now use the same command definitions.
+- Registry-style preview renderer: preview rendering now follows the same extension direction as the DOCX builder.
+- AI Agent Prompt: the header prompt includes the GitHub repo so external AI agents can follow the project format more reliably.
+- Export readiness signals: word count, block count, Frontmatter status, and DOCX readiness are visible before export.
+- Mobile editor/preview tabs: the mobile layout avoids squeezed split panes.
 
-## 📄 Sample Output
+## Supported Syntax
 
-You can view the exported Word document effect here:
-- [📥 Download Sample File (範例Word.docx)](samples/範例Word.docx)
+| Feature | Syntax | Notes |
+| :--- | :--- | :--- |
+| Frontmatter | `---` YAML block | Supports `title`, `author`, `header`, `footer`, and other metadata |
+| Table of contents | `[TOC]` | Creates a Word-style TOC block |
+| Headings | `#` to `###` | Maps to H1 through H3 |
+| Code blocks | <code>```ts:ln</code> / <code>```json:no-ln</code> | Supports language labels and line-number flags |
+| Mermaid | <code>```mermaid</code> | Supported in preview and DOCX export |
+| Callouts | `> [!NOTE]` / `> [!TIP]` / `> [!WARNING]` | Note, tip, and warning blocks |
+| Dialogue | `User "::` / `AI ::"` / `System :":` | Left, right, and centered dialogue bubbles |
+| Tables | Markdown table | Exported as Word tables |
+| Images | `![alt](image-id-or-url)` | Supports dropped images and Markdown image syntax |
+| Links | `[text](url)` | Can export with QR Code support |
+
+## AI Assisted Generation
+
+To convert existing notes, transcripts, or drafts into MD2DOC-Evolution format, click the AI Prompt button in the header and paste the prompt into ChatGPT, Claude, or another AI agent.
+
+The built-in prompt includes:
+
+- GitHub repo reference: `https://github.com/eric861129/MD2DOC-Evolution`
+- Required formatting for Frontmatter, TOC, headings, code blocks, callouts, tables, and dialogue
+- An output contract that asks the agent to return only the converted Markdown manuscript
+- A silent quality check before the agent answers
+
+See the full rules in [AI Generation Guide](docs/AI_GENERATION_GUIDE.md).
+
+## Documentation
+
+- [Project Overview](docs/PROJECT_OVERVIEW.md): design philosophy and core features.
+- [AI Generation Guide](docs/AI_GENERATION_GUIDE.md): conversion rules for users and AI agents.
+- [Architecture](docs/ARCHITECTURE.md): tech stack, directory structure, and core workflows.
+- [Development Guide](docs/DEVELOPMENT_GUIDE.md): local setup, testing, and debugging.
+- [Customization](CUSTOMIZATION.md): layout, styling, and export customization.
+
+## Sample Output
+
+Sample Word document:
+
+- [Download sample DOCX](samples/範例Word.docx)
 
 <div align="center">
-  <img src="docs/images/1.jpg" width="48%" alt="Cover & Header" />
-  <img src="docs/images/2.jpg" width="48%" alt="Chat Dialogues" />
+  <img src="docs/images/1.jpg" width="48%" alt="Cover and header" />
+  <img src="docs/images/2.jpg" width="48%" alt="Chat dialogues" />
   <br/>
-  <img src="docs/images/3.jpg" width="48%" alt="Callouts & Styles" />
-  <img src="docs/images/4.jpg" width="48%" alt="Code Blocks" />
+  <img src="docs/images/3.jpg" width="48%" alt="Callouts and styles" />
+  <img src="docs/images/4.jpg" width="48%" alt="Code blocks" />
   <br/>
-  <img src="docs/images/5.jpg" width="48%" alt="Tables & Lists" />
-  <img src="docs/images/6.jpg" width="48%" alt="Tables & Lists" />
-  <br/>
-  <img src="docs/images/7.jpg" width="48%" alt="Tables & Lists" />
-  <img src="docs/images/8.jpg" width="48%" alt="Tables & Lists" />
+  <img src="docs/images/5.jpg" width="48%" alt="Tables and lists" />
+  <img src="docs/images/6.jpg" width="48%" alt="Tables and lists" />
 </div>
-*(Screenshot of actual Word output)*
 
-## 🤖 AI Assisted Generation
+## Getting Started
 
-If you have existing Markdown manuscripts, you can use AI tools (like ChatGPT or Claude) to quickly convert them to the optimized format for this project.
+### Requirements
 
-### Recommended Prompt
-Copy the following command to your AI assistant along with your content:
+- Node.js 20+
+- npm
 
-> I want to convert this Markdown content into the format for the "MD2DOC-Evolution" project.
-> Please refer to this guide: https://github.com/eric861129/MD2DOC-Evolution/blob/main/docs/AI_GENERATION_GUIDE.md
-> 
-> Please help me:
-> 1. Add YAML Frontmatter (title, author).
-> 2. Convert standard tips/notes into specialized Callouts (e.g., `> [!TIP]`).
-> 3. Convert UI operations (buttons, shortcuts) into `【】` and `[]` styles.
-> 4. Ensure all code blocks have language labels.
-> 
-> Here is my content:
-> [Paste your content here]
+### Local Development
 
----
+```bash
+git clone https://github.com/eric861129/MD2DOC-Evolution.git
+cd MD2DOC-Evolution
+npm install
+npm run dev
+```
 
-## ✨ Features
+Local dev URL:
 
-This project is not just a Markdown converter; it is deeply optimized for "publishing" needs:
+```text
+http://localhost:3000/MD2DOC-Evolution/
+```
 
-- **📚 Professional Word (DOCX) Export**
-    - Automatically configures headings, paragraphs, line spacing, and borders.
-    - Built-in font settings: **Microsoft JhengHei** for Chinese, **Consolas** for English/Code.
-    - Supports multiple page sizes: Technical Book (17x23cm), A4, A5, B5.
-    - **Automatic TOC**: Supports generating clickable Table of Contents using `[TOC]` syntax (Standard TOC field in Word).
+## Verification
 
-- **💻 Enhanced Code Blocks**
-    - **Automatic Line Numbers**: Line numbers displayed by default, matching IDE style (single line spacing).
-    - **Language Labels**: Automatically displays language name in the top-right corner.
-    - **Flexible Control**: Supports `js:ln` (force show) or `js:no-ln` (hide line numbers) syntax.
+```bash
+npm run typecheck
+npm run test:run
+npm run build
+npm run verify
+```
 
-- **📈 Mermaid Chart Support**
-    - Supports standard `mermaid` syntax for flowcharts, sequence diagrams, etc.
-    - **Auto-Image Conversion**: Real-time SVG preview on web, auto-converts to high-res PNG in exported Word docs.
+`npm run verify` runs type checking, unit/component tests, and the production build. GitHub Actions uses the same verification flow.
 
-- **🔗 Smart Links (QR Code)**
-    - **Auto QR Code Generation**: Markdown links `[Text](URL)` automatically generate a QR Code next to the text in the exported file.
-    - **Optimized for Physical Books**: Convenient for readers to scan and jump to resources while reading printed or e-books.
+## Tech Stack
 
-- **📑 YAML Frontmatter Support**
-    - **Metadata Management**: Define book title, author, and layout preferences at the beginning of the file using YAML syntax.
-    - **Auto Document Properties**: Defined `title` and `author` are automatically written to Word document properties.
+- React 19
+- TypeScript
+- Vite 6
+- Tailwind CSS via `@tailwindcss/vite`
+- docx
+- Mermaid
+- Vitest + Testing Library
 
-- **📖 Dynamic Headers & Footers**
-    - **Professional Page Numbers**: Automatically inserts page numbers centered in the footer.
-    - **Header Navigation**: Displays the book title automatically in the header.
-    - **Flexible Toggle**: Use Frontmatter to set `header: false` or `footer: false` to enable or disable them.
+## Contributing
 
-- **💬 Chat Dialogues**
-    - Designed for "scenario simulation" or "AI conversations" common in technical books.
-    - Simply type `User:` or `AI:` to generate left/right aligned, styled dialogue boxes.
+Issues, suggestions, and pull requests are welcome. The repository currently keeps the branch flow rules:
 
-- **⚠️ Rich Callouts**
-    - Supports GitHub/Obsidian style callout syntax:
-    - `[!TIP]` Tip: Solid border
-    - `[!NOTE]` Note: Dashed border
-    - `[!WARNING]` Warning: Thick border emphasis
+- `main` accepts `dev` or `hotfix/*`
+- `dev` accepts `dev_feature_*`, `dev_refactor_*`, `dev_hotfix_*`, or `hotfix/*`
 
-- **⌨️ Special Inline Styles**
-    - **UI Button**: Use `【Settings】` to generate button styles.
-    - **Shortcut**: Use `[Ctrl]` to generate keyboard key styles.
-    - **Book Title**: Use `『Clean Code』` for automatic bolding.
+Before opening a PR, run:
 
-- **📊 Rich Block Support**
-    - **Tables**: Supports standard Markdown table syntax, auto-generating bordered Word tables.
-    - **Ordered Lists**: Supports `1.` `2.` with automatic numbering.
+```bash
+npm run verify
+```
 
-- **👁️ WYSIWYG Editor**
-    - Two-column layout: Writing on the left, real-time preview on the right.
-    - **Resizable Layout**: Draggable divider to freely adjust the ratio between editor and preview panes.
-    - **Editor Optimizations**: Supports `Tab` indentation (inserts spaces) without losing focus.
-    - **Quick Import**: Support for dragging and dropping `.md` files directly into the editor.
+## License
 
-- **⚡ Slash Commands**
-    - Notion-like `/` command system.
-    - Type `/` to bring up a menu for quick insertion of Headings, Tables, Mermaid charts, Dialogues, and more, significantly boosting writing efficiency.
-
-## 🚀 Getting Started
-
-## ❓ Known Issues
-
-### About Mermaid Chart Export
-When you open a Word document containing Mermaid charts, Word might pop up the following security alert:
-
-![Word Alert](docs/images/WordAlert.jpg)
-
-> "Word found unreadable content in the document. Do you want to recover the contents of this document?"
-
-This is due to compatibility encoding issues when converting Mermaid charts to Word image formats.
-✅ **Please safely click "Yes"**. Word will automatically repair and correctly display all chart content. This does not affect the security or integrity of the document.
-
-## 🎨 Customization
-
-This project supports high customization. You can adjust fonts, colors, or add Markdown syntax based on your needs. For details, please refer to:
-- [📘 Customization Guide (CUSTOMIZATION.md)](CUSTOMIZATION.md)
-
-## 🛠️ Tech Stack
-
-- **Frontend Framework**: [React 19](https://react.dev/) (Hooks-based Modular Architecture)
-- **Build Tool**: [Vite 6](https://vitejs.dev/)
-- **Design System**: Centralized Theming System (`theme.ts`)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Document Generation**: [docx](https://docx.js.org/)
-- **UI Icons**: [Lucide React](https://lucide.dev/)
-
-## 🤝 Contributing
-
-Contributions are welcome! If you find a bug or have a feature suggestion:
-
-1. Fork this project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License. See [LICENSE](LICENSE) for details.

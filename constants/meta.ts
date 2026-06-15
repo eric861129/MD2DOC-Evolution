@@ -6,9 +6,11 @@
  * Application metadata constants
  */
 
+import { GITHUB_REPO_URL } from './project';
+
 export const APP_VERSION = __APP_VERSION__;
 
-export const GITHUB_URL = "https://github.com/eric861129/MD2DOC-Evolution";
+export const GITHUB_URL = GITHUB_REPO_URL;
 
 export const PAGE_SIZES = [
   { name: "tech", width: 17, height: 23 },

@@ -27,6 +27,11 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
   onScroll,
 }) => {
   const { registerImage, t } = useEditor();
+  const [editorScrollTop, setEditorScrollTop] = React.useState(0);
+  const lineNumbers = React.useMemo(
+    () => Array.from({ length: Math.max(content.split(/\r\n|\r|\n/).length, 1) }, (_, index) => index + 1),
+    [content]
+  );
 
   const {
     isOpen,
@@ -60,6 +65,13 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     handleSlashChange(e);
     setContent(e.target.value);
+  };
+
+  const handleEditorScroll = () => {
+    if (textareaRef.current) {
+      setEditorScrollTop(textareaRef.current.scrollTop);
+    }
+    onScroll();
   };
 
   const handleDrop = async (e: React.DragEvent<HTMLTextAreaElement>) => {
@@ -127,7 +139,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
 
       <div className="relative min-h-0 flex-1">
         {content.trim().length === 0 && (
-          <div className="pointer-events-none absolute inset-x-8 top-8 z-10 max-w-md rounded-md border border-dashed border-slate-300 bg-white/80 p-5 text-slate-500 backdrop-blur dark:border-slate-700 dark:bg-slate-900/75 dark:text-slate-300">
+          <div className="pointer-events-none absolute left-16 right-8 top-8 z-10 max-w-md rounded-md border border-dashed border-slate-300 bg-white/80 p-5 text-slate-500 backdrop-blur dark:border-slate-700 dark:bg-slate-900/75 dark:text-slate-300 md:left-24">
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-product-glow text-product-primary">
               <Upload className="h-5 w-5" />
             </div>
@@ -136,10 +148,26 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
           </div>
         )}
 
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 overflow-hidden border-r border-slate-200/70 bg-white/45 dark:border-slate-800 dark:bg-slate-950/20 md:w-16"
+        >
+          <div
+            className="py-5 text-right font-mono text-xs leading-6 text-slate-400 dark:text-slate-600 md:py-8"
+            style={{ transform: `translateY(-${editorScrollTop}px)` }}
+          >
+            {lineNumbers.map((lineNumber) => (
+              <div key={lineNumber} className="h-6 pr-2 tabular-nums md:pr-3">
+                {lineNumber}
+              </div>
+            ))}
+          </div>
+        </div>
+
         <textarea
           ref={textareaRef}
-          onScroll={onScroll}
-          className="selection-product h-full w-full resize-none bg-transparent p-5 text-base leading-8 text-slate-800 caret-[var(--product-primary)] outline-none dark:text-slate-200 md:p-8"
+          onScroll={handleEditorScroll}
+          className="selection-product h-full w-full resize-none overflow-auto bg-transparent py-5 pl-14 pr-5 text-base leading-6 text-slate-800 caret-[var(--product-primary)] outline-none dark:text-slate-200 md:py-8 md:pl-[4.5rem] md:pr-8"
           style={{ fontFamily: UI_THEME.FONTS.PREVIEW }}
           value={content}
           onChange={handleChange}
@@ -147,6 +175,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           spellCheck={false}
+          wrap="off"
           placeholder="在此輸入 Markdown 書稿..."
         />
 

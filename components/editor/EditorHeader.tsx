@@ -6,6 +6,7 @@
 
 import React, { useState } from 'react';
 import {
+  AlertTriangle,
   Bot,
   Download,
   FileText,
@@ -41,6 +42,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
     toggleLanguage,
     t,
     isGenerating,
+    isValidatingExport,
     parsedBlocks,
     documentMeta,
     wordCount,
@@ -48,12 +50,23 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
     toggleDarkMode,
     exportError,
     clearExportError,
+    validationIssues,
+    showValidationIssues,
+    setShowValidationIssues,
   } = useEditor();
 
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const hasContent = parsedBlocks.length > 0;
   const hasFrontmatter = Boolean(documentMeta.title || documentMeta.author);
   const logoPath = `${import.meta.env.BASE_URL}logo.svg`;
+  const validationIssueCount = validationIssues.length;
+  const exportReadinessLabel = !hasContent
+    ? t('workspace.waitingContent')
+    : isValidatingExport
+      ? t('workspace.exportChecking')
+      : validationIssueCount > 0
+        ? t('workspace.exportWarnings', { count: validationIssueCount })
+        : t('workspace.exportValid');
 
   const stats = [
     {
@@ -68,7 +81,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
     },
     {
       label: 'DOCX',
-      value: hasContent ? t('workspace.exportReady') : '等待內容',
+      value: exportReadinessLabel,
       className: 'col-span-1',
     },
     {
@@ -176,6 +189,42 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
           </div>
         ))}
       </div>
+
+      {hasContent && validationIssueCount > 0 && (
+        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-100">
+          <button
+            type="button"
+            onClick={() => setShowValidationIssues(!showValidationIssues)}
+            className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm font-semibold"
+            aria-expanded={showValidationIssues}
+          >
+            <span className="inline-flex min-w-0 items-center gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span className="truncate">
+                {t('workspace.exportWarningPanel')}：{t('workspace.exportWarnings', { count: validationIssueCount })}
+              </span>
+            </span>
+            <span className="text-xs font-bold uppercase tracking-[0.14em]">
+              {showValidationIssues ? t('workspace.hideExportWarnings') : t('workspace.showExportWarnings')}
+            </span>
+          </button>
+          {showValidationIssues && (
+            <ul className="space-y-2 border-t border-amber-200/80 px-3 py-3 text-sm dark:border-amber-900/70">
+              {validationIssues.map((issue) => (
+                <li key={issue.id} className="rounded border border-amber-200/80 bg-white/70 p-3 dark:border-amber-900/70 dark:bg-slate-950/30">
+                  <div className="font-bold">{issue.title}</div>
+                  <div className="mt-1 leading-6">{issue.message}</div>
+                  {issue.sourceLine !== undefined && (
+                    <div className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-200">
+                      Line {issue.sourceLine + 1}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {exportError && (
         <button

@@ -137,4 +137,70 @@ describe('markdownParser', () => {
     expect(blocks[0].content).toContain('Chapter 1 1');
     expect(blocks[0].content).toContain('Chapter 2 5');
   });
+
+  it('should parse a full MD2DOC manuscript fixture', () => {
+    const input = [
+      '---',
+      'title: 技術書稿',
+      'author: Eric',
+      'header: true',
+      'footer: true',
+      '---',
+      '[TOC]',
+      '- 第一章 1',
+      '',
+      '# 技術書稿',
+      '## 第一章',
+      '### 安裝',
+      '> [!NOTE]',
+      '> 請先確認 Node.js 版本。',
+      '',
+      '```ts:ln',
+      'const version = "1.4.0";',
+      '```',
+      '',
+      '```json:no-ln',
+      '{"name":"md2doc"}',
+      '```',
+      '',
+      'User ":: 我該如何匯出？',
+      'AI ::" 點擊【匯出 DOCX】。',
+      'System :": 匯出完成',
+      '',
+      '| 欄位 | 說明 |',
+      '| :--- | :--- |',
+      '| title | 文件標題 |',
+    ].join('\n');
+
+    const { blocks, meta } = parseMarkdown(input);
+
+    expect(meta).toMatchObject({
+      title: '技術書稿',
+      author: 'Eric',
+      header: true,
+      footer: true,
+    });
+    expect(blocks.map((block) => block.type)).toEqual([
+      BlockType.TOC,
+      BlockType.HEADING_1,
+      BlockType.HEADING_2,
+      BlockType.HEADING_3,
+      BlockType.CALLOUT_NOTE,
+      BlockType.CODE_BLOCK,
+      BlockType.CODE_BLOCK,
+      BlockType.CHAT_CUSTOM,
+      BlockType.CHAT_CUSTOM,
+      BlockType.CHAT_CUSTOM,
+      BlockType.TABLE,
+    ]);
+    expect(blocks[5].metadata).toMatchObject({ language: 'ts', showLineNumbers: true });
+    expect(blocks[6].metadata).toMatchObject({ language: 'json', showLineNumbers: false });
+    expect(blocks[7]).toMatchObject({ role: 'User', alignment: 'left' });
+    expect(blocks[8]).toMatchObject({ role: 'AI', alignment: 'right' });
+    expect(blocks[9]).toMatchObject({ role: 'System', alignment: 'center' });
+    expect(blocks[10].tableRows).toEqual([
+      ['欄位', '說明'],
+      ['title', '文件標題'],
+    ]);
+  });
 });

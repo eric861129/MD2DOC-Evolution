@@ -1,26 +1,41 @@
 import React, { useEffect, useRef, useState } from 'react';
-import mermaid from 'mermaid';
 
-mermaid.initialize({
-  startOnLoad: false,
-  theme: 'base',
-  themeVariables: {
-    fontFamily: '"Microsoft JhengHei", "PingFang TC", sans-serif',
-    fontSize: '16px',
-    primaryColor: '#F8F5EF',
-    primaryTextColor: '#1F2933',
-    primaryBorderColor: '#345A70',
-    lineColor: '#345A70',
-    secondaryColor: '#EFE7DA',
-    tertiaryColor: '#FFFFFF',
-  },
-  themeCSS: `
-    .node label { font-weight: 700 !important; }
-    .label { font-weight: 700 !important; }
-    .mermaid .label { font-weight: 700 !important; }
-  `,
-  securityLevel: 'loose',
-});
+let mermaidPromise: Promise<any> | null = null;
+let mermaidInitialized = false;
+
+const loadMermaid = async () => {
+  if (!mermaidPromise) {
+    mermaidPromise = import('mermaid').then((module) => module.default);
+  }
+
+  const mermaid = await mermaidPromise;
+
+  if (!mermaidInitialized) {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      themeVariables: {
+        fontFamily: '"Microsoft JhengHei", "PingFang TC", sans-serif',
+        fontSize: '16px',
+        primaryColor: '#F8F5EF',
+        primaryTextColor: '#1F2933',
+        primaryBorderColor: '#345A70',
+        lineColor: '#345A70',
+        secondaryColor: '#EFE7DA',
+        tertiaryColor: '#FFFFFF',
+      },
+      themeCSS: `
+        .node label { font-weight: 700 !important; }
+        .label { font-weight: 700 !important; }
+        .mermaid .label { font-weight: 700 !important; }
+      `,
+      securityLevel: 'loose',
+    });
+    mermaidInitialized = true;
+  }
+
+  return mermaid;
+};
 
 interface MermaidRendererProps {
   chart: string;
@@ -30,23 +45,40 @@ const MermaidRenderer: React.FC<MermaidRendererProps> = ({ chart }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [svg, setSvg] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    let isActive = true;
+
     const renderChart = async () => {
       try {
+        setIsLoading(true);
         setError(null);
+        const mermaid = await loadMermaid();
         const id = `mermaid-${Math.random().toString(36).slice(2, 11)}`;
         const result = await mermaid.render(id, chart);
-        setSvg(result.svg);
+        if (isActive) {
+          setSvg(result.svg);
+        }
       } catch (err) {
         console.error('Mermaid rendering failed:', err);
-        setError('Mermaid 圖表渲染失敗，請確認語法。');
+        if (isActive) {
+          setError('Mermaid 圖表渲染失敗，請確認語法。');
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
     };
 
     if (chart) {
       renderChart();
     }
+
+    return () => {
+      isActive = false;
+    };
   }, [chart]);
 
   return (
@@ -63,7 +95,7 @@ const MermaidRenderer: React.FC<MermaidRendererProps> = ({ chart }) => {
         <div
           ref={containerRef}
           className="flex w-full justify-center overflow-x-auto rounded-md border border-slate-200 bg-white p-5 shadow-sm"
-          dangerouslySetInnerHTML={{ __html: svg }}
+          dangerouslySetInnerHTML={{ __html: isLoading && !svg ? '<span>Loading Mermaid...</span>' : svg }}
         />
       )}
     </div>
