@@ -23,12 +23,16 @@ const properties = [
   'paddingLeft',
   'fontStyle',
   'fontVariant',
+  'fontVariantLigatures',
   'fontWeight',
   'fontStretch',
   'fontSize',
   'fontSizeAdjust',
+  'fontFeatureSettings',
+  'fontKerning',
   'lineHeight',
   'fontFamily',
+  'textRendering',
   'textAlign',
   'textTransform',
   'textIndent',
@@ -66,9 +70,10 @@ export function getCaretCoordinates(element: HTMLTextAreaElement, position: numb
   const computed = window.getComputedStyle(element);
   const isInput = element.nodeName === 'INPUT';
 
-  // Default styles for the mirror div to make it invisible but positioned correctly for calculation
-  style.whiteSpace = 'pre-wrap';
-  if (!isInput) style.wordWrap = 'break-word';
+  // Match the textarea wrapping mode so slash-command positioning follows the real caret.
+  const isSoftWrapped = isInput || element.wrap !== 'off';
+  style.whiteSpace = isSoftWrapped ? 'pre-wrap' : 'pre';
+  style.wordWrap = isSoftWrapped ? 'break-word' : 'normal';
 
   // Position off-screen
   style.position = 'absolute';

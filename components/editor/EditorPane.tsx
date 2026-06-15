@@ -137,9 +137,9 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
         </div>
       </div>
 
-      <div className="relative min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1">
         {content.trim().length === 0 && (
-          <div className="pointer-events-none absolute left-16 right-8 top-8 z-10 max-w-md rounded-md border border-dashed border-slate-300 bg-white/80 p-5 text-slate-500 backdrop-blur dark:border-slate-700 dark:bg-slate-900/75 dark:text-slate-300 md:left-24">
+          <div className="pointer-events-none absolute left-20 right-8 top-8 z-10 max-w-md rounded-md border border-dashed border-slate-300 bg-white/80 p-5 text-slate-500 backdrop-blur dark:border-slate-700 dark:bg-slate-900/75 dark:text-slate-300 md:left-24">
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-product-glow text-product-primary">
               <Upload className="h-5 w-5" />
             </div>
@@ -150,7 +150,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
 
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 overflow-hidden border-r border-slate-200/70 bg-white/45 dark:border-slate-800 dark:bg-slate-950/20 md:w-16"
+          className="pointer-events-none h-full w-12 shrink-0 select-none overflow-hidden border-r border-slate-200/70 bg-white/45 dark:border-slate-800 dark:bg-slate-950/20 md:w-16"
         >
           <div
             className="py-5 text-right font-mono text-xs leading-6 text-slate-400 dark:text-slate-600 md:py-8"
@@ -167,8 +167,13 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
         <textarea
           ref={textareaRef}
           onScroll={handleEditorScroll}
-          className="selection-product h-full w-full resize-none overflow-auto bg-transparent py-5 pl-14 pr-5 text-base leading-6 text-slate-800 caret-[var(--product-primary)] outline-none dark:text-slate-200 md:py-8 md:pl-[4.5rem] md:pr-8"
-          style={{ fontFamily: UI_THEME.FONTS.PREVIEW }}
+          className="selection-product h-full min-w-0 flex-1 resize-none overflow-auto bg-transparent p-5 text-base leading-6 text-slate-800 caret-[var(--product-primary)] outline-none dark:text-slate-200 md:p-8"
+          style={{
+            fontFamily: UI_THEME.FONTS.PREVIEW,
+            fontFeatureSettings: '"liga" 0, "calt" 0',
+            fontKerning: 'none',
+            fontVariantLigatures: 'none',
+          }}
           value={content}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
