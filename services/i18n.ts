@@ -13,45 +13,82 @@ const resources = {
   zh: {
     translation: {
       title: 'MD2DOC-Evolution',
-            subtitle: `核心引擎：Markdown -> Word (v${APP_VERSION})`,
-                  export: '匯出 Word',
-                  exportMD: '匯出 MD',
-                  exporting: '正在轉換...',
-                  aiPrompt: 'AI 輔助生成',
-                  reset: '重置為範例文件',      resetConfirm: '確定要重置內容嗎？您目前的編輯將會遺失並恢復為預設範例。',
-      switchLangConfirm: '切換語言將會重置當前內容為該語言的範例文件。確定要繼續嗎？',
+      subtitle: `Markdown 到 Word 的技術書稿工作台 v${APP_VERSION}`,
+      export: '匯出 DOCX',
+      exportMD: '匯出 Markdown',
+      exporting: '轉檔中...',
+      aiPrompt: 'AI 轉稿提示',
+      reset: '重設範例',
+      resetConfirm: '確定要重設為範例內容嗎？目前草稿會被取代。',
+      switchLangConfirm: '切換語言會載入該語言的範例內容，並清除目前草稿。要繼續嗎？',
       theme: {
-        light: '切換至亮色模式',
-        dark: '切換至深色模式'
+        light: '切換為淺色模式',
+        dark: '切換為深色模式'
       },
       sizes: {
-        tech: '技術書籍 (17x23cm)',
+        tech: '技術書稿 (17x23cm)',
         a4: 'A4 (21x29.7cm)',
         a5: 'A5 (14.8x21cm)',
         b5: 'B5 (17.6x25cm)'
+      },
+      workspace: {
+        editor: '稿件編輯',
+        preview: '列印預覽',
+        source: 'Markdown 草稿',
+        blocks: '區塊',
+        words: '字數',
+        frontmatterReady: 'Frontmatter 已設定',
+        frontmatterMissing: '尚未設定標題或作者',
+        lineNumbers: '程式碼行號',
+        exportReady: '已準備好匯出',
+        emptyTitle: '開始建立你的技術書稿',
+        emptyDescription: '輸入 Markdown、拖入 .md 檔案，或使用左側工具快速插入常用區塊。',
+        mobileEditor: '編輯',
+        mobilePreview: '預覽',
+        zoomIn: '放大預覽',
+        zoomOut: '縮小預覽',
+        fitWidth: '符合寬度'
       }
     }
   },
   en: {
     translation: {
       title: 'MD2DOC-Evolution',
-      subtitle: `Core Engine: Markdown -> Word (v${APP_VERSION})`,
+      subtitle: `Markdown to Word workspace v${APP_VERSION}`,
       export: 'Export DOCX',
-      exportMD: 'Export MD',
+      exportMD: 'Export Markdown',
       exporting: 'Converting...',
-      aiPrompt: 'AI Assistant',
-      reset: 'Reset to Example',
-      resetConfirm: 'Are you sure you want to reset? Your current changes will be lost.',
-      switchLangConfirm: 'Switching language will reset the content to the default example of that language. Continue?',
+      aiPrompt: 'AI prompt',
+      reset: 'Reset example',
+      resetConfirm: 'Reset to the example content? Your current draft will be replaced.',
+      switchLangConfirm: 'Switching language loads the example for that language and clears the current draft. Continue?',
       theme: {
-        light: 'Switch to Light Mode',
-        dark: 'Switch to Dark Mode'
+        light: 'Switch to light mode',
+        dark: 'Switch to dark mode'
       },
       sizes: {
-        tech: 'Tech Book (17x23cm)',
+        tech: 'Technical book (17x23cm)',
         a4: 'A4 (21x29.7cm)',
         a5: 'A5 (14.8x21cm)',
         b5: 'B5 (17.6x25cm)'
+      },
+      workspace: {
+        editor: 'Manuscript editor',
+        preview: 'Print preview',
+        source: 'Markdown draft',
+        blocks: 'Blocks',
+        words: 'Words',
+        frontmatterReady: 'Frontmatter ready',
+        frontmatterMissing: 'Title or author missing',
+        lineNumbers: 'Code line numbers',
+        exportReady: 'Ready to export',
+        emptyTitle: 'Start your technical manuscript',
+        emptyDescription: 'Write Markdown, drop in an .md file, or use the tool rail to insert common blocks.',
+        mobileEditor: 'Editor',
+        mobilePreview: 'Preview',
+        zoomIn: 'Zoom in',
+        zoomOut: 'Zoom out',
+        fitWidth: 'Fit width'
       }
     }
   }

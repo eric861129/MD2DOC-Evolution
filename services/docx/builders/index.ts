@@ -7,6 +7,7 @@
 import { Paragraph } from "docx";
 import { BlockType, ParsedBlock } from "../../types";
 import { docxRegistry } from "../registry";
+import { DocxConfig } from "../types";
 import { WORD_THEME } from "../../../constants/theme";
 import { parseInlineStyles } from "./common";
 

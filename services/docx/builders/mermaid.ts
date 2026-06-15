@@ -182,6 +182,7 @@ export const createMermaidBlock = async (chart: string, config: DocxConfig): Pro
               width: Math.round(finalDisplayWidth),
               height: Math.round(finalDisplayHeight),
             },
+            type: "png",
           }),
         ],
         alignment: AlignmentType.CENTER,

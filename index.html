@@ -1,97 +1,51 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZXT99R0JE3"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="MD2DOC-Evolution 是專為技術寫作者設計的 Markdown 到 Word DOCX 編輯與匯出工具，支援 Mermaid、程式碼區塊、Callout 與 QR Code。" />
+  <meta name="keywords" content="Markdown, DOCX, Word, 技術寫作, 書稿, Mermaid, Code Block, QR Code, Markdown 轉 Word" />
+  <meta name="author" content="EricHuang" />
+  <link rel="canonical" href="https://huangchiyu.com/MD2DOC-Evolution/" />
 
-      gtag('config', 'G-ZXT99R0JE3');
-    </script>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="Professional Markdown to Word (Docx) converter for technical publishing. Supports Mermaid charts, code highlighting, and AI features. 專為技術寫作設計的 Markdown 轉 Word 工具，支援 Mermaid 圖表、程式碼高亮與 AI 輔助。" />
-    <meta name="keywords" content="Markdown, Docx, Converter, Technical Writing, Book Publishing, Word, EricHuang, Mermaid, Code Highlighting, AI Writing, Markdown轉Word, 技術文件, 排版工具, 電子書製作, 寫書軟體, 程式碼高亮, 流程圖, 技術書, 自動化排版" />
-    <meta name="author" content="EricHuang" />
-    <link rel="canonical" href="https://huangchiyu.com/MD2DOC-Evolution/" />
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://huangchiyu.com/MD2DOC-Evolution/" />
-    <meta property="og:title" content="MD2DOC-Evolution | Markdown to Word Converter | 專業技術書稿轉檔" />
-    <meta property="og:description" content="Professional Markdown to Word (Docx) converter for technical writers. 專為技術寫作設計的 Markdown 轉 Word 工具。" />
-    <meta property="og:image" content="https://huangchiyu.com/MD2DOC-Evolution/og-image.jpg" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://huangchiyu.com/MD2DOC-Evolution/" />
+  <meta property="og:title" content="MD2DOC-Evolution | Markdown to Word Converter" />
+  <meta property="og:description" content="A focused Markdown workspace for exporting technical manuscripts to Word DOCX." />
+  <meta property="og:image" content="https://huangchiyu.com/MD2DOC-Evolution/og-image.jpg" />
 
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://huangchiyu.com/MD2DOC-Evolution/" />
-    <meta property="twitter:title" content="MD2DOC-Evolution | Markdown to Word Converter" />
-    <meta property="twitter:description" content="Professional Markdown to Word (Docx) converter for technical writers. 專為技術寫作設計的 Markdown 轉 Word 工具。" />
-    <meta property="twitter:image" content="https://huangchiyu.com/MD2DOC-Evolution/og-image.jpg" />
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://huangchiyu.com/MD2DOC-Evolution/" />
+  <meta property="twitter:title" content="MD2DOC-Evolution | Markdown to Word Converter" />
+  <meta property="twitter:description" content="A focused Markdown workspace for exporting technical manuscripts to Word DOCX." />
+  <meta property="twitter:image" content="https://huangchiyu.com/MD2DOC-Evolution/og-image.jpg" />
 
-    <!-- Structured Data (JSON-LD) for Software Application -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "MD2DOC-Evolution",
-      "operatingSystem": "Web Browser",
-      "applicationCategory": "ProductivityApplication",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
-      "description": "A professional Markdown to Word (Docx) converter designed for technical book publishing with Mermaid charts and code highlighting support.",
-      "author": {
-          "@type": "Person",
-          "name": "EricHuang",
-          "url": "https://github.com/eric861129"
-      }
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "MD2DOC-Evolution",
+    "operatingSystem": "Web Browser",
+    "applicationCategory": "ProductivityApplication",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "description": "A professional Markdown to Word DOCX converter designed for technical book publishing with Mermaid charts and code highlighting support.",
+    "author": {
+      "@type": "Person",
+      "name": "EricHuang",
+      "url": "https://github.com/eric861129"
     }
-    </script>
-    
-    <!-- GoatCounter -->
-    <script data-goatcounter="https://eric861129.goatcounter.com/count"
-            async src="//gc.zgo.at/count.js"></script>
+  }
+  </script>
 
-    <link rel="icon" type="image/svg+xml" href="./logo.svg" />
-    <title>MD2DOC-Evolution | Markdown to Word Converter | 專業技術書稿轉檔</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'brand-primary': 'var(--brand-primary)',
-                        'product-primary': 'var(--product-primary)',
-                        'product-hover': 'var(--product-hover)',
-                        'product-glow': 'var(--product-glow)',
-                        'bg-base': 'var(--bg-base)',
-                        'text-high': 'var(--text-high)',
-                    }
-                }
-            }
-        }
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
-    <script>
-        // 關鍵：將 Buffer 掛載到全局，docx 庫才能運作
-        // 修正：檢查 window.buffer 是否存在，避免直接引用導致 ReferenceError
-        if (window.buffer) {
-            window.Buffer = window.Buffer || window.buffer.Buffer;
-        }
-        // 確保 process.env 存在，避免 Gemini SDK 報錯
-        window.process = window.process || { env: { API_KEY: "" } };
-    </script>
+  <link rel="icon" type="image/svg+xml" href="./logo.svg" />
+  <title>MD2DOC-Evolution | Markdown to Word Converter</title>
 </head>
 <body class="manuscript-font">
-    <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
+  <div id="root"></div>
+  <script type="module" src="./index.tsx"></script>
 </body>
 </html>

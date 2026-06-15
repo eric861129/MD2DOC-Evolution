@@ -13,7 +13,7 @@ export interface CommandItem {
   description?: string;
   icon: LucideIcon;
   insertText: string;
-  cursorOffset?: number; // Cursor position relative to inserted text end (negative moves back)
+  cursorOffset?: number;
   group: string;
 }
 
@@ -32,45 +32,37 @@ export const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
   items,
   selectedIndex,
   onSelect,
-  onClose
+  onClose,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const selectedItemRef = useRef<HTMLButtonElement>(null);
   const [positionStyle, setPositionStyle] = React.useState<React.CSSProperties>({});
 
   useEffect(() => {
-    if (isOpen && menuRef.current) {
-      const menuHeight = menuRef.current.offsetHeight;
-      const spaceBelow = window.innerHeight - position.top;
-      
-      // If less than 320px below (approx max height), flip up
-      // We assume line height is roughly 24px, so we move it up by that amount + padding if flipping
-      if (spaceBelow < 320 && position.top > 320) {
-        setPositionStyle({
-          bottom: `calc(100% - ${position.top - 24 - 10}px)`, // Position above the line
-          left: position.left,
-          maxHeight: '320px'
-        });
-      } else {
-        setPositionStyle({
-          top: position.top,
-          left: position.left,
-          maxHeight: '320px'
-        });
-      }
+    if (!isOpen || !menuRef.current) return;
+
+    const spaceBelow = window.innerHeight - position.top;
+    if (spaceBelow < 320 && position.top > 320) {
+      setPositionStyle({
+        bottom: `calc(100% - ${position.top - 34}px)`,
+        left: position.left,
+        maxHeight: '320px',
+      });
+    } else {
+      setPositionStyle({
+        top: position.top,
+        left: position.left,
+        maxHeight: '320px',
+      });
     }
   }, [isOpen, position]);
 
   useEffect(() => {
     if (isOpen && selectedItemRef.current) {
-      selectedItemRef.current.scrollIntoView({
-        block: 'nearest',
-        behavior: 'smooth'
-      });
+      selectedItemRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }, [selectedIndex, isOpen]);
 
-  // Click outside to close
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -81,6 +73,7 @@ export const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -91,56 +84,50 @@ export const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
   return (
     <div
       ref={menuRef}
-      className="absolute z-50 w-72 overflow-y-auto bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col p-1"
+      className="absolute z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col overflow-y-auto rounded-md border border-slate-200/80 bg-white/95 p-1 shadow-2xl backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95"
       style={positionStyle}
     >
       {items.length === 0 ? (
         <div className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
-          No commands match
+          沒有符合的指令
         </div>
       ) : (
-        <div className="space-y-0.5">
-          {/* Group headers could be added here if needed */}
+        <div className="space-y-1">
           {items.map((item, index) => {
             const isSelected = index === selectedIndex;
             const Icon = item.icon;
-            
+
             return (
-            <button
-              key={command.id}
-              onClick={() => {
-                onSelect(command.id);
-              }}
-              className={`
-                w-full flex items-center gap-3 px-3 py-2 text-sm text-left transition-all
-                ${idx === selectedIndex 
-                  ? 'bg-product-glow' 
-                  : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'}
-              `}
-              style={idx === selectedIndex ? { color: 'var(--product-primary)' } : {}}
-            >
-              <div 
-                className={`
-                  p-1.5 rounded-lg border transition-colors
-                  ${idx === selectedIndex 
-                    ? 'bg-white dark:bg-slate-900' 
-                    : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}
-                `}
-                style={idx === selectedIndex ? { borderColor: 'var(--product-primary)' } : {}}
+              <button
+                key={item.id}
+                ref={isSelected ? selectedItemRef : undefined}
+                onClick={() => onSelect(item)}
+                className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-all ${
+                  isSelected
+                    ? 'bg-product-glow text-product'
+                    : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                }`}
               >
-                {React.cloneElement(command.icon as React.ReactElement, { 
-                  className: "w-4 h-4",
-                  style: idx === selectedIndex ? { color: 'var(--product-primary)' } : {}
-                })}
-              </div>
-                <div className="flex flex-col flex-1 min-w-0">
-                  <span className="font-medium truncate">{item.label}</span>
+                <span
+                  className={`flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${
+                    isSelected
+                      ? 'border-product bg-white dark:bg-slate-950'
+                      : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">{item.label}</span>
                   {item.description && (
-                    <span className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                    <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
                       {item.description}
                     </span>
                   )}
-                </div>
+                </span>
+                <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400">
+                  {item.group}
+                </span>
               </button>
             );
           })}

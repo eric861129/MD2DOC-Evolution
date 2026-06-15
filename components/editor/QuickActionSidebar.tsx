@@ -5,94 +5,66 @@
  */
 
 import React from 'react';
-import { 
-  Heading1,
-  Heading2,
-  Heading3,
-  Code, 
-  BarChart, 
-  Info, 
-  AlertTriangle, 
-  FileText, 
-  MessageSquare, 
-  Table as TableIcon, 
-  ListOrdered,
-} from 'lucide-react';
 import { useEditor } from '../../contexts/EditorContext';
-import { IconButton } from '../ui/IconButton';
+import { getQuickActions } from './editorCommands';
 
 export const QuickActionSidebar: React.FC = () => {
   const { setContent, content, textareaRef } = useEditor();
+  const actions = getQuickActions();
 
   const insertTemplate = (template: string) => {
     if (!textareaRef.current) return;
 
     const textarea = textareaRef.current;
-    const savedScrollTop = textarea.scrollTop; // 記錄捲軸位置
+    const savedScrollTop = textarea.scrollTop;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const before = content.substring(0, start);
     const after = content.substring(end);
+    const needsLineBreakBefore = before.length > 0 && !before.endsWith('\n');
+    const needsLineBreakAfter = after.length > 0 && !template.endsWith('\n');
+    const insertion = `${needsLineBreakBefore ? '\n' : ''}${template}${needsLineBreakAfter ? '\n' : ''}`;
 
-    const newContent = before + template + after;
-    setContent(newContent);
+    setContent(before + insertion + after);
 
-    // Focus back and set cursor position
-    setTimeout(() => {
+    window.setTimeout(() => {
       textarea.focus();
-      textarea.scrollTop = savedScrollTop; // 還原捲軸位置
-      
-      // Determine cursor placement logic
-      if (template.includes('這裡輸入')) {
-        const placeholder = '這裡輸入';
-        const offset = template.indexOf(placeholder);
-        textarea.selectionStart = start + offset;
-        textarea.selectionEnd = start + offset + placeholder.length;
-      } else if (template.includes('// 程式碼貼在這裡')) {
-        const placeholder = '// 程式碼貼在這裡';
-        const offset = template.indexOf(placeholder);
+      textarea.scrollTop = savedScrollTop;
+
+      const placeholder = ['這裡輸入', '程式碼貼在這裡', '書稿標題'].find((target) =>
+        insertion.includes(target)
+      );
+
+      if (placeholder) {
+        const offset = insertion.indexOf(placeholder);
         textarea.selectionStart = start + offset;
         textarea.selectionEnd = start + offset + placeholder.length;
       } else {
-        textarea.selectionStart = textarea.selectionEnd = start + template.length;
+        textarea.selectionStart = textarea.selectionEnd = start + insertion.length;
       }
     }, 0);
   };
 
-  const actions = [
-    { icon: <Heading1 className="w-4 h-4" />, label: 'H1', template: '# ', title: '大標題' },
-    { icon: <Heading2 className="w-4 h-4" />, label: 'H2', template: '## ', title: '中標題' },
-    { icon: <Heading3 className="w-4 h-4" />, label: 'H3', template: '### ', title: '小標題' },
-    { divider: true },
-    { icon: <Code className="w-4 h-4" />, label: 'Code', template: '\n```javascript:ln\n// 程式碼貼在這裡\n```\n', title: '程式碼區塊' },
-    { icon: <BarChart className="w-4 h-4" />, label: 'Mermaid', template: '\n```mermaid\ngraph TD;\n  A-->B;\n```\n', title: 'Mermaid 圖表' },
-    { divider: true },
-    { icon: <Info className="w-4 h-4" />, label: 'Tip', template: '\n> [!TIP]\n> 這裡輸入提示內容\n', title: '提示區塊' },
-    { icon: <FileText className="w-4 h-4" />, label: 'Note', template: '\n> [!NOTE]\n> 這裡輸入筆記內容\n', title: '筆記區塊' },
-    { icon: <AlertTriangle className="w-4 h-4" />, label: 'Warning', template: '\n> [!WARNING]\n> 這裡輸入警告內容\n', title: '警告區塊' },
-    { divider: true },
-    { icon: <MessageSquare className="w-4 h-4" />, label: 'Chat L', template: 'User ":: 這裡輸入對話內容', title: '對話 (左)' },
-    { icon: <MessageSquare className="w-4 h-4" />, label: 'Chat R', template: 'AI ::" 這裡輸入對話內容', title: '對話 (右)' },
-    { divider: true },
-    { icon: <TableIcon className="w-4 h-4" />, label: 'Table', template: '\n| 標題1 | 標題2 |\n| :--- | :--- |\n| 內容1 | 內容2 |\n', title: '表格' },
-    { icon: <ListOrdered className="w-4 h-4" />, label: 'TOC', template: '[TOC]', title: '插入目錄' },
-  ];
-
   return (
-    <aside className="w-16 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col items-center py-4 gap-2 transition-colors overflow-y-auto shrink-0">
+    <aside className="workspace-panel relative z-30 hidden w-[4.5rem] shrink-0 flex-col items-center gap-2 rounded-md p-2 lg:flex">
       {actions.map((action, index) => {
-        if (action.divider) {
-          return <div key={index} className="w-8 h-px bg-slate-200 dark:bg-slate-800 my-1" />;
-        }
+        const Icon = action.icon;
+        const previous = actions[index - 1];
+        const showDivider = previous && previous.group !== action.group;
+
         return (
-          <IconButton
-            key={index}
-            onClick={() => insertTemplate(action.template!)}
-            title={action.title}
-            className="w-10 h-10 hover:scale-110 active:scale-95 transition-transform"
-          >
-            {action.icon}
-          </IconButton>
+          <React.Fragment key={action.id}>
+            {showDivider && <div className="my-1 h-px w-8 bg-slate-200 dark:bg-slate-800" />}
+            <button
+              type="button"
+              onClick={() => insertTemplate(action.insertText)}
+              className="tool-tip group flex h-11 w-11 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-product-primary hover:text-product-primary hover:shadow-lg active:scale-95 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+              data-tooltip={action.description || action.label}
+              aria-label={action.description || action.label}
+            >
+              <Icon className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+            </button>
+          </React.Fragment>
         );
       })}
     </aside>

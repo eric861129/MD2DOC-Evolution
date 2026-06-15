@@ -4,7 +4,7 @@
  * Licensed under the MIT License.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getCaretCoordinates } from '../../utils/editor/caretCoordinates';
 import { SLASH_COMMANDS } from '../../components/editor/slash-command/commands';
 import { CommandItem } from '../../components/editor/slash-command/SlashCommandMenu';
@@ -105,11 +105,15 @@ export const useSlashCommand = ({ content, setContent, textareaRef }: UseSlashCo
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex(prev => (prev + 1) % filteredCommands.length);
+        if (filteredCommands.length > 0) {
+          setSelectedIndex(prev => (prev + 1) % filteredCommands.length);
+        }
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+        if (filteredCommands.length > 0) {
+          setSelectedIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+        }
         break;
       case 'Enter':
         e.preventDefault();

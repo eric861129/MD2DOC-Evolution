@@ -1,93 +1,261 @@
-/* --- 設計系統核心變數 (Amber Anthracite v2.0 + Scholarly Blue) --- */
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Geist", "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Cascadia Code", "Consolas", monospace;
+  --color-brand-primary: var(--brand-primary);
+  --color-product-primary: var(--product-primary);
+  --color-product-hover: var(--product-hover);
+  --color-product-glow: var(--product-glow);
+  --color-bg-base: var(--bg-base);
+  --color-text-high: var(--text-high);
+}
+
 :root {
-  --font-main: "Consolas", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+  --font-main: "Geist", "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+  --font-preview: "Geist Mono", "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", monospace;
 
-  /* Master Brand: Amber Anthracite v2.0 */
-  --bg-base: #FCF9F5;
-  --text-high: #2D2926;
-  --brand-primary: #A86434; /* Amber */
-
-  /* MD2DOC Product Layer: Scholarly Blue */
-  --product-primary: #3E5C76; 
-  --product-hover: #527491;
-  --product-glow: rgba(62, 92, 118, 0.12);
+  --bg-base: #f7f3ed;
+  --bg-panel: #fffaf2;
+  --bg-elevated: rgba(255, 250, 242, 0.86);
+  --text-high: #26231f;
+  --text-muted: #6e675f;
+  --line-soft: rgba(55, 50, 44, 0.12);
+  --brand-primary: #a86434;
+  --product-primary: #345a70;
+  --product-hover: #24475a;
+  --product-glow: rgba(52, 90, 112, 0.16);
+  --accent-amber: #bc7a34;
+  --surface-shadow: 0 24px 70px rgba(57, 46, 34, 0.13);
 }
 
-[data-theme='dark'] {
-  --bg-base: #1A1816;
-  --text-high: #E0E0E0;
-  --brand-primary: #EFC69B; /* Soft Amber */
-
-  --product-primary: #6D9DC5;
-  --product-hover: #8AB3D6;
-  --product-glow: rgba(109, 157, 197, 0.2);
+.dark {
+  --bg-base: #12100d;
+  --bg-panel: #1b1814;
+  --bg-elevated: rgba(27, 24, 20, 0.88);
+  --text-high: #f2ede5;
+  --text-muted: #aea69a;
+  --line-soft: rgba(242, 237, 229, 0.12);
+  --brand-primary: #d6a15f;
+  --product-primary: #8fb3c5;
+  --product-hover: #aacbdd;
+  --product-glow: rgba(143, 179, 197, 0.2);
+  --accent-amber: #d29a57;
+  --surface-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
 }
 
-/* --- 基礎頁面樣式 --- */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  font-family: var(--font-main);
-  background-color: var(--bg-base);
-  color: var(--text-high);
+  min-width: 320px;
   margin: 0;
+  overflow-x: hidden;
+  font-family: var(--font-main);
+  color: var(--text-high);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(188, 122, 52, 0.16), transparent 34rem),
+    radial-gradient(circle at 86% 18%, rgba(52, 90, 112, 0.14), transparent 30rem),
+    linear-gradient(135deg, var(--bg-base), color-mix(in srgb, var(--bg-base) 86%, #ffffff 14%));
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  opacity: 0.34;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 82%);
+}
+
+button,
+select,
+textarea {
+  font: inherit;
+}
+
+button:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--product-primary);
+  outline-offset: 3px;
 }
 
 .manuscript-font {
   font-family: var(--font-main);
 }
 
-code, pre, .font-mono {
-  font-family: "Consolas", monospace !important;
+code,
+pre,
+.font-mono {
+  font-family: var(--font-mono) !important;
+  font-variant-ligatures: none;
 }
 
-/* --- 自定義捲軸樣式 --- */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-base); }
-::-webkit-scrollbar-thumb { 
-  background: #cbd5e1; 
-  border-radius: 4px; 
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
-[data-theme='dark'] ::-webkit-scrollbar-thumb {
-  background: #334155;
+
+::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--bg-base) 88%, transparent);
 }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-/* --- 產品功能性 Helper Classes --- */
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-muted) 42%, transparent);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
 
-/* 按鈕主色調 */
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--product-primary) 58%, transparent);
+  background-clip: content-box;
+}
+
+.workspace-glass {
+  background: var(--bg-elevated);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--surface-shadow);
+  backdrop-filter: blur(22px);
+}
+
+.workspace-panel {
+  background: color-mix(in srgb, var(--bg-panel) 92%, transparent);
+  border: 1px solid var(--line-soft);
+  box-shadow: 0 18px 50px rgba(53, 45, 36, 0.08);
+}
+
+.dark .workspace-panel {
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.24);
+}
+
 .btn-product-primary {
   background-color: var(--product-primary);
-  transition: all 0.2s ease;
+  color: #ffffff;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease;
 }
 
 .btn-product-primary:hover:not(:disabled) {
   background-color: var(--product-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px var(--product-glow);
+  box-shadow: 0 14px 32px var(--product-glow);
 }
 
-/* 文字選取顏色 */
+.btn-product-primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.bg-product {
+  background-color: var(--product-primary);
+}
+
+.text-product {
+  color: var(--product-primary);
+}
+
+.border-product {
+  border-color: var(--product-primary);
+}
+
 .selection-product::selection {
+  color: var(--text-high);
   background-color: var(--product-glow);
 }
 
-/* 預覽區 H2 裝飾線 */
 .before-bg-product::before {
   content: "";
   display: block;
   background-color: var(--product-primary) !important;
 }
 
-/* 分隔線調整工具 */
 .resizer-product:hover {
   background-color: var(--product-glow);
 }
 
 .resizer-product:active {
-  background-color: rgba(109, 157, 197, 0.4);
+  background-color: color-mix(in srgb, var(--product-primary) 34%, transparent);
 }
 
-/* 品牌簽名 Hover */
 .hover-brand:hover {
   color: var(--brand-primary) !important;
+}
+
+.tool-tip {
+  position: relative;
+  z-index: 40;
+}
+
+.tool-tip::after {
+  position: absolute;
+  left: calc(100% + 0.625rem);
+  top: 50%;
+  z-index: 80;
+  min-width: max-content;
+  max-width: 14rem;
+  padding: 0.35rem 0.5rem;
+  color: #ffffff;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  pointer-events: none;
+  content: attr(data-tooltip);
+  background: #22201d;
+  border-radius: 0.375rem;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+  opacity: 0;
+  transform: translateY(-50%) translateX(-0.25rem);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.tool-tip:hover::after,
+.tool-tip:focus-visible::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.print-paper {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.58), transparent 34%),
+    #fffdf8;
+  box-shadow:
+    0 0 0 1px rgba(70, 62, 51, 0.09),
+    0 30px 90px rgba(46, 39, 30, 0.18);
+}
+
+.marquee-track {
+  animation: md2doc-marquee 22s linear infinite;
+}
+
+@keyframes md2doc-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

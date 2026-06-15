@@ -10,7 +10,7 @@ import { DocxConfig } from "./types";
 
 export type DocxBlockResult = Paragraph | Table | (Paragraph | Table)[];
 
-export type DocxBlockHandler = (block: ParsedBlock, config: DocxConfig) => Promise<DocxBlockResult>;
+export type DocxBlockHandler = (block: ParsedBlock, config: DocxConfig) => DocxBlockResult | Promise<DocxBlockResult>;
 
 class DocxHandlerRegistry {
   private handlers: Map<string, DocxBlockHandler> = new Map();

@@ -104,7 +104,7 @@ export const WORD_THEME = {
 
 export const UI_THEME = {
   FONTS: {
-    PREVIEW: `"${WORD_THEME.FONTS.LATIN}", "${WORD_THEME.FONTS.CJK}", sans-serif`
+    PREVIEW: `"Geist Mono", "${WORD_THEME.FONTS.LATIN}", "${WORD_THEME.FONTS.CJK}", monospace`
   }
 };
 

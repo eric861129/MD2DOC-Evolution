@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { IconButton } from './IconButton';
 
@@ -24,30 +25,34 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div 
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/55 p-4 backdrop-blur-sm">
+      <div
         ref={modalRef}
-        className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800"
+        className="workspace-glass flex max-h-[90vh] w-full max-w-2xl flex-col rounded-md"
         role="dialog"
         aria-modal="true"
+        aria-labelledby="modal-title"
       >
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h2>
-          <IconButton onClick={onClose} title="Close">
-            <X className="w-5 h-5" />
+        <div className="flex items-center justify-between border-b border-slate-200/70 p-4 dark:border-slate-800">
+          <h2 id="modal-title" className="text-lg font-semibold text-slate-950 dark:text-white">
+            {title}
+          </h2>
+          <IconButton onClick={onClose} title="關閉" className="h-9 w-9">
+            <X className="h-4 w-4" />
           </IconButton>
         </div>
-        <div className="p-6 overflow-y-auto">
+        <div className="overflow-y-auto p-6">
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -1,7 +1,7 @@
 {
   "name": "md2doc-evolution",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.4.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/eric861129/MD2DOC-Evolution.git"
@@ -10,11 +10,20 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource/geist": "^5.2.9",
+    "@fontsource/geist-mono": "^5.2.8",
+    "@gsap/react": "^2.1.2",
+    "@tailwindcss/vite": "^4.3.1",
+    "buffer": "^6.0.3",
     "docx": "^9.5.1",
     "file-saver": "^2.0.5",
+    "gsap": "^3.15.0",
     "i18next": "^25.7.3",
     "i18next-browser-languagedetector": "^8.2.0",
     "js-yaml": "^4.1.1",
@@ -24,7 +33,8 @@
     "qrcode": "^1.5.4",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "react-i18next": "^16.5.1"
+    "react-i18next": "^16.5.1",
+    "tailwindcss": "^4.3.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

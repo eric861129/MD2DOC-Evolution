@@ -5,19 +5,19 @@ mermaid.initialize({
   startOnLoad: false,
   theme: 'base',
   themeVariables: {
-    fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif',
+    fontFamily: '"Microsoft JhengHei", "PingFang TC", sans-serif',
     fontSize: '16px',
-    primaryColor: '#F9F9F9',          // Even lighter Gray background
-    primaryTextColor: '#000000',      // Pure black text
-    primaryBorderColor: '#333333',    // Darker border for contrast
-    lineColor: '#333333',             // Lines
-    secondaryColor: '#EEEEEE',        // Secondary nodes
-    tertiaryColor: '#FFFFFF',         // Background
+    primaryColor: '#F8F5EF',
+    primaryTextColor: '#1F2933',
+    primaryBorderColor: '#345A70',
+    lineColor: '#345A70',
+    secondaryColor: '#EFE7DA',
+    tertiaryColor: '#FFFFFF',
   },
   themeCSS: `
-    .node label { font-weight: bold !important; }
-    .label { font-weight: bold !important; }
-    .mermaid .label { font-weight: bold !important; }
+    .node label { font-weight: 700 !important; }
+    .label { font-weight: 700 !important; }
+    .mermaid .label { font-weight: 700 !important; }
   `,
   securityLevel: 'loose',
 });
@@ -35,13 +35,12 @@ const MermaidRenderer: React.FC<MermaidRendererProps> = ({ chart }) => {
     const renderChart = async () => {
       try {
         setError(null);
-        // Generate a unique ID for this chart instance
-        const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-        const { svg } = await mermaid.render(id, chart);
-        setSvg(svg);
+        const id = `mermaid-${Math.random().toString(36).slice(2, 11)}`;
+        const result = await mermaid.render(id, chart);
+        setSvg(result.svg);
       } catch (err) {
         console.error('Mermaid rendering failed:', err);
-        setError('Failed to render Mermaid chart. Please check syntax.');
+        setError('Mermaid 圖表渲染失敗，請確認語法。');
       }
     };
 
@@ -51,19 +50,19 @@ const MermaidRenderer: React.FC<MermaidRendererProps> = ({ chart }) => {
   }, [chart]);
 
   return (
-    <div className="my-4 flex flex-col items-center">
+    <div className="my-10 flex flex-col items-center">
       {error ? (
-        <div className="w-full p-4 bg-red-50 border border-red-200 text-red-600 rounded">
-          <p className="font-bold text-sm">Mermaid Error:</p>
-          <pre className="text-xs mt-1 whitespace-pre-wrap">{error}</pre>
-          <pre className="text-xs mt-2 p-2 bg-gray-100 rounded text-gray-500 overflow-x-auto w-full">
+        <div className="w-full rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
+          <p className="text-sm font-bold">Mermaid error</p>
+          <pre className="mt-1 whitespace-pre-wrap text-xs">{error}</pre>
+          <pre className="mt-3 w-full overflow-x-auto rounded bg-white/70 p-3 text-xs text-red-900">
             {chart}
           </pre>
         </div>
       ) : (
-        <div 
+        <div
           ref={containerRef}
-          className="w-full overflow-x-auto flex justify-center p-4 bg-white rounded border border-gray-100 shadow-sm"
+          className="flex w-full justify-center overflow-x-auto rounded-md border border-slate-200 bg-white p-5 shadow-sm"
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       )}

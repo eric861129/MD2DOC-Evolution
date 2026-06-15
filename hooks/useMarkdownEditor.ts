@@ -42,6 +42,8 @@ export const useMarkdownEditor = () => {
   // 4. Export Capabilities (DOCX, MD)
   const {
     isGenerating,
+    exportError,
+    clearExportError,
     selectedSizeIndex,
     setSelectedSizeIndex,
     handleDownload,
@@ -58,6 +60,8 @@ export const useMarkdownEditor = () => {
     imageRegistry,
     registerImage,
     isGenerating,
+    exportError,
+    clearExportError,
     selectedSizeIndex,
     setSelectedSizeIndex,
     wordCount,
