@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { validateExport } from '../services/exportValidation';
 import { parseMarkdown } from '../services/markdownParser';
-import { measureCodeSpanMappingOperations } from '../services/parser/ast';
+import { measureChapterSpanScanOperations } from '../services/parser/ast';
 import { BlockType } from '../services/types';
 
 describe('出版社 Markdown 語法', () => {
@@ -309,6 +309,165 @@ describe('出版社 Markdown 語法', () => {
   });
 
   it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+  ])('%s 相同內容的 root chapter 與後續 indented code 只解析前者', (
+    _name,
+    newline,
+  ) => {
+    const chapterLines = [
+      '[CHAPTER]',
+      'number: "94"',
+      'title: "相同內容"',
+      '[/CHAPTER]',
+    ];
+    const markdown = [
+      ...chapterLines,
+      '',
+      ...chapterLines.map((line) => `    ${line}`),
+    ].join(newline);
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.CHAPTER_OPENER,
+      BlockType.CODE_BLOCK,
+    ]);
+    expect(blocks[0].metadata?.chapter).toMatchObject({
+      number: '94',
+      title: '相同內容',
+    });
+    expect(blocks[1].content).toBe(chapterLines.join('\n'));
+  });
+
+  it.each([
+    ['1-space', ' '],
+    ['2-space', '  '],
+    ['4-space', '    '],
+    ['6-space', '      '],
+    ['tab', '\t'],
+  ])('%s leading whitespace 的 marker 不視為 root CHAPTER', (
+    _name,
+    indentation,
+  ) => {
+    const markdown = [
+      `${indentation}[CHAPTER]`,
+      `${indentation}number: "95"`,
+      `${indentation}title: "縮排內容"`,
+      `${indentation}[/CHAPTER]`,
+    ].join('\n');
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).not.toContainEqual(
+      expect.objectContaining({ type: BlockType.CHAPTER_OPENER }),
+    );
+  });
+
+  it.each([
+    [
+      'backtick fence 與較長 closing',
+      [
+        '```markdown',
+        '[CHAPTER]',
+        'number: "96"',
+        'title: "Fence 內容"',
+        '[/CHAPTER]',
+        '````',
+      ].join('\n'),
+    ],
+    [
+      'tilde fence',
+      [
+        '~~~markdown',
+        '[CHAPTER]',
+        'number: "96"',
+        'title: "Fence 內容"',
+        '[/CHAPTER]',
+        '~~~',
+      ].join('\n'),
+    ],
+    [
+      '2-space top-level fence',
+      [
+        '  ```markdown',
+        '[CHAPTER]',
+        'number: "96"',
+        'title: "Fence 內容"',
+        '[/CHAPTER]',
+        '  ```',
+      ].join('\n'),
+    ],
+    [
+      '未關閉 fence 到 EOF',
+      [
+        '```markdown',
+        '[CHAPTER]',
+        'number: "96"',
+        'title: "Fence 內容"',
+        '[/CHAPTER]',
+      ].join('\n'),
+    ],
+  ])('%s 內零縮排 marker 全部受保護', (_name, markdown) => {
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({
+      type: BlockType.CODE_BLOCK,
+      content: expect.stringContaining('[CHAPTER]'),
+    });
+  });
+
+  it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+  ])('%s root marker 允許行尾水平空白', (_name, newline) => {
+    const markdown = [
+      '[CHAPTER] \t',
+      'number: "99"',
+      'title: "行尾空白"',
+      '[/CHAPTER]\t ',
+    ].join(newline);
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({
+      type: BlockType.CHAPTER_OPENER,
+      content: '行尾空白',
+    });
+  });
+
+  it('fence 只能由同字元且長度足夠的 closing 關閉', () => {
+    const markdown = [
+      '````markdown',
+      '[CHAPTER]',
+      'number: "97"',
+      'title: "仍在 Fence"',
+      '[/CHAPTER]',
+      '~~~',
+      '```',
+      '`````',
+      '',
+      '[CHAPTER]',
+      'number: "98"',
+      'title: "合法章節"',
+      '[/CHAPTER]',
+    ].join('\n');
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.CODE_BLOCK,
+      BlockType.CHAPTER_OPENER,
+    ]);
+    expect(blocks[1].metadata?.chapter).toMatchObject({
+      number: '98',
+      title: '合法章節',
+    });
+  });
+
+  it.each([
     ['2-space fenced code', '  ', true],
     ['4-space fenced code', '    ', true],
     ['6-space fenced code', '      ', false],
@@ -461,18 +620,31 @@ describe('出版社 Markdown 語法', () => {
     ]);
   });
 
-  it('10k 行 protected-span mapping 操作量維持線性上限', () => {
-    const markdown = Array.from(
-      { length: 5_000 },
-      (_, index) => `paragraph-${index}`,
-    ).join('\n\n');
-    const metrics = measureCodeSpanMappingOperations(markdown);
+  it.each([1_500, 3_000, 6_000, 12_000])(
+    '%i 行 near-match 的 chapter 掃描每行只轉移一次',
+    (lineCount) => {
+      const prefixLineCount = Math.floor((lineCount - 3) / 2);
+      const codeLineCount = lineCount - prefixLineCount - 3;
+      const markdown = [
+        '- Parent',
+        '',
+        ...Array.from(
+          { length: prefixLineCount },
+          () => '  almost-the-same',
+        ),
+        '',
+        ...Array.from(
+          { length: codeLineCount - 1 },
+          () => '      almost-the-same',
+        ),
+        '      final-code-line',
+      ].join('\n');
+      const metrics = measureChapterSpanScanOperations(markdown);
 
-    expect(metrics.sourceLineCount).toBe(9_999);
-    expect(metrics.lineProbeCount).toBeLessThanOrEqual(
-      metrics.sourceLineCount * 4,
-    );
-  });
+      expect(metrics.sourceLineCount).toBe(lineCount);
+      expect(metrics.lineTransitionCount).toBe(lineCount);
+    },
+  );
 
   it('未關閉 CHAPTER 只回復 marker，後續 heading 與 paragraph 全部保留', () => {
     const markdown = [

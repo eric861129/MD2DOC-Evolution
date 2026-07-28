@@ -40,11 +40,6 @@ interface ChapterSourceSpan {
   isClosed: boolean;
 }
 
-interface SourceSpan {
-  startIndex: number;
-  endIndex: number;
-}
-
 interface ParseContext {
   nextListInstance: number;
 }
@@ -54,10 +49,14 @@ interface ManualTocEntry {
   page: string;
 }
 
-export interface CodeSpanMappingMetrics {
-  lineProbeCount: number;
+export interface ChapterSpanScanMetrics {
+  lineTransitionCount: number;
   sourceLineCount: number;
-  tokenCount: number;
+}
+
+interface FenceState {
+  marker: '`' | '~';
+  minimumClosingLength: number;
 }
 
 const CHAPTER_KEYS = new Set([
@@ -123,61 +122,113 @@ const scanPhysicalLineSpans = (source: string): PhysicalLineSpan[] => {
   return spans;
 };
 
-const isProtectedIndex = (
-  index: number,
-  protectedSpans: SourceSpan[],
-): boolean => protectedSpans.some((span) =>
-  index >= span.startIndex && index < span.endIndex
-);
+const CHAPTER_OPEN_PATTERN = /^\[CHAPTER\][\t ]*$/;
+const CHAPTER_CLOSE_PATTERN = /^\[\/CHAPTER\][\t ]*$/;
+const FENCE_OPEN_PATTERN = /^ {0,3}(`{3,}|~{3,})(.*)$/;
+const FENCE_CLOSE_PATTERN = /^ {0,3}(`+|~+)[\t ]*$/;
+
+const parseFenceOpening = (line: string): FenceState | undefined => {
+  const match = line.match(FENCE_OPEN_PATTERN);
+  if (!match) {
+    return undefined;
+  }
+
+  const fence = match[1];
+  const marker = fence[0] as FenceState['marker'];
+  if (marker === '`' && match[2].includes('`')) {
+    return undefined;
+  }
+
+  return {
+    marker,
+    minimumClosingLength: fence.length,
+  };
+};
+
+const isFenceClosing = (
+  line: string,
+  fence: FenceState,
+): boolean => {
+  const match = line.match(FENCE_CLOSE_PATTERN);
+  return Boolean(
+    match
+    && match[1][0] === fence.marker
+    && match[1].length >= fence.minimumClosingLength,
+  );
+};
 
 const scanChapterSourceSpans = (
   source: string,
-  protectedSpans: SourceSpan[],
+  metrics?: ChapterSpanScanMetrics,
 ): ChapterSourceSpan[] => {
   const lines = scanPhysicalLineSpans(source);
   const spans: ChapterSourceSpan[] = [];
+  let chapterStart: PhysicalLineSpan | undefined;
+  let chapterYamlStart = 0;
+  let fence: FenceState | undefined;
+  if (metrics) {
+    metrics.sourceLineCount = lines.length;
+  }
 
-  for (let index = 0; index < lines.length; index += 1) {
-    if (
-      lines[index].content.trim() !== '[CHAPTER]'
-      || isProtectedIndex(lines[index].startIndex, protectedSpans)
-    ) {
+  for (const line of lines) {
+    if (metrics) {
+      metrics.lineTransitionCount += 1;
+    }
+
+    if (chapterStart) {
+      if (CHAPTER_OPEN_PATTERN.test(line.content)) {
+        spans.push({
+          startIndex: chapterStart.startIndex,
+          endIndex: chapterStart.endIndex,
+          lineOffset: chapterStart.lineOffset,
+          yamlContent: '',
+          isClosed: false,
+        });
+        chapterStart = line;
+        chapterYamlStart = line.endIndex;
+        continue;
+      }
+
+      if (CHAPTER_CLOSE_PATTERN.test(line.content)) {
+        spans.push({
+          startIndex: chapterStart.startIndex,
+          endIndex: line.endIndex,
+          lineOffset: chapterStart.lineOffset,
+          yamlContent: source.slice(chapterYamlStart, line.startIndex),
+          isClosed: true,
+        });
+        chapterStart = undefined;
+      }
       continue;
     }
 
-    const startLine = lines[index];
-    let closingIndex = index + 1;
-    let isClosed = false;
-    while (closingIndex < lines.length) {
-      const candidateLine = lines[closingIndex];
-      if (isProtectedIndex(candidateLine.startIndex, protectedSpans)) {
-        closingIndex += 1;
-        continue;
+    if (fence) {
+      if (isFenceClosing(line.content, fence)) {
+        fence = undefined;
       }
-      if (candidateLine.content.trim() === '[CHAPTER]') {
-        break;
-      }
-      if (candidateLine.content.trim() === '[/CHAPTER]') {
-        isClosed = true;
-        break;
-      }
-      closingIndex += 1;
+      continue;
     }
 
-    const closingLine = isClosed ? lines[closingIndex] : startLine;
-    const yamlStart = index + 1 < lines.length
-      ? lines[index + 1].startIndex
-      : startLine.endIndex;
-    const yamlEnd = isClosed ? closingLine.startIndex : yamlStart;
+    const openingFence = parseFenceOpening(line.content);
+    if (openingFence) {
+      fence = openingFence;
+      continue;
+    }
 
+    if (CHAPTER_OPEN_PATTERN.test(line.content)) {
+      chapterStart = line;
+      chapterYamlStart = line.endIndex;
+    }
+  }
+
+  if (chapterStart) {
     spans.push({
-      startIndex: startLine.startIndex,
-      endIndex: closingLine.endIndex,
-      lineOffset: startLine.lineOffset,
-      yamlContent: source.slice(yamlStart, yamlEnd),
-      isClosed,
+      startIndex: chapterStart.startIndex,
+      endIndex: chapterStart.endIndex,
+      lineOffset: chapterStart.lineOffset,
+      yamlContent: '',
+      isClosed: false,
     });
-    index = isClosed ? closingIndex : index;
   }
 
   return spans;
@@ -489,153 +540,17 @@ const createNormalizedBoundaryMap = (source: string): number[] => {
   return originalIndexByNormalizedBoundary;
 };
 
-const collectNestedCodeTokens = (token: any): any[] => {
-  const codeTokens: any[] = [];
-  const visitToken = (candidate: any): void => {
-    if (!candidate || typeof candidate !== 'object') {
-      return;
-    }
-    if (
-      candidate.type === 'code'
-      || (
-        candidate.type === 'codespan'
-        && candidate.raw.includes('\n')
-      )
-    ) {
-      codeTokens.push(candidate);
-      return;
-    }
-    if (Array.isArray(candidate.items)) {
-      candidate.items.forEach(visitToken);
-    }
-    if (Array.isArray(candidate.tokens)) {
-      candidate.tokens.forEach(visitToken);
-    }
-  };
-
-  visitToken(token);
-  return codeTokens;
-};
-
-const findNestedCodeSpan = (
-  codeToken: any,
-  sourceLines: PhysicalLineSpan[],
-  parentSpan: SourceSpan,
-  startLineIndex: number,
-  metrics?: CodeSpanMappingMetrics,
-): { span: SourceSpan; nextLineIndex: number } | undefined => {
-  const expectedLines = scanPhysicalLineSpans(codeToken.raw)
-    .map(({ content }) => content.trim());
-  if (expectedLines.length === 0) {
-    return undefined;
-  }
-
-  for (
-    let candidateIndex = startLineIndex;
-    candidateIndex < sourceLines.length;
-    candidateIndex += 1
-  ) {
-    if (metrics) {
-      metrics.lineProbeCount += 1;
-    }
-    const candidateEndIndex = candidateIndex + expectedLines.length - 1;
-    const firstLine = sourceLines[candidateIndex];
-    const lastLine = sourceLines[candidateEndIndex];
-    if (!firstLine || !lastLine || firstLine.startIndex < parentSpan.startIndex) {
-      continue;
-    }
-    if (lastLine.endIndex > parentSpan.endIndex) {
-      break;
-    }
-
-    const isMatch = expectedLines.every((expectedLine, lineIndex) =>
-      sourceLines[candidateIndex + lineIndex]?.content.trim() === expectedLine
-    );
-    if (isMatch) {
-      return {
-        span: {
-          startIndex: firstLine.startIndex,
-          endIndex: lastLine.endIndex,
-        },
-        nextLineIndex: candidateEndIndex + 1,
-      };
-    }
-  }
-  return undefined;
-};
-
-const collectCodeSourceSpans = (
-  source: string,
-  tokens: ReturnType<typeof marked.lexer>,
-  boundaryMap: number[],
-  metrics?: CodeSpanMappingMetrics,
-): SourceSpan[] => {
-  const spans: SourceSpan[] = [];
-  const sourceLines = scanPhysicalLineSpans(source);
-  let normalizedIndex = 0;
-  let sourceLineCursor = 0;
-
-  for (const token of tokens) {
-    const rawLength = token.raw.length;
-    const normalizedEndIndex = normalizedIndex + rawLength;
-    if (token.type === 'code') {
-      spans.push({
-        startIndex: boundaryMap[normalizedIndex] ?? normalizedIndex,
-        endIndex: boundaryMap[normalizedEndIndex] ?? normalizedEndIndex,
-      });
-    } else {
-      const parentSpan = {
-        startIndex: boundaryMap[normalizedIndex] ?? normalizedIndex,
-        endIndex: boundaryMap[normalizedEndIndex] ?? normalizedEndIndex,
-      };
-      while (
-        sourceLineCursor < sourceLines.length
-        && sourceLines[sourceLineCursor].startIndex < parentSpan.startIndex
-      ) {
-        if (metrics) {
-          metrics.lineProbeCount += 1;
-        }
-        sourceLineCursor += 1;
-      }
-      let nextLineIndex = sourceLineCursor;
-
-      for (const codeToken of collectNestedCodeTokens(token)) {
-        const located = findNestedCodeSpan(
-          codeToken,
-          sourceLines,
-          parentSpan,
-          nextLineIndex,
-          metrics,
-        );
-        if (located) {
-          spans.push(located.span);
-          nextLineIndex = located.nextLineIndex;
-        }
-      }
-    }
-    normalizedIndex = normalizedEndIndex;
-  }
-  return spans;
-};
-
 /**
- * 回傳 protected-span mapping 的穩定操作量，供複雜度回歸測試使用。
+ * 回傳章首頁實體行掃描的穩定操作量，供複雜度回歸測試使用。
  */
-export const measureCodeSpanMappingOperations = (
+export const measureChapterSpanScanOperations = (
   markdown: string,
-): CodeSpanMappingMetrics => {
-  const tokens = marked.lexer(markdown);
-  const metrics: CodeSpanMappingMetrics = {
-    lineProbeCount: 0,
-    sourceLineCount: scanPhysicalLineSpans(markdown).length,
-    tokenCount: tokens.length,
+): ChapterSpanScanMetrics => {
+  const metrics: ChapterSpanScanMetrics = {
+    lineTransitionCount: 0,
+    sourceLineCount: 0,
   };
-  collectCodeSourceSpans(
-    markdown,
-    tokens,
-    createNormalizedBoundaryMap(markdown),
-    metrics,
-  );
+  scanChapterSourceSpans(markdown, metrics);
   return metrics;
 };
 
@@ -728,14 +643,7 @@ const parseMarkdownFragment = (
   const tokens = marked.lexer(markdown);
   const originalIndexByNormalizedBoundary =
     createNormalizedBoundaryMap(markdown);
-  const chapterSpans = scanChapterSourceSpans(
-    markdown,
-    collectCodeSourceSpans(
-      markdown,
-      tokens,
-      originalIndexByNormalizedBoundary,
-    ),
-  );
+  const chapterSpans = scanChapterSourceSpans(markdown);
   if (chapterSpans.length > 0) {
     const chapterBlocks: ParsedBlock[] = [];
     let cursor = 0;
