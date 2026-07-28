@@ -89,6 +89,20 @@ const getStyle = (styles: Document, styleId: string): Element => {
   return style;
 };
 
+const getExternalRelationship = (
+  relationships: Document,
+  hyperlink: Element,
+): Element => {
+  const relationshipId = hyperlink.getAttribute('r:id');
+  const relationship = Array.from(
+    relationships.getElementsByTagName('Relationship'),
+  ).find((candidate) => candidate.getAttribute('Id') === relationshipId);
+  if (!relationship) {
+    throw new Error(`找不到外部連結 Relationship：${relationshipId}`);
+  }
+  return relationship;
+};
+
 beforeAll(() => {
   if (typeof Blob.prototype.arrayBuffer === 'function') {
     return;
@@ -189,6 +203,133 @@ describe('DOCX 出版社排版', () => {
     expect(relationshipsXml).toContain('Target="https://example.com"');
     expect(elementsByName(paragraph, 'drawing')).toHaveLength(1);
     expect(entries.some((entry) => entry.startsWith('word/media/'))).toBe(true);
+  });
+
+  it('混合 Markdown 依 token tree 保留巢狀粗體、斜體、行內程式碼與外部連結', async () => {
+    const { blocks } = parseMarkdown(
+      '***both***、**bold `code`**、***both `codeBoth`***、[**bold** and `code`](https://example.com/nested) 與 _italic_。',
+    );
+    const blob = await generateDocx(blocks, {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+    });
+    const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
+    const relationships = parseXml(await readDocxXml(
+      blob,
+      'word/_rels/document.xml.rels',
+    ));
+    const paragraph = findParagraphContaining(document, 'both');
+
+    expect(paragraphText(paragraph))
+      .toBe('both、bold code、both codeBoth、bold and code 與 italic。');
+
+    const bothProperties = directChild(findRun(paragraph, 'both'), 'rPr')!;
+    expect(directChild(bothProperties, 'b')).toBeDefined();
+    expect(directChild(bothProperties, 'i')).toBeDefined();
+
+    const hyperlinkRuns = new Set(
+      elementsByName(paragraph, 'hyperlink')
+        .flatMap((hyperlink) => elementsByName(hyperlink, 'r')),
+    );
+    const strongCodeProperties = directChild(
+      elementsByName(paragraph, 'r')
+        .find((run) => {
+          const text = elementsByName(run, 't')
+            .map((node) => node.textContent)
+            .join('');
+          return text === 'code' && !hyperlinkRuns.has(run);
+        })!,
+      'rPr',
+    )!;
+    expect(directChild(strongCodeProperties, 'b')).toBeDefined();
+    expect(wordAttribute(directChild(strongCodeProperties, 'sz')!, 'val'))
+      .toBe('19');
+    expect(wordAttribute(directChild(strongCodeProperties, 'color')!, 'val'))
+      .toBe('9B1C1C');
+
+    const boldItalicCodeProperties = directChild(
+      findRun(paragraph, 'codeBoth'),
+      'rPr',
+    )!;
+    expect(directChild(boldItalicCodeProperties, 'b')).toBeDefined();
+    expect(directChild(boldItalicCodeProperties, 'i')).toBeDefined();
+    expect(wordAttribute(
+      directChild(boldItalicCodeProperties, 'sz')!,
+      'val',
+    )).toBe('19');
+    expect(wordAttribute(
+      directChild(boldItalicCodeProperties, 'color')!,
+      'val',
+    )).toBe('9B1C1C');
+
+    const hyperlink = elementsByName(paragraph, 'hyperlink')
+      .find((candidate) => paragraphText(candidate) === 'bold and code')!;
+    expect(hyperlink).toBeDefined();
+    const relationship = getExternalRelationship(relationships, hyperlink);
+    expect(relationship.getAttribute('Target'))
+      .toBe('https://example.com/nested');
+    expect(relationship.getAttribute('TargetMode')).toBe('External');
+
+    const linkedBoldProperties = directChild(findRun(hyperlink, 'bold'), 'rPr')!;
+    expect(directChild(linkedBoldProperties, 'b')).toBeDefined();
+    const linkedCodeProperties = directChild(findRun(hyperlink, 'code'), 'rPr')!;
+    expect(wordAttribute(directChild(linkedCodeProperties, 'sz')!, 'val'))
+      .toBe('19');
+    expect(wordAttribute(directChild(linkedCodeProperties, 'color')!, 'val'))
+      .toBe('9B1C1C');
+
+    const italicProperties = directChild(findRun(paragraph, 'italic'), 'rPr')!;
+    expect(directChild(italicProperties, 'i')).toBeDefined();
+  });
+
+  it('遞迴行內格式可由 heading、callout 與 table 共用', async () => {
+    const { blocks } = parseMarkdown([
+      '## ***混合標題***',
+      '',
+      '> [!NOTE]',
+      '> **提示 `code`**',
+      '',
+      '| 欄位 | 說明 |',
+      '| --- | --- |',
+      '| **粗體** | [文件](https://example.com/table) |',
+    ].join('\n'));
+    const blob = await generateDocx(blocks, {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+    });
+    const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
+    const relationships = parseXml(await readDocxXml(
+      blob,
+      'word/_rels/document.xml.rels',
+    ));
+
+    const heading = findParagraph(document, '混合標題');
+    expect(paragraphStyleId(heading)).toBe('Heading2');
+    const headingProperties = directChild(findRun(heading, '混合標題'), 'rPr')!;
+    expect(directChild(headingProperties, 'b')).toBeDefined();
+    expect(directChild(headingProperties, 'i')).toBeDefined();
+
+    const callout = findParagraphContaining(document, '提示 code');
+    const calloutCodeProperties = directChild(findRun(callout, 'code'), 'rPr')!;
+    expect(directChild(calloutCodeProperties, 'b')).toBeDefined();
+    expect(wordAttribute(directChild(calloutCodeProperties, 'sz')!, 'val'))
+      .toBe('19');
+
+    const tableBoldProperties = directChild(
+      findRun(findParagraph(document, '粗體'), '粗體'),
+      'rPr',
+    )!;
+    expect(directChild(tableBoldProperties, 'b')).toBeDefined();
+
+    const tableLinkParagraph = findParagraph(document, '文件');
+    const tableHyperlink = elementsByName(tableLinkParagraph, 'hyperlink')[0];
+    const tableRelationship = getExternalRelationship(
+      relationships,
+      tableHyperlink,
+    );
+    expect(tableRelationship.getAttribute('Target'))
+      .toBe('https://example.com/table');
+    expect(tableRelationship.getAttribute('TargetMode')).toBe('External');
   });
 
   it('level 0 到 2 清單繼承 Normal 樣式並引用合法 numbering', async () => {
