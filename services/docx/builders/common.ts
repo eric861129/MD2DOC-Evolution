@@ -1,4 +1,11 @@
-import { TextRun, ShadingType, UnderlineType, ImageRun } from "docx";
+import {
+  ExternalHyperlink,
+  ImageRun,
+  ShadingType,
+  TextRun,
+  UnderlineType,
+  type ParagraphChild,
+} from "docx";
 import { parseInlineElements, InlineStyleType } from "../../../utils/styleParser";
 import { WORD_THEME } from "../../../constants/theme";
 import { DocxConfig } from "../types";
@@ -15,19 +22,22 @@ export const FONT_CONFIG_NORMAL = {
 };
 
 // --- Helper: 行內樣式解析 ---
-export const parseInlineStyles = async (text: string, config?: DocxConfig): Promise<(TextRun | ImageRun)[]> => {
+export const parseInlineStyles = async (
+  text: string,
+  config?: DocxConfig,
+): Promise<ParagraphChild[]> => {
   const segments = parseInlineElements(text);
-  const runs: (TextRun | ImageRun)[] = [];
+  const runs: ParagraphChild[] = [];
 
   for (const segment of segments) {
-    const baseConfig = { text: segment.content, font: FONT_CONFIG_NORMAL };
+    const baseConfig = { text: segment.content };
     
     switch (segment.type) {
       case InlineStyleType.BOLD:
         runs.push(new TextRun({ ...baseConfig, bold: true }));
         break;
       case InlineStyleType.ITALIC:
-        runs.push(new TextRun({ ...baseConfig, italics: true, color: COLORS.PRIMARY_BLUE }));
+        runs.push(new TextRun({ ...baseConfig, italics: true }));
         break;
       case InlineStyleType.UNDERLINE:
         runs.push(new TextRun({
@@ -37,25 +47,36 @@ export const parseInlineStyles = async (text: string, config?: DocxConfig): Prom
         }));
         break;
       case InlineStyleType.LINK:
-        // 1. Link Text (藍色底線)
-        runs.push(new TextRun({
-          ...baseConfig,
-          color: COLORS.LINK_BLUE,
-          underline: { type: UnderlineType.SINGLE, color: COLORS.LINK_BLUE }
-        }));
-        // 2. QR Code Generation (Async)
         if (segment.url) {
+          runs.push(new ExternalHyperlink({
+            children: [
+              new TextRun({
+                ...baseConfig,
+                color: COLORS.LINK_BLUE,
+                underline: {
+                  type: UnderlineType.SINGLE,
+                  color: COLORS.LINK_BLUE,
+                },
+              }),
+            ],
+            link: segment.url,
+          }));
+        } else {
+          runs.push(new TextRun(baseConfig));
+        }
+
+        if (config?.profile.id === 'technical-legacy' && segment.url) {
           try {
             const qrBuffer = await generateQRCode(segment.url);
             if (qrBuffer.byteLength > 0) {
               // 前後加個小空格避免貼太近
-              runs.push(new TextRun({ text: " ", font: FONT_CONFIG_NORMAL, size: 4 })); 
+              runs.push(new TextRun({ text: " ", size: 4 }));
               runs.push(new ImageRun({
                 data: qrBuffer,
                 transformation: { width: 45, height: 45 }, // 約 1.5cm
                 type: "png"
               }));
-              runs.push(new TextRun({ text: " ", font: FONT_CONFIG_NORMAL, size: 4 })); 
+              runs.push(new TextRun({ text: " ", size: 4 }));
             }
           } catch (e) {
             console.warn(`Failed to generate QR for ${segment.url}`, e);
@@ -90,8 +111,15 @@ export const parseInlineStyles = async (text: string, config?: DocxConfig): Prom
         break;
       case InlineStyleType.CODE:
         runs.push(new TextRun({
-          ...baseConfig, 
-          shading: { fill: COLORS.BG_CODE, type: ShadingType.CLEAR, color: "auto" } 
+          ...baseConfig,
+          font: config?.profile.fonts.code ?? FONT_CONFIG_NORMAL,
+          size: 19,
+          color: config?.profile.colors.inlineCode ?? COLORS.BLACK,
+          shading: {
+            fill: config?.profile.paragraph.code.shadingFill ?? COLORS.BG_CODE,
+            type: ShadingType.CLEAR,
+            color: "auto",
+          },
         }));
         break;
       case InlineStyleType.UI_BUTTON:

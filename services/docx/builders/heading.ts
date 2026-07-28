@@ -1,23 +1,17 @@
-import { Paragraph, HeadingLevel } from "docx";
-import { WORD_THEME } from "../../../constants/theme";
+import { Paragraph } from "docx";
 import { parseInlineStyles } from "./common";
 import { DocxConfig } from "../types";
-
-const { SPACING, COLORS, LAYOUT } = WORD_THEME;
+import { DOCUMENT_STYLE_IDS } from "../styles";
 
 export const createHeading = async (content: string, level: 1 | 2 | 3, config?: DocxConfig): Promise<Paragraph> => {
-  const configs = {
-    1: { heading: HeadingLevel.HEADING_1, spacing: SPACING.H1, borderBottom: true },
-    2: { heading: HeadingLevel.HEADING_2, spacing: SPACING.H2, borderBottom: false },
-    3: { heading: HeadingLevel.HEADING_3, spacing: SPACING.H3, borderBottom: false },
+  const style = {
+    1: DOCUMENT_STYLE_IDS.heading1,
+    2: DOCUMENT_STYLE_IDS.heading2,
+    3: DOCUMENT_STYLE_IDS.heading3,
   }[level];
 
   return new Paragraph({
+    style,
     children: await parseInlineStyles(content, config),
-    heading: configs.heading,
-    spacing: configs.spacing,
-    border: configs.borderBottom ? { 
-      bottom: { style: "single", space: 8, color: COLORS.BLACK, size: LAYOUT.BORDER.H1_BOTTOM } 
-    } : undefined
   });
 };

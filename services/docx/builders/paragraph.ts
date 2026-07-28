@@ -1,13 +1,11 @@
 import { Paragraph } from "docx";
-import { WORD_THEME } from "../../../constants/theme";
 import { parseInlineStyles } from "./common";
 import { DocxConfig } from "../types";
-
-const { SPACING, LAYOUT } = WORD_THEME;
+import { DOCUMENT_STYLE_IDS } from "../styles";
 
 export const createParagraph = async (content: string, config?: DocxConfig): Promise<Paragraph> => {
   return new Paragraph({
+    style: DOCUMENT_STYLE_IDS.normal,
     children: await parseInlineStyles(content, config),
-    spacing: SPACING.PARAGRAPH
   });
 };

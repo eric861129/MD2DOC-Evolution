@@ -1,4 +1,4 @@
-import { Paragraph, TextRun, BorderStyle, ImageRun } from "docx";
+import { Paragraph, TextRun, BorderStyle, type ParagraphChild } from "docx";
 import { BlockType } from "../../types";
 import { WORD_THEME } from "../../../constants/theme";
 import { parseInlineStyles, FONT_CONFIG_NORMAL } from "./common";
@@ -13,7 +13,7 @@ export const createCallout = async (content: string, type: BlockType, docxConfig
     [BlockType.CALLOUT_NOTE]: { label: "NOTE", color: COLORS.CALLOUT.NOTE.BORDER, style: BorderStyle.DASHED, size: LAYOUT.BORDER.CALLOUT_NOTE, bg: COLORS.CALLOUT.NOTE.BG },
   }[type] || { label: "NOTE", color: COLORS.CALLOUT.NOTE.BORDER, style: BorderStyle.DASHED, size: LAYOUT.BORDER.CALLOUT_NOTE, bg: COLORS.CALLOUT.NOTE.BG };
 
-  const children: (TextRun | ImageRun)[] = [
+  const children: ParagraphChild[] = [
     new TextRun({ text: `[ ${config.label} ]`, bold: true, size: FONT_SIZES.LABEL, font: FONT_CONFIG_NORMAL })
   ];
 

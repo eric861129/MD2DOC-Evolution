@@ -9,6 +9,7 @@ import { BlockType, ParsedBlock } from "../../types";
 import { docxRegistry } from "../registry";
 import { DocxConfig } from "../types";
 import { WORD_THEME } from "../../../constants/theme";
+import { DOCUMENT_STYLE_IDS } from "../styles";
 import { parseInlineStyles } from "./common";
 
 // Builders
@@ -71,16 +72,16 @@ export const registerDefaultHandlers = () => {
   // Lists
   docxRegistry.register(BlockType.BULLET_LIST, async (block, config) => 
     new Paragraph({ 
-      children: await parseInlineStyles(block.content, config), 
-      numbering: { reference: "default-bullet", level: block.nestingLevel || 0 }, 
-      spacing: SPACING.LIST 
+      style: DOCUMENT_STYLE_IDS.normal,
+      children: await parseInlineStyles(block.content, config),
+      numbering: { reference: "default-bullet", level: block.nestingLevel || 0 },
     })
   );
   docxRegistry.register(BlockType.NUMBERED_LIST, async (block, config) => 
     new Paragraph({ 
-      children: await parseInlineStyles(block.content, config), 
-      numbering: { reference: "default-numbering", level: block.nestingLevel || 0 }, 
-      spacing: SPACING.LIST 
+      style: DOCUMENT_STYLE_IDS.normal,
+      children: await parseInlineStyles(block.content, config),
+      numbering: { reference: "default-numbering", level: block.nestingLevel || 0 },
     })
   );
 
