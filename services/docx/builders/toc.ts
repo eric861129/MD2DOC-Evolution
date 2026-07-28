@@ -18,7 +18,7 @@ export const createManualTOC = (content: string, pageConfig: DocxConfig): Paragr
 
   // 計算右側定位點位置 (總寬度減去邊距)
   // 假設兩邊邊距各為 1440 twips (1 inch)
-  const rightPos = (pageConfig.widthCm * SIZES.CM_TO_TWIPS) - (TWIPS_PER_INCH * 2);
+  const rightPos = (pageConfig.layout.page.widthCm * SIZES.CM_TO_TWIPS) - (TWIPS_PER_INCH * 2);
 
   lines.forEach(line => {
     // 移除列表符號

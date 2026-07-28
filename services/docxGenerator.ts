@@ -4,34 +4,131 @@
  * Licensed under the MIT License.
  */
 
-import { Document, Packer, Paragraph, AlignmentType, Table, Header, Footer, PageNumber, TextRun } from "docx";
-import { ParsedBlock } from "./types";
-import { FONT_CONFIG_NORMAL } from "./docx/builders/common";
-import { SIZES, WORD_THEME } from "../constants/theme";
+import {
+  AlignmentType,
+  Document,
+  Footer,
+  Header,
+  OnOffElement,
+  Packer,
+  PageNumber,
+  Paragraph,
+  Table,
+  TextRun,
+} from 'docx';
+import type { DocumentMeta, ParsedBlock } from './types';
 
-// Registry & Handlers
-import { docxRegistry } from "./docx/registry";
-import { registerDefaultHandlers } from "./docx/builders/index";
-import { DocxConfig } from "./docx/types";
+// 區塊處理器註冊表
+import { registerDefaultHandlers } from './docx/builders/index';
+import { resolvePageLayout } from './docx/layout/resolve';
+import { getDocumentProfile } from './docx/profiles';
+import { docxRegistry } from './docx/registry';
+import { createDocumentStyles } from './docx/styles';
+import type { DocxConfig, GenerateDocxOptions } from './docx/types';
 
-// Initialize default handlers
+// 初始化預設區塊處理器
 registerDefaultHandlers();
 
-// Re-export DocxConfig for consumers
-export type { DocxConfig };
+// 重新匯出生成器合約，供既有呼叫端使用
+export type { DocxConfig, GenerateDocxOptions };
 
-const { FONT_SIZES, LAYOUT } = WORD_THEME;
+const createHeaders = (
+  meta: DocumentMeta,
+  config: DocxConfig,
+): { default?: Header } => {
+  if (
+    meta.header === false
+    || !meta.title
+    || !config.profile.headerFooter.showTitle
+  ) {
+    return {};
+  }
+
+  return {
+    default: new Header({
+      children: [
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: meta.title,
+              font: config.profile.fonts.body,
+              size: 18,
+              color: '808080',
+            }),
+          ],
+          alignment: AlignmentType.RIGHT,
+          border: {
+            bottom: {
+              style: 'single',
+              size: 6,
+              color: 'E0E0E0',
+              space: 6,
+            },
+          },
+        }),
+      ],
+    }),
+  };
+};
+
+const createFooters = (
+  meta: DocumentMeta,
+  config: DocxConfig,
+): { default?: Footer } => {
+  if (meta.footer === false) {
+    return {};
+  }
+
+  const showBookAndPage = config.profile.headerFooter.showBookAndPage && meta.title;
+  return {
+    default: new Footer({
+      children: [
+        new Paragraph({
+          children: [
+            new TextRun({
+              children: [
+                ...(showBookAndPage ? [`${meta.title} | `] : []),
+                PageNumber.CURRENT,
+              ],
+              font: config.profile.fonts.body,
+              size: 20,
+            }),
+          ],
+          alignment: AlignmentType.CENTER,
+        }),
+      ],
+    }),
+  };
+};
+
+const applyPageSettings = (doc: Document, config: DocxConfig): void => {
+  if (config.layout.margins.mode === 'mirrored') {
+    doc.Settings.addChildElement(new OnOffElement('w:mirrorMargins', true));
+  }
+  if (config.layout.margins.gutterPosition === 'top') {
+    doc.Settings.addChildElement(new OnOffElement('w:gutterAtTop', true));
+  }
+};
 
 // --- 主生成函式 ---
 export const generateDocx = async (
-    blocks: ParsedBlock[], 
-    config: DocxConfig = { widthCm: 17, heightCm: 23 }
+  blocks: ParsedBlock[],
+  options: GenerateDocxOptions,
 ): Promise<Blob> => {
-  
-  // Initialize counters for automatic numbering (Figures, QRs)
-  config.counters = {
-    figure: 0,
-    qr: 0
+  const layout = resolvePageLayout(options.exportSettings);
+  const profile = getDocumentProfile(options.exportSettings.profileId);
+  const config: DocxConfig = {
+    layout,
+    profile,
+    showLineNumbers: options.showLineNumbers,
+    meta: options.meta ?? {},
+    imageRegistry: options.imageRegistry ?? {},
+    counters: {
+      figure: 0,
+      qr: 0,
+      bookmark: 0,
+      listInstance: 0,
+    },
   };
 
   const docChildren: (Paragraph | Table)[] = [];
@@ -47,48 +144,18 @@ export const generateDocx = async (
     }
   }
 
-  // 2. Prepare Headers & Footers
-  const docMeta = config.meta || {};
-  const headers: any = {};
-  const footers: any = {};
-
-  // Header: Show Title if 'header' is not false and title exists
-  if (docMeta.header !== false && docMeta.title) {
-    headers.default = new Header({
-      children: [
-        new Paragraph({
-          children: [
-            new TextRun({ text: docMeta.title, font: FONT_CONFIG_NORMAL.ascii, size: 18, color: "808080" })
-          ],
-          alignment: AlignmentType.RIGHT,
-          border: { bottom: { style: "single", size: 6, color: "E0E0E0", space: 6 } } // Slight underline
-        })
-      ]
-    });
-  }
-
-  // Footer: Show Page Number if 'footer' is not false (Default true)
-  if (docMeta.footer !== false) {
-    footers.default = new Footer({
-      children: [
-        new Paragraph({
-          children: [
-            new TextRun({
-              children: [PageNumber.CURRENT],
-              font: FONT_CONFIG_NORMAL.ascii,
-              size: 20
-            })
-          ],
-          alignment: AlignmentType.CENTER
-        })
-      ]
-    });
-  }
+  const headers = createHeaders(config.meta, config);
+  const footers = createFooters(config.meta, config);
+  const { margins, page } = layout;
+  const headerFooterDistanceTwips = Math.round(
+    profile.headerFooter.distanceCm / 2.54 * 1440,
+  );
 
   const doc = new Document({
-    creator: docMeta.author,
-    title: docMeta.title,
-    description: docMeta.subject,
+    creator: config.meta.author,
+    title: config.meta.title,
+    description: config.meta.subject,
+    features: { updateFields: true },
     numbering: {
       config: [
         {
@@ -112,18 +179,28 @@ export const generateDocx = async (
     sections: [{
       properties: {
         page: {
-          size: { width: config.widthCm * SIZES.CM_TO_TWIPS, height: config.heightCm * SIZES.CM_TO_TWIPS },
-          margin: { top: LAYOUT.MARGIN.NORMAL, right: LAYOUT.MARGIN.NORMAL, bottom: LAYOUT.MARGIN.NORMAL, left: LAYOUT.MARGIN.NORMAL },
+          size: {
+            width: page.widthTwips,
+            height: page.heightTwips,
+          },
+          margin: {
+            top: margins.topTwips,
+            right: margins.rightTwips,
+            bottom: margins.bottomTwips,
+            left: margins.leftTwips,
+            header: headerFooterDistanceTwips,
+            footer: headerFooterDistanceTwips,
+            gutter: margins.gutterTwips,
+          },
         },
       },
-      headers: headers,
-      footers: footers,
-      children: docChildren
+      headers,
+      footers,
+      children: docChildren,
     }],
-    styles: {
-      default: { document: { run: { font: FONT_CONFIG_NORMAL, size: FONT_SIZES.BODY } } },
-    },
+    styles: createDocumentStyles(profile),
   });
 
-  return await Packer.toBlob(doc);
+  applyPageSettings(doc, config);
+  return Packer.toBlob(doc);
 };

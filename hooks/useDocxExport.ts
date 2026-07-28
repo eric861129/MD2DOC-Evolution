@@ -99,8 +99,6 @@ export const useDocxExport = ({
       await runExportValidation(true);
       const { generateDocx } = await import('../services/docxGenerator');
       const blob = await generateDocx(parsedBlocks, {
-        widthCm: resolvedPageLayout.page.widthCm,
-        heightCm: resolvedPageLayout.page.heightCm,
         exportSettings,
         showLineNumbers: true,
         meta: documentMeta,

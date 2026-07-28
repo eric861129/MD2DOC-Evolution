@@ -18,7 +18,7 @@ export const createCodeBlock = async (content: string, config: DocxConfig, metad
   
   // 計算可用寬度 (總寬度 - 邊距)
   // 修正：移除額外的程式碼縮排，確保與內文對齊
-  const totalWidth = config.widthCm * 567; // TWIPS_PER_CM
+  const totalWidth = config.layout.page.widthCm * 567; // TWIPS_PER_CM
   const usableWidth = totalWidth - (2 * LAYOUT.MARGIN.NORMAL);
   const codeColWidth = usableWidth - lineNumWidth;
 
