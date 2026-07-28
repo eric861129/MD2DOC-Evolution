@@ -9,6 +9,15 @@ const publisherBlocks = [
   { type: BlockType.BULLET_LIST, content: 'Item 1' },
 ];
 
+const getSettingsChildNames = (settingsXml: string): string[] => {
+  const settingsDocument = new DOMParser().parseFromString(
+    settingsXml,
+    'application/xml',
+  );
+  return Array.from(settingsDocument.documentElement.children)
+    .map((element) => element.localName);
+};
+
 beforeAll(() => {
   if (typeof Blob.prototype.arrayBuffer === 'function') {
     return;
@@ -105,6 +114,12 @@ describe('docxGenerator', () => {
     const settingsXml = await readDocxXml(blob, 'word/settings.xml');
     expect(settingsXml).toMatch(/<w:mirrorMargins(?:\s[^>]*)?\/>/);
     expect(settingsXml).not.toContain('<w:gutterAtTop');
+    const settingsChildNames = getSettingsChildNames(settingsXml);
+    const displayBackgroundIndex = settingsChildNames.indexOf('displayBackgroundShape');
+    const mirrorMarginsIndex = settingsChildNames.indexOf('mirrorMargins');
+    expect(mirrorMarginsIndex).toBe(displayBackgroundIndex + 1);
+    expect(mirrorMarginsIndex).toBeLessThan(settingsChildNames.indexOf('updateFields'));
+    expect(mirrorMarginsIndex).toBeLessThan(settingsChildNames.indexOf('compat'));
   });
 
   it('上方裝訂預留在 settings 啟用 gutterAtTop 且不誤啟用鏡像邊界', async () => {
@@ -132,6 +147,41 @@ describe('docxGenerator', () => {
     const settingsXml = await readDocxXml(blob, 'word/settings.xml');
     expect(settingsXml).toMatch(/<w:gutterAtTop(?:\s[^>]*)?\/>/);
     expect(settingsXml).not.toContain('<w:mirrorMargins');
+    const settingsChildNames = getSettingsChildNames(settingsXml);
+    const displayBackgroundIndex = settingsChildNames.indexOf('displayBackgroundShape');
+    const gutterAtTopIndex = settingsChildNames.indexOf('gutterAtTop');
+    expect(gutterAtTopIndex).toBe(displayBackgroundIndex + 1);
+    expect(gutterAtTopIndex).toBeLessThan(settingsChildNames.indexOf('updateFields'));
+    expect(gutterAtTopIndex).toBeLessThan(settingsChildNames.indexOf('compat'));
+  });
+
+  it('程式碼區塊與手動目錄共用解析後的出版社裝訂版內容寬度', async () => {
+    const blob = await generateDocx([
+      {
+        type: BlockType.CODE_BLOCK,
+        content: 'const answer = 42;',
+        metadata: { showLineNumbers: false, language: 'typescript' },
+      },
+      {
+        type: BlockType.TOC,
+        content: '第一章 1',
+      },
+    ], {
+      exportSettings: {
+        profileId: 'publisher-binding',
+        pageSizeId: 'tech',
+        marginPresetId: 'publisher-binding',
+      },
+      showLineNumbers: false,
+    });
+
+    const documentXml = await readDocxXml(blob, 'word/document.xml');
+    expect(documentXml).toMatch(
+      /<w:tblW(?=[^>]*w:type="dxa")(?=[^>]*w:w="7088")[^>]*\/>/,
+    );
+    expect(documentXml).toMatch(
+      /<w:tab(?=[^>]*w:val="right")(?=[^>]*w:pos="7088")(?=[^>]*w:leader="dot")[^>]*\/>/,
+    );
   });
 
   it('technical-legacy 保持頁首書名與頁尾僅頁碼的既有行為', async () => {

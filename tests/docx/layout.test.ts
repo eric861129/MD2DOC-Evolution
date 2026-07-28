@@ -63,6 +63,7 @@ describe('resolvePageLayout', () => {
       gutterCm: 0.5,
     });
     expect(layout.content.widthCm).toBeCloseTo(12.5, 2);
+    expect(layout.content.widthTwips).toBe(7088);
   });
 
   it('自訂邊界低於 1 公分時回傳列印風險警告', () => {
@@ -132,6 +133,22 @@ describe('resolvePageLayout', () => {
         gutterPosition: 'left',
       },
     })).toThrow('裝訂預留必須介於 0.00 至 5.00 公分之間');
+  });
+
+  it('拒絕鏡像邊界搭配上方裝訂預留', () => {
+    expect(() => resolvePageLayout({
+      ...DEFAULT_EXPORT_SETTINGS,
+      marginPresetId: 'custom',
+      customMargins: {
+        mode: 'mirrored',
+        topCm: 2,
+        bottomCm: 2,
+        insideCm: 2,
+        outsideCm: 2,
+        gutterCm: 0.5,
+        gutterPosition: 'top',
+      },
+    })).toThrow('鏡像邊界不可搭配上方裝訂預留');
   });
 
   it.each([NaN, Infinity, -Infinity])('拒絕非有限的自訂邊界數值：%s', (value) => {

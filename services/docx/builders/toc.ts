@@ -1,5 +1,5 @@
 import { Paragraph, TextRun, AlignmentType, TabStopType, LeaderType } from "docx";
-import { SIZES, WORD_THEME, LINE_HEIGHT, TWIPS_PER_INCH } from "../../../constants/theme";
+import { WORD_THEME, LINE_HEIGHT } from "../../../constants/theme";
 import { FONT_CONFIG_NORMAL } from "./common";
 import { DocxConfig } from "../types";
 
@@ -16,9 +16,8 @@ export const createManualTOC = (content: string, pageConfig: DocxConfig): Paragr
     spacing: { before: LINE_HEIGHT.DOUBLE, after: LINE_HEIGHT.DOUBLE }
   }));
 
-  // 計算右側定位點位置 (總寬度減去邊距)
-  // 假設兩邊邊距各為 1440 twips (1 inch)
-  const rightPos = (pageConfig.layout.page.widthCm * SIZES.CM_TO_TWIPS) - (TWIPS_PER_INCH * 2);
+  // 共用版面解析器的精確內容寬度，支援非對稱與鏡像邊界
+  const rightPos = pageConfig.layout.content.widthTwips;
 
   lines.forEach(line => {
     // 移除列表符號

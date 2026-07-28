@@ -72,6 +72,12 @@ const resolveMargins = (settings: ExportSettings): MarginConfigCm => {
   return settings.customMargins;
 };
 
+const validateMarginCombination = (margins: MarginConfigCm): void => {
+  if (margins.mode === 'mirrored' && margins.gutterPosition === 'top') {
+    throw new Error('鏡像邊界不可搭配上方裝訂預留');
+  }
+};
+
 const validateCustomMargins = (margins: MarginConfigCm): void => {
   const edgeValues = margins.mode === 'standard'
     ? [margins.topCm, margins.bottomCm, margins.leftCm, margins.rightCm]
@@ -126,13 +132,20 @@ const isGeometryCustomized = (settings: ExportSettings): boolean => {
 export const resolvePageLayout = (settings: ExportSettings): ResolvedPageLayout => {
   const page = resolvePageSize(settings);
   const marginConfig = resolveMargins(settings);
+  validateMarginCombination(marginConfig);
   if (settings.marginPresetId === 'custom') {
     validateCustomMargins(marginConfig);
   }
 
   const margins = toResolvedMargins(marginConfig);
+  const pageWidthTwips = toTwips(page.widthCm);
+  const pageHeightTwips = toTwips(page.heightCm);
   const contentWidthCm = page.widthCm - margins.leftCm - margins.rightCm - margins.gutterCm;
   const contentHeightCm = page.heightCm - margins.topCm - margins.bottomCm;
+  const contentWidthTwips = pageWidthTwips
+    - margins.leftTwips
+    - margins.rightTwips
+    - margins.gutterTwips;
   if (contentWidthCm < MINIMUM_CONTENT_WIDTH_CM) {
     throw new Error('有效內容寬度不得小於 8 公分');
   }
@@ -157,11 +170,15 @@ export const resolvePageLayout = (settings: ExportSettings): ResolvedPageLayout 
     page: {
       widthCm: page.widthCm,
       heightCm: page.heightCm,
-      widthTwips: toTwips(page.widthCm),
-      heightTwips: toTwips(page.heightCm),
+      widthTwips: pageWidthTwips,
+      heightTwips: pageHeightTwips,
     },
     margins,
-    content: { widthCm: contentWidthCm, heightCm: contentHeightCm },
+    content: {
+      widthCm: contentWidthCm,
+      heightCm: contentHeightCm,
+      widthTwips: contentWidthTwips,
+    },
     isCustomizedFromProfile,
     warnings,
   };

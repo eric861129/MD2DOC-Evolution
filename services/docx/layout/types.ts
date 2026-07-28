@@ -70,6 +70,7 @@ export interface ResolvedPageLayout {
   content: {
     widthCm: number;
     heightCm: number;
+    widthTwips: number;
   };
   isCustomizedFromProfile: boolean;
   warnings: string[];

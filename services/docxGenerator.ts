@@ -9,7 +9,6 @@ import {
   Document,
   Footer,
   Header,
-  OnOffElement,
   Packer,
   PageNumber,
   Paragraph,
@@ -23,6 +22,7 @@ import { registerDefaultHandlers } from './docx/builders/index';
 import { resolvePageLayout } from './docx/layout/resolve';
 import { getDocumentProfile } from './docx/profiles';
 import { docxRegistry } from './docx/registry';
+import { applyPageSettings } from './docx/settings';
 import { createDocumentStyles } from './docx/styles';
 import type { DocxConfig, GenerateDocxOptions } from './docx/types';
 
@@ -99,15 +99,6 @@ const createFooters = (
       ],
     }),
   };
-};
-
-const applyPageSettings = (doc: Document, config: DocxConfig): void => {
-  if (config.layout.margins.mode === 'mirrored') {
-    doc.Settings.addChildElement(new OnOffElement('w:mirrorMargins', true));
-  }
-  if (config.layout.margins.gutterPosition === 'top') {
-    doc.Settings.addChildElement(new OnOffElement('w:gutterAtTop', true));
-  }
 };
 
 // --- 主生成函式 ---
@@ -201,6 +192,6 @@ export const generateDocx = async (
     styles: createDocumentStyles(profile),
   });
 
-  applyPageSettings(doc, config);
+  applyPageSettings(doc.Settings, layout);
   return Packer.toBlob(doc);
 };
