@@ -44,20 +44,20 @@ export const createCallout = async (
   const paragraphs = [
     createCalloutParagraph([
       new TextRun({
-        text: `[ ${token.label} ]`,
+        text: `${token.label} `,
         bold: true,
         font: config.profile.fonts.body,
       }),
     ], token, config),
   ];
 
-  const contentParagraphs = content
-    .split(/\n\s*\n/)
-    .filter((paragraph) => paragraph.length > 0);
+  const sourceLines = content === ''
+    ? []
+    : content.split(/\r?\n/);
 
-  for (const paragraph of contentParagraphs) {
+  for (const line of sourceLines) {
     paragraphs.push(createCalloutParagraph(
-      await parseInlineStyles(paragraph, config),
+      await parseInlineStyles(line, config),
       token,
       config,
     ));

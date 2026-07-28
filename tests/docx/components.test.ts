@@ -1,6 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { generateDocx } from '../../services/docxGenerator';
-import { parseMarkdown } from '../../services/markdownParser';
 import { BlockType, type ParsedBlock } from '../../services/types';
 import { readDocxXml } from '../helpers/readDocx';
 
@@ -37,6 +36,15 @@ const bodyParagraphs = (document: Document): Element[] => {
     .filter((element) => element.localName === 'p') as Element[];
 };
 
+const styledBodyParagraphs = (
+  document: Document,
+  styleId: string,
+): Element[] => bodyParagraphs(document)
+  .filter((paragraph) => {
+    const style = directChild(paragraphProperties(paragraph), 'pStyle');
+    return style && wordAttribute(style, 'val') === styleId;
+  });
+
 const findParagraph = (document: Document, text: string): Element => {
   const paragraph = elementsByName(document, 'p')
     .find((candidate) => paragraphText(candidate) === text);
@@ -72,6 +80,7 @@ const expectBorder = (
     expect(border, `${side} border`).toBeDefined();
     expect(wordAttribute(border!, 'val')).toBe(expectedStyle);
     expect(wordAttribute(border!, 'sz')).toBe('8');
+    expect(wordAttribute(border!, 'space')).toBe('6');
     expect(wordAttribute(border!, 'color')).toBe('A6A6A6');
   }
 };
@@ -175,14 +184,10 @@ describe('DOCX 出版元件', () => {
 
     const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
     const labelParagraph = elementsByName(document, 'p')
-      .find((paragraph) => paragraphText(paragraph).includes(label));
+      .find((paragraph) => paragraphText(paragraph) === `${label} `);
     expect(labelParagraph, `${label} label`).toBeDefined();
 
-    const calloutParagraphs = bodyParagraphs(document)
-      .filter((paragraph) => {
-        const style = directChild(paragraphProperties(paragraph), 'pStyle');
-        return style && wordAttribute(style, 'val') === 'Callout';
-      });
+    const calloutParagraphs = styledBodyParagraphs(document, 'Callout');
     expect(calloutParagraphs.length).toBeGreaterThan(0);
     for (const paragraph of calloutParagraphs) {
       expect(wordAttribute(getParagraphProperty(paragraph, 'shd'), 'fill'))
@@ -195,14 +200,14 @@ describe('DOCX 出版元件', () => {
     }
   });
 
-  it('Callout 多段內容保留粗體與巢狀超連結', async () => {
-    const { blocks } = parseMarkdown([
-      '> [!IMPORTANT]',
-      '> 第一段有 **粗體**。',
-      '>',
-      '> 第二段有 [**官方** `文件`](https://example.com/docs)。',
-    ].join('\n'));
-    const blob = await generateDocx(blocks, {
+  it('Callout 每個連續來源實體行各自成段且保留巢狀行內格式', async () => {
+    const blob = await generateDocx([{
+      type: BlockType.CALLOUT_IMPORTANT,
+      content: [
+        '第一行有 **粗體**。',
+        '第二行有 [**官方** `文件`](https://example.com/docs)。',
+      ].join('\n'),
+    }], {
       exportSettings: publisherExportSettings,
       showLineNumbers: false,
     });
@@ -212,16 +217,21 @@ describe('DOCX 出版元件', () => {
       blob,
       'word/_rels/document.xml.rels',
     ));
-    const contentParagraphs = bodyParagraphs(document)
-      .filter((paragraph) => paragraphText(paragraph).includes('第一段')
-        || paragraphText(paragraph).includes('第二段'));
-    expect(contentParagraphs).toHaveLength(2);
+    const calloutParagraphs = styledBodyParagraphs(document, 'Callout');
+    expect(calloutParagraphs.map(paragraphText)).toEqual([
+      'IMPORTANT ',
+      '第一行有 粗體。',
+      '第二行有 官方 文件。',
+    ]);
+    expect(calloutParagraphs.flatMap((paragraph) =>
+      elementsByName(paragraph, 'br')
+    )).toHaveLength(0);
 
-    const boldRun = elementsByName(contentParagraphs[0], 'r')
+    const boldRun = elementsByName(calloutParagraphs[1], 'r')
       .find((run) => paragraphText(run) === '粗體');
     expect(directChild(directChild(boldRun!, 'rPr')!, 'b')).toBeDefined();
 
-    const hyperlink = elementsByName(contentParagraphs[1], 'hyperlink')[0];
+    const hyperlink = elementsByName(calloutParagraphs[2], 'hyperlink')[0];
     expect(hyperlink).toBeDefined();
     const relationshipId = hyperlink.getAttribute('r:id');
     const relationship = Array.from(
@@ -232,6 +242,47 @@ describe('DOCX 出版元件', () => {
     expect(elementsByName(hyperlink, 'r').some((run) =>
       directChild(directChild(run, 'rPr')!, 'b') !== undefined
     )).toBe(true);
+  });
+
+  it('Callout 保留來源空白實體行為空的 styled/shaded paragraph', async () => {
+    const blob = await generateDocx([{
+      type: BlockType.CALLOUT_IMPORTANT,
+      content: '第一行\n\n第三行',
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+    });
+
+    const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
+    const calloutParagraphs = styledBodyParagraphs(document, 'Callout');
+    expect(calloutParagraphs.map(paragraphText)).toEqual([
+      'IMPORTANT ',
+      '第一行',
+      '',
+      '第三行',
+    ]);
+
+    for (const paragraph of calloutParagraphs) {
+      expect(wordAttribute(getParagraphProperty(paragraph, 'shd'), 'fill'))
+        .toBe('EEF4FB');
+      const indent = getParagraphProperty(paragraph, 'ind');
+      expect(wordAttribute(indent, 'left')).toBe('230');
+      expect(wordAttribute(indent, 'right')).toBe('230');
+    }
+  });
+
+  it('空內容 Callout 只輸出權威 label 且不製造假內容段落', async () => {
+    const blob = await generateDocx([{
+      type: BlockType.CALLOUT_IMPORTANT,
+      content: '',
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+    });
+
+    const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
+    expect(styledBodyParagraphs(document, 'Callout').map(paragraphText))
+      .toEqual(['IMPORTANT ']);
   });
 
   it('left、right、center 對話使用精確背景、縮排、框線與段落間距', async () => {
@@ -263,22 +314,25 @@ describe('DOCX 出版元件', () => {
     const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
     const cases = [
       {
-        paragraph: findParagraph(document, 'Left:左側內容'),
+        paragraph: findParagraph(document, 'Left：左側內容'),
         fill: 'F2F2F2',
         indent: { left: null, right: '1440' },
         border: 'dotted',
+        keepNext: false,
       },
       {
-        paragraph: findParagraph(document, 'Right:右側內容'),
+        paragraph: findParagraph(document, 'Right：右側內容'),
         fill: 'FFFFFF',
         indent: { left: '1440', right: null },
         border: 'dashed',
+        keepNext: true,
       },
       {
-        paragraph: findParagraph(document, 'Center:置中內容'),
+        paragraph: findParagraph(document, 'Center：置中內容'),
         fill: 'F8FAFC',
         indent: { left: '720', right: '720' },
         border: 'double',
+        keepNext: false,
       },
     ];
 
@@ -291,6 +345,14 @@ describe('DOCX 出版元件', () => {
       const spacing = getParagraphProperty(testCase.paragraph, 'spacing');
       expect(wordAttribute(spacing, 'before')).toBe('400');
       expect(wordAttribute(spacing, 'after')).toBe('400');
+      expect(wordAttribute(spacing, 'line')).toBe('300');
+      expect(directChild(paragraphProperties(testCase.paragraph), 'keepLines'))
+        .toBeDefined();
+      expect(Boolean(directChild(
+        paragraphProperties(testCase.paragraph),
+        'keepNext',
+      ))).toBe(testCase.keepNext);
+      expect(elementsByName(testCase.paragraph, 'br')).toHaveLength(0);
       expectBorder(testCase.paragraph, testCase.border);
     }
   });

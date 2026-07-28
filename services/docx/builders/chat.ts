@@ -6,7 +6,6 @@
 
 import { AlignmentType, BorderStyle, Paragraph, TextRun } from "docx";
 import { ParsedBlock } from "../../types";
-import { LINE_HEIGHT } from "../../../constants/theme";
 import { parseInlineStyles, FONT_CONFIG_NORMAL } from "./common";
 import { DocxConfig } from "../types";
 
@@ -36,22 +35,21 @@ export const createChatBubble = async (block: ParsedBlock, config?: DocxConfig):
 
   const children = [
       new TextRun({ 
-        text: `${role}:`, 
+        text: `${role}：`,
         bold: true, 
         size: 18,
         font: FONT_CONFIG_NORMAL 
       }),
-      new TextRun({ text: "", break: 1 }),
       ...await parseInlineStyles(content, config)
   ];
 
   return new Paragraph({
     children,
     border: {
-      top: { style: borderStyle, size: 8, space: 10, color: 'A6A6A6' },
-      bottom: { style: borderStyle, size: 8, space: 10, color: 'A6A6A6' },
-      left: { style: borderStyle, size: 8, space: 10, color: 'A6A6A6' },
-      right: { style: borderStyle, size: 8, space: 10, color: 'A6A6A6' },
+      top: { style: borderStyle, size: 8, space: 6, color: 'A6A6A6' },
+      bottom: { style: borderStyle, size: 8, space: 6, color: 'A6A6A6' },
+      left: { style: borderStyle, size: 8, space: 6, color: 'A6A6A6' },
+      right: { style: borderStyle, size: 8, space: 6, color: 'A6A6A6' },
     },
     indent: isRight 
       ? { left: 1440 }
@@ -59,7 +57,9 @@ export const createChatBubble = async (block: ParsedBlock, config?: DocxConfig):
         ? { left: 720, right: 720 }
         : { right: 1440 },
     alignment: docxAlignment,
-    spacing: { before: 400, after: 400, line: LINE_HEIGHT.ONE_POINT_TWO },
+    spacing: { before: 400, after: 400, line: 300 },
+    keepLines: true,
+    ...(isRight ? { keepNext: true } : {}),
     shading: { fill: bgFill }
   });
 };
