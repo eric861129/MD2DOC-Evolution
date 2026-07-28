@@ -447,6 +447,117 @@ describe('inspectDocxPackage', () => {
   });
 
   it.each([
+    {
+      relationshipsPath: '_rels/.rels',
+      target: '1:foo.bin',
+      entry: '1:foo.bin',
+    },
+    {
+      relationshipsPath: '_rels/.rels',
+      target: ':foo.bin',
+      entry: ':foo.bin',
+    },
+    {
+      relationshipsPath: '_rels/.rels',
+      target: '%31:foo.bin',
+      entry: '1:foo.bin',
+    },
+    {
+      relationshipsPath: 'word/_rels/document.xml.rels',
+      target: '1:foo.bin',
+      entry: 'word/1:foo.bin',
+    },
+    {
+      relationshipsPath: 'word/_rels/document.xml.rels',
+      target: ':foo.bin',
+      entry: 'word/:foo.bin',
+    },
+    {
+      relationshipsPath: 'word/_rels/document.xml.rels',
+      target: '%31:foo.bin',
+      entry: 'word/1:foo.bin',
+    },
+  ])('relative-ref 第一個 raw segment 含 literal colon 時回傳 RELATIONSHIP_TARGET_INVALID：$relationshipsPath / $target', async ({
+    relationshipsPath,
+    target,
+    entry,
+  }) => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(entry, new Uint8Array([1]));
+      zip.file(
+        relationshipsPath,
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="custom" Target="${target}"/>
+</Relationships>`,
+      );
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'RELATIONSHIP_TARGET_INVALID',
+      entry: relationshipsPath,
+    }));
+  });
+
+  it.each([
+    {
+      relationshipsPath: '_rels/.rels',
+      target: 'word/a:b.bin',
+      entry: 'word/a:b.bin',
+    },
+    {
+      relationshipsPath: '_rels/.rels',
+      target: './1:foo.bin',
+      entry: '1:foo.bin',
+    },
+    {
+      relationshipsPath: '_rels/.rels',
+      target: 'a%3Ab.bin',
+      entry: 'a:b.bin',
+    },
+    {
+      relationshipsPath: 'word/_rels/document.xml.rels',
+      target: 'word/a:b.bin',
+      entry: 'word/word/a:b.bin',
+    },
+    {
+      relationshipsPath: 'word/_rels/document.xml.rels',
+      target: './1:foo.bin',
+      entry: 'word/1:foo.bin',
+    },
+    {
+      relationshipsPath: 'word/_rels/document.xml.rels',
+      target: 'a%3Ab.bin',
+      entry: 'word/a:b.bin',
+    },
+  ])('relative-ref path-noscheme 保留非首段或 encoded colon：$relationshipsPath / $target', async ({
+    relationshipsPath,
+    target,
+    entry,
+  }) => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(entry, new Uint8Array([1]));
+      zip.file(
+        relationshipsPath,
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="custom" Target="${target}"/>
+</Relationships>`,
+      );
+    }));
+
+    expect(issues).not.toContainEqual(expect.objectContaining({
+      code: 'RELATIONSHIP_TARGET_INVALID',
+      entry: relationshipsPath,
+    }));
+    expect(issues).not.toContainEqual(expect.objectContaining({
+      code: 'RELATIONSHIP_TARGET_MISSING',
+      entry: relationshipsPath,
+    }));
+  });
+
+  it.each([
     'word/document%00.xml',
     'word/space document.xml',
     'word/tab\tdocument.xml',

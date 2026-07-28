@@ -137,6 +137,10 @@ const assertSafeRelationshipReference = (reference: string): void => {
     throw new Error('Internal Target 必須是相對 package URI。');
   }
   assertValidPackagePathReference(reference);
+  const firstRawSegment = reference.split('/', 1)[0];
+  if (firstRawSegment.includes(':')) {
+    throw new Error('Internal Target 的 relative-ref 第一個 raw segment 不得包含冒號。');
+  }
 };
 
 const splitRelationshipTarget = (
