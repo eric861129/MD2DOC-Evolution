@@ -166,6 +166,7 @@ export const generateDocx = async (
   for (const block of blocks) {
     if (
       block.type === BlockType.TABLE
+      && profile.id !== 'technical-legacy'
       && docChildren.at(-1) instanceof Table
     ) {
       docChildren.push(new Paragraph({

@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import JSZip from 'jszip';
 import { BlockType, type ParsedBlock } from '../../services/types';
 
@@ -11,6 +11,7 @@ const require = createRequire(import.meta.url);
 const { JSDOM } = require('jsdom') as {
   JSDOM: new (html?: string) => {
     window: {
+      document: Document;
       DOMParser: typeof DOMParser;
       XMLSerializer: typeof XMLSerializer;
     };
@@ -34,14 +35,29 @@ const { PNG } = require('pngjs') as {
   };
 };
 
-const REPOSITORY_ROOT = path.resolve(import.meta.dirname, '..', '..');
-const FIXTURE_PATH = path.join(
+const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
+const REPOSITORY_ROOT = path.resolve(SCRIPT_DIRECTORY, '..', '..');
+const argumentValue = (name: string): string | undefined => {
+  const argumentIndex = process.argv.indexOf(name);
+  if (argumentIndex < 0) {
+    return undefined;
+  }
+  const value = process.argv[argumentIndex + 1]?.trim();
+  if (!value || value.startsWith('--')) {
+    throw new Error(`${name} 必須指定一個路徑。`);
+  }
+  return value;
+};
+const FIXTURE_PATH = path.resolve(argumentValue('--fixture') ?? path.join(
   REPOSITORY_ROOT,
   'tests',
   'fixtures',
   'publisher-manuscript.md',
+));
+const ARTIFACT_ROOT = path.resolve(
+  argumentValue('--artifact-root')
+  ?? path.join(REPOSITORY_ROOT, 'artifacts', 'docx-qa'),
 );
-const ARTIFACT_ROOT = path.join(REPOSITORY_ROOT, 'artifacts', 'docx-qa');
 const OUTPUT_PATH = path.join(ARTIFACT_ROOT, 'publisher-fixture.docx');
 const GENERATED_IMAGE_KEY = 'fixture-generated-image';
 const MERMAID_IMAGE_KEY = 'fixture-mermaid-image';
@@ -112,7 +128,10 @@ const findMermaidBrowser = (): string => {
 const runProcess = async (
   executable: string,
   args: string[],
-): Promise<void> => new Promise((resolve, reject) => {
+): Promise<{ stdout: string; stderr: string }> => new Promise((
+  resolve,
+  reject,
+) => {
   const child = spawn(executable, args, {
     cwd: REPOSITORY_ROOT,
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -129,7 +148,7 @@ const runProcess = async (
   child.once('error', reject);
   child.once('exit', (code) => {
     if (code === 0) {
-      resolve();
+      resolve({ stdout, stderr });
       return;
     }
     reject(new Error(
@@ -176,13 +195,51 @@ const createMermaidHtml = (
       }
     });
     mermaid.run({ nodes: [diagram] })
-      .then(() => { document.body.dataset.rendered = 'true'; })
+      .then(() => {
+        if (!diagram.querySelector('svg')) {
+          throw new Error('Mermaid 未產生 SVG');
+        }
+        document.body.dataset.rendered = 'true';
+      })
       .catch((error) => {
         document.body.textContent = 'MERMAID_RENDER_FAILED: ' + error.message;
       });
   </script>
 </body>
 </html>`;
+};
+
+const assertMermaidDom = (html: string): void => {
+  const dom = new JSDOM(html);
+  const body = dom.window.document.body;
+  const svg = body.querySelector('svg');
+  const viewBox = svg?.getAttribute('viewBox')
+    ?.trim()
+    .split(/\s+/)
+    .map(Number);
+  const hasPositiveViewBox = (
+    viewBox?.length === 4
+    && viewBox.every(Number.isFinite)
+    && viewBox[2] > 0
+    && viewBox[3] > 0
+  );
+  const hasGraphicContent = Boolean(
+    svg?.querySelector('g, path, rect, circle, ellipse, polygon, polyline, text'),
+  );
+
+  if (
+    body.dataset.rendered !== 'true'
+    || !svg
+    || svg.namespaceURI !== 'http://www.w3.org/2000/svg'
+    || !hasPositiveViewBox
+    || !hasGraphicContent
+  ) {
+    const browserMessage = body.textContent?.replace(/\s+/g, ' ').trim();
+    throw new Error(
+      'Mermaid 瀏覽器渲染失敗：缺少 body[data-rendered="true"] '
+      + `或有效 SVG。${browserMessage ? ` ${browserMessage}` : ''}`,
+    );
+  }
 };
 
 const assertMermaidPng = (bytes: Buffer): void => {
@@ -231,7 +288,7 @@ const renderMermaidPng = async (
   await writeFile(htmlPath, html, 'utf8');
   await mkdir(browserProfile);
 
-  await runProcess(browserPath, [
+  const browserArguments = [
     '--headless=new',
     '--disable-gpu',
     '--hide-scrollbars',
@@ -240,6 +297,16 @@ const renderMermaidPng = async (
     '--window-size=1000,560',
     '--force-device-scale-factor=1',
     '--virtual-time-budget=5000',
+  ];
+  const domResult = await runProcess(browserPath, [
+    ...browserArguments,
+    '--dump-dom',
+    pathToFileURL(htmlPath).href,
+  ]);
+  assertMermaidDom(domResult.stdout);
+
+  await runProcess(browserPath, [
+    ...browserArguments,
     `--screenshot=${pngPath}`,
     pathToFileURL(htmlPath).href,
   ]);

@@ -175,6 +175,31 @@ describe('出版社固定表格 OOXML', () => {
     expect(elementsByName(body.children[1], 't')).toHaveLength(0);
   });
 
+  it('technical-legacy 相鄰表格維持直接相鄰，不插入出版社空段落', async () => {
+    const blob = await generateDocx([
+      {
+        type: BlockType.TABLE,
+        content: '',
+        tableRows: [['舊版一欄'], ['第一列']],
+      },
+      {
+        type: BlockType.TABLE,
+        content: '',
+        tableRows: [['舊版編號', '舊版內容'], ['L-01', '第二列']],
+      },
+    ], {
+      exportSettings: legacySettings,
+      showLineNumbers: false,
+    });
+    const document = parseXml(
+      await readDocxXml(blob, 'word/document.xml'),
+    );
+    const body = elementsByName(document, 'body')[0];
+
+    expect(Array.from(body.children).map((child) => child.localName))
+      .toEqual(['tbl', 'tbl', 'sectPr']);
+  });
+
   it('出版社表格每一列都禁止跨頁拆分', async () => {
     const document = await createTableDocument([
       ['編號', '備註'],

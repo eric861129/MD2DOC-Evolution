@@ -79,7 +79,7 @@ MD2DOC-Evolution 是一個開源的 Markdown 到 Word DOCX 技術書稿工作台
 
 ### Requirements
 
-- Node.js 20+
+- Node.js 20.19+（20.x）、22.12+（22.x），或 24.0+
 - npm
 
 ### Local Development
