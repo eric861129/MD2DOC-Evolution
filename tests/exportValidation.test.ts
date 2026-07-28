@@ -3,6 +3,9 @@ import { validateExport } from '../services/exportValidation';
 import { DEFAULT_EXPORT_SETTINGS } from '../services/docx/layout/presets';
 import { BlockType, ParsedBlock } from '../services/types';
 
+const VALID_GIF_DATA_URL =
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+
 vi.mock('mermaid', () => ({
   default: {
     initialize: vi.fn(),
@@ -33,7 +36,7 @@ describe('validateExport', () => {
     await expect(validate({
       content: '| 欄位 | 說明 |\n| :--- | :--- |\n| title | 文件標題 |',
       blocks,
-      imageRegistry: { 'image-1': 'data:image/png;base64,AAA=' },
+      imageRegistry: { 'image-1': VALID_GIF_DATA_URL },
     })).resolves.toEqual([]);
   });
 
@@ -196,7 +199,7 @@ describe('validateExport', () => {
     }));
   });
 
-  it('章首頁圖片 key 缺少時回傳 error，但接受直接 data URL', async () => {
+  it('章首頁圖片 key 缺少時回傳 error，但接受通過 MIME、magic 與結構驗證的 data URL', async () => {
     const missing = await validate({
       blocks: [{
         type: BlockType.CHAPTER_OPENER,
@@ -219,7 +222,7 @@ describe('validateExport', () => {
           chapter: {
             number: '1',
             title: '開始',
-            image: 'data:image/png;base64,AAA=',
+            image: VALID_GIF_DATA_URL,
             goals: [],
           },
         },
@@ -231,6 +234,75 @@ describe('validateExport', () => {
       severity: 'error',
     }));
     expect(directDataUrl).not.toContainEqual(expect.objectContaining({
+      id: 'chapter-image-missing-0',
+    }));
+  });
+
+  it.each([
+    {
+      name: 'registry 值不是 data URL',
+      image: 'chapter-cover',
+      registry: { 'chapter-cover': 'https://example.com/cover.png' },
+    },
+    {
+      name: 'registry Base64 無效',
+      image: 'chapter-cover',
+      registry: { 'chapter-cover': 'data:image/gif;base64,%%%' },
+    },
+    {
+      name: 'direct MIME 與 magic bytes 不一致',
+      image: VALID_GIF_DATA_URL.replace('image/gif', 'image/png'),
+      registry: {},
+    },
+    {
+      name: 'direct MIME 不支援',
+      image: VALID_GIF_DATA_URL.replace('image/gif', 'image/webp'),
+      registry: {},
+    },
+  ])('章首頁圖片 $name 時回傳 chapter-image-invalid', async ({ image, registry }) => {
+    const issues = await validate({
+      blocks: [{
+        type: BlockType.CHAPTER_OPENER,
+        content: '第一章',
+        metadata: {
+          chapter: {
+            number: '1',
+            title: '開始',
+            image,
+            goals: [],
+          },
+        },
+      }],
+      imageRegistry: registry,
+    });
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      id: 'chapter-image-invalid-0',
+      severity: 'error',
+    }));
+  });
+
+  it('章首頁圖片 registry 的合法 data URL 通過預檢', async () => {
+    const issues = await validate({
+      blocks: [{
+        type: BlockType.CHAPTER_OPENER,
+        content: '第一章',
+        metadata: {
+          chapter: {
+            number: '1',
+            title: '開始',
+            image: 'chapter-cover',
+            goals: [],
+          },
+        },
+      }],
+      imageRegistry: { 'chapter-cover': VALID_GIF_DATA_URL },
+    });
+
+    expect(issues).not.toContainEqual(expect.objectContaining({
+      id: 'chapter-image-invalid-0',
+    }));
+    expect(issues).not.toContainEqual(expect.objectContaining({
       id: 'chapter-image-missing-0',
     }));
   });

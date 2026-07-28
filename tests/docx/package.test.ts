@@ -42,8 +42,24 @@ const exactSettings = {
   marginPresetId: 'publisher-exact',
 } as const;
 
+const topGutterSettings = {
+  profileId: 'publisher-exact',
+  pageSizeId: 'tech',
+  marginPresetId: 'custom',
+  customMargins: {
+    mode: 'standard',
+    topCm: 2,
+    rightCm: 2,
+    bottomCm: 2,
+    leftCm: 2,
+    gutterCm: 0.5,
+    gutterPosition: 'top',
+  },
+} as const;
+
 const createPackage = async (
   mutate?: (zip: JSZip) => void,
+  compression: 'STORE' | 'DEFLATE' = 'STORE',
 ): Promise<Blob> => {
   const zip = new JSZip();
   zip.file('[Content_Types].xml', CONTENT_TYPES);
@@ -51,11 +67,44 @@ const createPackage = async (
   zip.file('word/settings.xml', SETTINGS_XML);
   mutate?.(zip);
   return new Blob(
-    [await zip.generateAsync({ type: 'uint8array' })],
+    [await zip.generateAsync({ type: 'uint8array', compression })],
     {
       type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     },
   );
+};
+
+const corruptCompressedEntry = async (
+  entryName: string,
+): Promise<Blob> => {
+  const source = new Uint8Array(
+    await (await createPackage(undefined, 'DEFLATE')).arrayBuffer(),
+  );
+  const view = new DataView(source.buffer);
+  const decoder = new TextDecoder();
+  let offset = 0;
+
+  while (offset + 30 <= source.length && view.getUint32(offset, true) === 0x04034b50) {
+    const compressedSize = view.getUint32(offset + 18, true);
+    const nameLength = view.getUint16(offset + 26, true);
+    const extraLength = view.getUint16(offset + 28, true);
+    const nameStart = offset + 30;
+    const dataStart = nameStart + nameLength + extraLength;
+    const name = decoder.decode(source.subarray(nameStart, nameStart + nameLength));
+
+    if (name === entryName) {
+      if (compressedSize === 0) {
+        throw new Error(`測試項目沒有 compressed payload：${entryName}`);
+      }
+      source[dataStart] = (source[dataStart] & 0xf8) | 0x07;
+      return new Blob([source], {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+    }
+    offset = dataStart + compressedSize;
+  }
+
+  throw new Error(`測試封裝找不到項目：${entryName}`);
 };
 
 const readSettingsChildren = async (blob: Blob): Promise<string[]> => {
@@ -134,6 +183,91 @@ describe('postProcessDocx', () => {
     await expect(readSettingsChildren(processed)).resolves.not.toContain(
       'gutterAtTop',
     );
+  });
+
+  it('只正規化 WordprocessingML namespace，不移除同 localName 的 foreign 節點', async () => {
+    const source = await createPackage((zip) => {
+      zip.file(
+        'word/settings.xml',
+        SETTINGS_XML
+          .replace(
+            'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"',
+            'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:x="urn:foreign"',
+          )
+          .replace(
+            '<w:updateFields w:val="true"/>',
+            '<x:mirrorMargins/><x:gutterAtTop/><w:updateFields w:val="true"/>',
+          ),
+      );
+    });
+
+    const processed = await postProcessDocx(source, {
+      layout: resolvePageLayout(exactSettings),
+    });
+    const settingsXml = await readDocxXml(processed, 'word/settings.xml');
+
+    expect(settingsXml).toContain('<x:mirrorMargins');
+    expect(settingsXml).toContain('<x:gutterAtTop');
+  });
+
+  it('缺少 displayBackgroundShape 時仍依完整 CT_Settings 順序把 mirror 放在 saveFormsData 與 alignBordersAndEdges 間', async () => {
+    const source = await createPackage((zip) => {
+      zip.file(
+        'word/settings.xml',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:saveFormsData/>
+  <w:alignBordersAndEdges/>
+  <w:updateFields w:val="true"/>
+  <w:compat/>
+</w:settings>`,
+      );
+    });
+
+    const processed = await postProcessDocx(source, {
+      layout: resolvePageLayout(bindingSettings),
+    });
+    const children = await readSettingsChildren(processed);
+
+    expect(children).toEqual([
+      'saveFormsData',
+      'mirrorMargins',
+      'alignBordersAndEdges',
+      'updateFields',
+      'compat',
+    ]);
+  });
+
+  it('top gutter 依正式 schema 放在 border settings 後、updateFields 前', async () => {
+    const source = await createPackage((zip) => {
+      zip.file(
+        'word/settings.xml',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:displayBackgroundShape/>
+  <w:alignBordersAndEdges/>
+  <w:bordersDoNotSurroundHeader/>
+  <w:bordersDoNotSurroundFooter/>
+  <w:updateFields w:val="true"/>
+  <w:compat/>
+</w:settings>`,
+      );
+    });
+
+    const processed = await postProcessDocx(source, {
+      layout: resolvePageLayout(topGutterSettings),
+    });
+    const children = await readSettingsChildren(processed);
+
+    expect(children).toEqual([
+      'displayBackgroundShape',
+      'alignBordersAndEdges',
+      'bordersDoNotSurroundHeader',
+      'bordersDoNotSurroundFooter',
+      'gutterAtTop',
+      'updateFields',
+      'compat',
+    ]);
   });
 
   it('publisher-binding 的真實封裝包含鏡像設定與 283 twips gutter', async () => {
@@ -270,6 +404,146 @@ describe('inspectDocxPackage', () => {
       entry: 'word/document.xml',
     }));
   });
+
+  it('實際 compressed entry 損毀時不 reject generic，而回傳 PACKAGE_UNREADABLE', async () => {
+    const corrupted = await corruptCompressedEntry('word/document.xml');
+    const rawZip = await JSZip.loadAsync(await corrupted.arrayBuffer());
+
+    await expect(rawZip.file('word/document.xml')!.async('string')).rejects
+      .toBeInstanceOf(Error);
+    await expect(inspectDocxPackage(corrupted)).resolves.toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        code: 'PACKAGE_UNREADABLE',
+        entry: 'word/document.xml',
+      }),
+    );
+  });
+
+  it.each([
+    '../word/document.xml',
+    'https://example.com/word/document.xml',
+    '//example.com/word/document.xml',
+    'word\\document.xml',
+    'word%2Fdocument.xml',
+    'word%5Cdocument.xml',
+    'word/document%ZZ.xml',
+  ])('root relationship 的不安全 internal Target 回傳 RELATIONSHIP_TARGET_INVALID：%s', async (target) => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(
+        '_rels/.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="officeDocument" Target="${target}"/>
+</Relationships>`,
+      );
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'RELATIONSHIP_TARGET_INVALID',
+      entry: '_rels/.rels',
+    }));
+  });
+
+  it('大小寫不同但 OPC 等價的 ZIP part 回傳 PART_NAME_COLLISION', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file('WORD/DOCUMENT.XML', DOCUMENT_XML);
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'PART_NAME_COLLISION',
+      entry: 'word/document.xml',
+    }));
+  });
+
+  it('required part 以 OPC ASCII case-insensitive index 判定存在', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.remove('word/document.xml');
+      zip.file('WORD/DOCUMENT.XML', DOCUMENT_XML);
+    }));
+
+    expect(issues).not.toContainEqual(expect.objectContaining({
+      code: 'REQUIRED_PART_MISSING',
+      entry: 'word/document.xml',
+    }));
+  });
+
+  it.each([
+    {
+      name: 'Content Types namespace 錯誤',
+      xml: CONTENT_TYPES.replace(
+        'http://schemas.openxmlformats.org/package/2006/content-types',
+        'urn:wrong-content-types',
+      ),
+    },
+    {
+      name: 'Content Types root 錯誤',
+      xml: CONTENT_TYPES
+        .replace('<Types ', '<WrongTypes ')
+        .replace('</Types>', '</WrongTypes>'),
+    },
+    {
+      name: 'Default 缺少必要屬性',
+      xml: CONTENT_TYPES.replace(
+        '<Default Extension="png" ContentType="image/png"/>',
+        '<Default Extension="" ContentType="image/png"/>',
+      ),
+    },
+    {
+      name: 'Override PartName URI 無效',
+      xml: CONTENT_TYPES.replace(
+        '</Types>',
+        '<Override PartName="/word/media/cover%ZZ.png" ContentType="image/png"/></Types>',
+      ),
+    },
+    {
+      name: 'Override PartName 不是絕對 part name',
+      xml: CONTENT_TYPES.replace(
+        '</Types>',
+        '<Override PartName="word/media/cover.png" ContentType="image/png"/></Types>',
+      ),
+    },
+  ])('$name 時回傳 CONTENT_TYPES_INVALID 且 inspect 不 reject', async ({ xml }) => {
+    const inspection = inspectDocxPackage(await createPackage((zip) => {
+      zip.file('[Content_Types].xml', xml);
+    }));
+
+    await expect(inspection).resolves.toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'CONTENT_TYPES_INVALID',
+      entry: '[Content_Types].xml',
+    }));
+  });
+
+  it('常見圖片副檔名的有效 ContentType 不一致時回傳 MEDIA_CONTENT_TYPE_INVALID', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(
+        '[Content_Types].xml',
+        CONTENT_TYPES.replace('image/png', 'image/jpeg'),
+      );
+      zip.file('word/media/cover.png', new Uint8Array([1, 2, 3]));
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'MEDIA_CONTENT_TYPE_INVALID',
+      entry: 'word/media/cover.png',
+    }));
+  });
+
+  it('任何空媒體即使未被 relationship 引用仍回傳 MEDIA_EMPTY', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file('word/media/empty.png', new Uint8Array());
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'MEDIA_EMPTY',
+      entry: 'word/media/empty.png',
+    }));
+  });
 });
 
 describe('generateDocx 的品質閘門', () => {
@@ -313,6 +587,28 @@ describe('generateDocx 的品質閘門', () => {
             entry: 'word/document.xml',
           }),
         ]),
+      });
+    } finally {
+      packer.mockRestore();
+    }
+  });
+
+  it('Packer 產生的壓縮內容損毀時統一拋出 PACKAGE_UNREADABLE DocxQualityError', async () => {
+    const packer = vi.spyOn(Packer, 'toBlob')
+      .mockResolvedValueOnce(await corruptCompressedEntry('word/document.xml'));
+
+    try {
+      const generation = generateDocx([], {
+        exportSettings: exactSettings,
+        showLineNumbers: false,
+      });
+
+      await expect(generation).rejects.toBeInstanceOf(DocxQualityError);
+      await expect(generation).rejects.toMatchObject({
+        issues: [expect.objectContaining({
+          code: 'PACKAGE_UNREADABLE',
+          entry: 'word/document.xml',
+        })],
       });
     } finally {
       packer.mockRestore();

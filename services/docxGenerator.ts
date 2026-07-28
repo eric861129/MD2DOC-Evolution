@@ -25,6 +25,7 @@ import { resolvePageLayout } from './docx/layout/resolve';
 import { getDocumentProfile } from './docx/profiles';
 import { postProcessDocx } from './docx/postprocess';
 import {
+  DocxPackageIssueError,
   DocxQualityError,
   inspectDocxPackage,
 } from './docx/quality';
@@ -235,7 +236,15 @@ export const generateDocx = async (
 
   applyPageSettings(doc.Settings, layout);
   const packedBlob = await Packer.toBlob(doc);
-  const processedBlob = await postProcessDocx(packedBlob, { layout });
+  let processedBlob: Blob;
+  try {
+    processedBlob = await postProcessDocx(packedBlob, { layout });
+  } catch (error) {
+    if (error instanceof DocxPackageIssueError) {
+      throw new DocxQualityError([error.issue]);
+    }
+    throw error;
+  }
   const qualityIssues = await inspectDocxPackage(processedBlob);
 
   qualityIssues

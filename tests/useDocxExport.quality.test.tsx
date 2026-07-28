@@ -23,9 +23,9 @@ describe('useDocxExport DOCX 品質錯誤', () => {
         name: 'DocxQualityError',
         issues: [{
           severity: 'error',
-          code: 'RELATIONSHIP_TARGET_MISSING',
+          code: 'PACKAGE_UNREADABLE',
           message: 'Relationship 指向不存在的項目：media/missing.png',
-          entry: 'word/_rels/document.xml.rels',
+          entry: 'word/document.xml',
         }],
       },
     ));

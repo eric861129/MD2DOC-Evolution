@@ -6,6 +6,7 @@ import {
 } from './types';
 import { DEFAULT_EXPORT_SETTINGS } from './docx/layout/presets';
 import { resolvePageLayout } from './docx/layout/resolve';
+import { resolveImageMedia } from './docx/builders/image';
 import type {
   ExportSettings,
   ResolvedPageLayout,
@@ -139,6 +140,22 @@ const collectBlockIssues = (
           sourceLine: block.sourceLine,
           blockType: block.type,
         });
+      } else if (image) {
+        const source = imageRegistry[image] ?? image;
+        try {
+          resolveImageMedia(source);
+        } catch (error) {
+          issues.push({
+            id: `chapter-image-invalid-${index}`,
+            severity: 'error',
+            title: '章首頁圖片格式無效',
+            message: error instanceof Error
+              ? error.message
+              : '章首頁圖片資料無法驗證。',
+            sourceLine: block.sourceLine,
+            blockType: block.type,
+          });
+        }
       }
     }
 
