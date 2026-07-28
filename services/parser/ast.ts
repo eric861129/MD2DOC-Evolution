@@ -40,6 +40,11 @@ interface ChapterSourceSpan {
   isClosed: boolean;
 }
 
+interface SourceSpan {
+  startIndex: number;
+  endIndex: number;
+}
+
 interface ParseContext {
   nextListInstance: number;
 }
@@ -51,6 +56,7 @@ interface ManualTocEntry {
 
 export interface ChapterSpanScanMetrics {
   characterTransitionCount: number;
+  closerProtectionCharacterTransitionCount: number;
   lineTransitionCount: number;
   sourceLineCount: number;
   tokenTransitionCount: number;
@@ -58,6 +64,7 @@ export interface ChapterSpanScanMetrics {
 
 interface ChapterTokenEligibility {
   eligibleStartIndices: Set<number>;
+  protectedCloserSpans: SourceSpan[];
 }
 
 const CHAPTER_KEYS = new Set([
@@ -126,6 +133,26 @@ const scanPhysicalLineSpans = (source: string): PhysicalLineSpan[] => {
 const CHAPTER_OPEN_PATTERN = /^\[CHAPTER\][\t ]*$/;
 const CHAPTER_CLOSE_PATTERN = /^\[\/CHAPTER\][\t ]*$/;
 
+const createChapterCloserEligibility = (
+  protectedSpans: SourceSpan[],
+): ((offset: number) => boolean) => {
+  let protectedSpanIndex = 0;
+
+  return (offset: number): boolean => {
+    while (
+      protectedSpanIndex < protectedSpans.length
+      && protectedSpans[protectedSpanIndex].endIndex <= offset
+    ) {
+      protectedSpanIndex += 1;
+    }
+
+    const protectedSpan = protectedSpans[protectedSpanIndex];
+    return !protectedSpan
+      || offset < protectedSpan.startIndex
+      || protectedSpan.endIndex <= offset;
+  };
+};
+
 const scanChapterSourceSpans = (
   source: string,
   tokenEligibility: ChapterTokenEligibility,
@@ -135,6 +162,9 @@ const scanChapterSourceSpans = (
   const spans: ChapterSourceSpan[] = [];
   let chapterStart: PhysicalLineSpan | undefined;
   let chapterYamlStart = 0;
+  const isEligibleChapterCloser = createChapterCloserEligibility(
+    tokenEligibility.protectedCloserSpans,
+  );
   if (metrics) {
     metrics.sourceLineCount = lines.length;
   }
@@ -171,7 +201,10 @@ const scanChapterSourceSpans = (
         continue;
       }
 
-      if (CHAPTER_CLOSE_PATTERN.test(line.content)) {
+      if (
+        CHAPTER_CLOSE_PATTERN.test(line.content)
+        && isEligibleChapterCloser(line.startIndex)
+      ) {
         spans.push({
           startIndex: chapterStart.startIndex,
           endIndex: line.endIndex,
@@ -510,20 +543,156 @@ const createNormalizedBoundaryMap = (
   return originalIndexByNormalizedBoundary;
 };
 
+const collectSemanticLeafTokens = (
+  token: any,
+  leaves: any[],
+): void => {
+  const children = Array.isArray(token.items) && token.items.length > 0
+    ? token.items
+    : Array.isArray(token.tokens) && token.tokens.length > 0
+      ? token.tokens
+      : undefined;
+  if (!children) {
+    if (typeof token.raw === 'string' && token.raw.length > 0) {
+      leaves.push(token);
+    }
+    return;
+  }
+
+  for (const child of children) {
+    collectSemanticLeafTokens(child, leaves);
+  }
+};
+
+const collectSemanticCodeSpans = (
+  normalizedSource: string,
+  leaves: any[],
+  normalizedStartIndex: number,
+  normalizedEndIndex: number,
+  boundaryMap: number[],
+  protectedCloserSpans: SourceSpan[],
+  metrics?: ChapterSpanScanMetrics,
+): void => {
+  let sourceCursor = normalizedStartIndex;
+
+  const recordSourceTransition = (): void => {
+    if (metrics) {
+      const originalStartIndex =
+        boundaryMap[sourceCursor] ?? sourceCursor;
+      const originalEndIndex =
+        boundaryMap[sourceCursor + 1] ?? sourceCursor + 1;
+      metrics.closerProtectionCharacterTransitionCount +=
+        originalEndIndex - originalStartIndex;
+    }
+    sourceCursor += 1;
+  };
+
+  for (const leaf of leaves) {
+    let firstMatchedIndex: number | undefined;
+    let lastMatchedIndex: number | undefined;
+    let matched = true;
+
+    for (const character of leaf.raw as string) {
+      while (
+        sourceCursor < normalizedEndIndex
+        && normalizedSource[sourceCursor] !== character
+      ) {
+        recordSourceTransition();
+      }
+      if (sourceCursor >= normalizedEndIndex) {
+        matched = false;
+        break;
+      }
+
+      firstMatchedIndex ??= sourceCursor;
+      lastMatchedIndex = sourceCursor;
+      recordSourceTransition();
+    }
+
+    if (
+      matched
+      && leaf.type === 'codespan'
+      && firstMatchedIndex !== undefined
+      && lastMatchedIndex !== undefined
+    ) {
+      protectedCloserSpans.push({
+        startIndex:
+          boundaryMap[firstMatchedIndex] ?? firstMatchedIndex,
+        endIndex:
+          boundaryMap[lastMatchedIndex + 1] ?? lastMatchedIndex + 1,
+      });
+    }
+  }
+
+  while (sourceCursor < normalizedEndIndex) {
+    recordSourceTransition();
+  }
+};
+
 const collectChapterTokenEligibility = (
   tokens: ReturnType<typeof marked.lexer>,
   boundaryMap: number[],
   metrics?: ChapterSpanScanMetrics,
 ): ChapterTokenEligibility => {
   const eligibleStartIndices = new Set<number>();
+  const protectedCloserSpans: SourceSpan[] = [];
+  const normalizedSource = tokens.map(({ raw }) => raw).join('');
   let normalizedIndex = 0;
 
   for (const token of tokens) {
     const normalizedEndIndex = normalizedIndex + token.raw.length;
     const startIndex =
       boundaryMap[normalizedIndex] ?? normalizedIndex;
+    const endIndex =
+      boundaryMap[normalizedEndIndex] ?? normalizedEndIndex;
     if (token.type !== 'code' && token.type !== 'space') {
       eligibleStartIndices.add(startIndex);
+    }
+
+    if (token.type === 'code') {
+      protectedCloserSpans.push({ startIndex, endIndex });
+      if (metrics) {
+        metrics.closerProtectionCharacterTransitionCount +=
+          endIndex - startIndex;
+      }
+    } else if (token.type === 'list') {
+      let itemStartIndex = normalizedIndex;
+      for (const item of token.items) {
+        const itemEndIndex = itemStartIndex + item.raw.length;
+        const leaves: any[] = [];
+        collectSemanticLeafTokens(item, leaves);
+        collectSemanticCodeSpans(
+          normalizedSource,
+          leaves,
+          itemStartIndex,
+          itemEndIndex,
+          boundaryMap,
+          protectedCloserSpans,
+          metrics,
+        );
+        itemStartIndex = itemEndIndex;
+      }
+      collectSemanticCodeSpans(
+        normalizedSource,
+        [],
+        itemStartIndex,
+        normalizedEndIndex,
+        boundaryMap,
+        protectedCloserSpans,
+        metrics,
+      );
+    } else {
+      const leaves: any[] = [];
+      collectSemanticLeafTokens(token, leaves);
+      collectSemanticCodeSpans(
+        normalizedSource,
+        leaves,
+        normalizedIndex,
+        normalizedEndIndex,
+        boundaryMap,
+        protectedCloserSpans,
+        metrics,
+      );
     }
 
     if (metrics) {
@@ -534,6 +703,7 @@ const collectChapterTokenEligibility = (
 
   return {
     eligibleStartIndices,
+    protectedCloserSpans,
   };
 };
 
@@ -546,6 +716,7 @@ export const measureChapterSpanScanOperations = (
   const tokens = marked.lexer(markdown);
   const metrics: ChapterSpanScanMetrics = {
     characterTransitionCount: 0,
+    closerProtectionCharacterTransitionCount: 0,
     lineTransitionCount: 0,
     sourceLineCount: 0,
     tokenTransitionCount: 0,

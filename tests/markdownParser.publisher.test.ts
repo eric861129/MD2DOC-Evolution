@@ -264,6 +264,36 @@ describe('出版社 Markdown 語法', () => {
     ]);
   });
 
+  it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+  ])('%s 無效 YAML 的正常 closing 仍建立 chapter 與 issues', (
+    _name,
+    newline,
+  ) => {
+    const markdown = [
+      '[CHAPTER]',
+      'number: "117"',
+      '- invalid yaml',
+      '[/CHAPTER]',
+    ].join(newline);
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({
+      type: BlockType.CHAPTER_OPENER,
+      startIndex: 0,
+      endIndex: markdown.length,
+      validationIssues: expect.arrayContaining([
+        expect.objectContaining({
+          severity: 'error',
+          title: '章首頁 YAML 無法解析',
+        }),
+      ]),
+    });
+  });
+
   it('goals 缺失時正規化為空陣列且不產生錯誤', async () => {
     const markdown = [
       '[CHAPTER]',
@@ -822,6 +852,209 @@ describe('出版社 Markdown 語法', () => {
   });
 
   it.each([
+    ['LF list', '\n', '- 外層 `inline', BlockType.BULLET_LIST],
+    ['CRLF list', '\r\n', '- 外層 `inline', BlockType.BULLET_LIST],
+    ['LF blockquote', '\n', '> 引言 `inline', BlockType.QUOTE_BLOCK],
+    ['CRLF blockquote', '\r\n', '> 引言 `inline', BlockType.QUOTE_BLOCK],
+  ])('%s lazy codespan 的重複 closing/raw 不會關閉 unclosed root', (
+    _name,
+    newline,
+    containerStart,
+    containerType,
+  ) => {
+    const containerLines = [
+      containerStart,
+      '[/CHAPTER]',
+      'same raw',
+      '[/CHAPTER]',
+      'tail`',
+    ];
+    const markdown = [
+      '[CHAPTER]',
+      'number: "118"',
+      'title: "尚未關閉"',
+      '',
+      ...containerLines,
+      '',
+      ...containerLines,
+      '',
+      '[CHAPTER]',
+      'number: "119"',
+      'title: "後續合法章節"',
+      '[/CHAPTER]',
+    ].join(newline);
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.CHAPTER_OPENER,
+      BlockType.PARAGRAPH,
+      containerType,
+      containerType,
+      BlockType.CHAPTER_OPENER,
+    ]);
+    expect(blocks[0]).toMatchObject({
+      content: '',
+      endIndex: '[CHAPTER]'.length,
+      validationIssues: expect.arrayContaining([
+        expect.objectContaining({ title: '章首頁缺少 [/CHAPTER]' }),
+      ]),
+    });
+    for (const container of blocks.slice(2, 4)) {
+      expect(container.content.match(/\[\/CHAPTER\]/g)).toHaveLength(2);
+      expect(container.content).toContain('tail');
+    }
+    expect(blocks[4].metadata?.chapter).toMatchObject({
+      number: '119',
+      title: '後續合法章節',
+    });
+  });
+
+  it.each([
+    [
+      'LF list items',
+      '\n',
+      [
+        '- 第一項 `inline',
+        '[/CHAPTER]',
+        'same raw',
+        'tail`',
+        '- 第二項 `inline',
+        '[/CHAPTER]',
+        'same raw',
+        'tail`',
+      ],
+      BlockType.BULLET_LIST,
+      2,
+    ],
+    [
+      'CRLF list items',
+      '\r\n',
+      [
+        '- 第一項 `inline',
+        '[/CHAPTER]',
+        'same raw',
+        'tail`',
+        '- 第二項 `inline',
+        '[/CHAPTER]',
+        'same raw',
+        'tail`',
+      ],
+      BlockType.BULLET_LIST,
+      2,
+    ],
+    [
+      'LF blockquote paragraphs',
+      '\n',
+      [
+        '> 第一段 `inline',
+        '[/CHAPTER]',
+        'same raw',
+        'tail`',
+        '>',
+        '> 第二段 `inline',
+        '[/CHAPTER]',
+        'same raw',
+        'tail`',
+      ],
+      BlockType.QUOTE_BLOCK,
+      1,
+    ],
+    [
+      'CRLF blockquote paragraphs',
+      '\r\n',
+      [
+        '> 第一段 `inline',
+        '[/CHAPTER]',
+        'same raw',
+        'tail`',
+        '>',
+        '> 第二段 `inline',
+        '[/CHAPTER]',
+        'same raw',
+        'tail`',
+      ],
+      BlockType.QUOTE_BLOCK,
+      1,
+    ],
+  ])('%s 同一容器的重複 raw 依 semantic boundary 保留', (
+    _name,
+    newline,
+    containerLines,
+    containerType,
+    expectedContainerCount,
+  ) => {
+    const markdown = [
+      '[CHAPTER]',
+      'number: "120"',
+      'title: "尚未關閉"',
+      '',
+      ...containerLines,
+      '',
+      '[CHAPTER]',
+      'number: "121"',
+      'title: "後續合法章節"',
+      '[/CHAPTER]',
+    ].join(newline);
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.CHAPTER_OPENER,
+      BlockType.PARAGRAPH,
+      ...Array(expectedContainerCount).fill(containerType),
+      BlockType.CHAPTER_OPENER,
+    ]);
+    const containers = blocks.slice(2, 2 + expectedContainerCount);
+    expect(
+      containers.flatMap(
+        ({ content }) => content.match(/\[\/CHAPTER\]/g) ?? [],
+      ),
+    ).toHaveLength(2);
+    expect(blocks.at(-1)?.metadata?.chapter).toMatchObject({
+      number: '121',
+      title: '後續合法章節',
+    });
+  });
+
+  it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+  ])('%s unmatched backtick 不會跨 list item 保護 closing', (
+    _name,
+    newline,
+  ) => {
+    const closing = '[/CHAPTER]';
+    const markdown = [
+      '[CHAPTER]',
+      'number: "122"',
+      'title: "跨項目"',
+      '',
+      '- 第一項 `未配對',
+      closing,
+      '- 第二項 未配對`',
+    ].join(newline);
+    const closingStartIndex = markdown.indexOf(closing);
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.CHAPTER_OPENER,
+      BlockType.BULLET_LIST,
+    ]);
+    expect(blocks[0]).toMatchObject({
+      endIndex: closingStartIndex + closing.length,
+      validationIssues: expect.arrayContaining([
+        expect.objectContaining({
+          title: '章首頁 YAML 無法解析',
+        }),
+      ]),
+    });
+    expect(blocks[1].content).toContain('第二項 未配對');
+    expect(blocks[1].content).not.toContain(closing);
+  });
+
+  it.each([
     ['文件起點', [], [BlockType.CHAPTER_OPENER]],
     [
       'heading 後無空行',
@@ -1052,6 +1285,9 @@ describe('出版社 Markdown 語法', () => {
     const metrics = measureChapterSpanScanOperations(markdown);
 
     expect(metrics.characterTransitionCount).toBe(markdown.length);
+    expect(metrics.closerProtectionCharacterTransitionCount).toBe(
+      markdown.length,
+    );
     expect(metrics.tokenTransitionCount).toBe(
       topLevelBlockCount * 2 + 1,
     );
