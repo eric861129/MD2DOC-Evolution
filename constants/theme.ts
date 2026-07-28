@@ -100,6 +100,69 @@ export const WORD_THEME = {
   }
 };
 
+/**
+ * 出版社參考稿的權威 DOCX 樣式數值。
+ * 版面幾何由 layout preset 管理，此處只保存跨版型共用的視覺 Token。
+ */
+export const PUBLISHER_WORD_THEME = {
+  FONTS: {
+    BODY_LATIN: "Calibri",
+    CODE_LATIN: "Consolas",
+    CJK: "Noto Sans TC",
+  },
+  FONT_SIZES: {
+    BODY: 22,
+    CODE: 18,
+    CALLOUT: 21,
+    CAPTION: 18,
+    H1: 32,
+    H2: 26,
+    H3: 24,
+  },
+  COLORS: {
+    BODY: "000000",
+    HEADING_1: "2E74B5",
+    HEADING_2: "2E74B5",
+    HEADING_3: "1F4D78",
+    INLINE_CODE: "9B1C1C",
+    CAPTION: "555555",
+    CALLOUT_TEXT: "0B2545",
+    CODE_BACKGROUND: "F4F6F9",
+    TABLE_HEADER_BACKGROUND: "E8EEF5",
+  },
+  SPACING: {
+    PARAGRAPH: { before: 0, after: 120, line: 300 },
+    H1: { before: 360, after: 200 },
+    H2: { before: 280, after: 140 },
+    H3: { before: 200, after: 100 },
+    CODE_BLOCK: { before: 0, after: 0, line: LINE_HEIGHT.SINGLE },
+    CALLOUT: { before: 80, after: 120, line: 288 },
+    CAPTION: { before: 0, after: 160, line: LINE_HEIGHT.ONE_POINT_TWO },
+  },
+  CALLOUT_BACKGROUNDS: {
+    NOTE: "F4F6F9",
+    TIP: "EEF7F0",
+    WARNING: "FFF4CC",
+    IMPORTANT: "EEF4FB",
+    CAUTION: "FDECEC",
+  },
+  TABLE: {
+    INDENT: 120,
+    CELL_MARGINS: { top: 80, bottom: 80, start: 120, end: 120 },
+    BODY_SIZE: 20,
+    PARAGRAPH_AFTER: 60,
+    LINE: LINE_HEIGHT.ONE_POINT_TWO,
+  },
+  IMAGE: {
+    MAX_WIDTH_CM: 13,
+    CHAPTER_OPENER_WIDTH_CM: 9.8,
+    ALLOWED_MARGIN_INTRUSION_CM: 0.55,
+  },
+  HEADER_FOOTER: {
+    DISTANCE_CM: 1.24968,
+  },
+} as const;
+
 // --- UI Theme Configuration (For React Components) ---
 
 export const UI_THEME = {
