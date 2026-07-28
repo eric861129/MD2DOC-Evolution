@@ -1,0 +1,112 @@
+import { describe, expect, it } from 'vitest';
+import { DEFAULT_EXPORT_SETTINGS } from '../../services/docx/layout/presets';
+import { resolvePageLayout } from '../../services/docx/layout/resolve';
+
+describe('resolvePageLayout', () => {
+  it('解析出版社一致版為 17x23 公分與 2.54 公分邊界', () => {
+    const layout = resolvePageLayout({
+      ...DEFAULT_EXPORT_SETTINGS,
+      profileId: 'publisher-exact',
+      marginPresetId: 'publisher-exact',
+    });
+
+    expect(layout.page.widthCm).toBe(17);
+    expect(layout.page.heightCm).toBe(23);
+    expect(layout.margins.leftCm).toBe(2.54);
+    expect(layout.margins.leftTwips).toBe(1440);
+    expect(layout.content.widthCm).toBeCloseTo(11.92, 2);
+  });
+
+  it('解析窄邊界內容寬度為 14.46 公分', () => {
+    const layout = resolvePageLayout({
+      ...DEFAULT_EXPORT_SETTINGS,
+      profileId: 'publisher-narrow',
+      marginPresetId: 'narrow',
+    });
+
+    expect(layout.content.widthCm).toBeCloseTo(14.46, 2);
+  });
+
+  it('拒絕有效內容寬度小於 8 公分', () => {
+    expect(() => resolvePageLayout({
+      ...DEFAULT_EXPORT_SETTINGS,
+      pageSizeId: 'custom',
+      customPageSizeCm: { width: 10, height: 20 },
+      marginPresetId: 'custom',
+      customMargins: {
+        mode: 'standard',
+        topCm: 2,
+        bottomCm: 2,
+        leftCm: 2,
+        rightCm: 2,
+        gutterCm: 1,
+        gutterPosition: 'left',
+      },
+    })).toThrow('有效內容寬度不得小於 8 公分');
+  });
+
+  it('鏡像邊界將內外側保留給 UI 並寫入 OOXML 左右邊界', () => {
+    const layout = resolvePageLayout({
+      ...DEFAULT_EXPORT_SETTINGS,
+      profileId: 'publisher-binding',
+      marginPresetId: 'publisher-binding',
+    });
+
+    expect(layout.margins).toMatchObject({
+      mode: 'mirrored',
+      topCm: 2,
+      bottomCm: 2.2,
+      leftCm: 2.2,
+      rightCm: 1.8,
+      insideCm: 2.2,
+      outsideCm: 1.8,
+      gutterCm: 0.5,
+    });
+    expect(layout.content.widthCm).toBeCloseTo(12.5, 2);
+  });
+
+  it('自訂邊界低於 1 公分時回傳列印風險警告', () => {
+    const layout = resolvePageLayout({
+      ...DEFAULT_EXPORT_SETTINGS,
+      marginPresetId: 'custom',
+      customMargins: {
+        mode: 'standard',
+        topCm: 0.8,
+        bottomCm: 2,
+        leftCm: 2,
+        rightCm: 2,
+        gutterCm: 0,
+        gutterPosition: 'left',
+      },
+    });
+
+    expect(layout.warnings).toContain('邊界小於 1 公分，列印時可能有裁切風險。');
+  });
+
+  it('拒絕超出 0.50 至 5.00 公分範圍的自訂邊界', () => {
+    expect(() => resolvePageLayout({
+      ...DEFAULT_EXPORT_SETTINGS,
+      marginPresetId: 'custom',
+      customMargins: {
+        mode: 'standard',
+        topCm: 0.49,
+        bottomCm: 2,
+        leftCm: 2,
+        rightCm: 2,
+        gutterCm: 0,
+        gutterPosition: 'left',
+      },
+    })).toThrow('自訂邊界必須介於 0.50 至 5.00 公分之間');
+  });
+
+  it('覆寫出版社一致版幾何時標記為已自訂並提出頁碼警告', () => {
+    const layout = resolvePageLayout({
+      ...DEFAULT_EXPORT_SETTINGS,
+      profileId: 'publisher-exact',
+      marginPresetId: 'narrow',
+    });
+
+    expect(layout.isCustomizedFromProfile).toBe(true);
+    expect(layout.warnings).toContain('已自訂；不保證與出版社參考稿頁碼一致');
+  });
+});
