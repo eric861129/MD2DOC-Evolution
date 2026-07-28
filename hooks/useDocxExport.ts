@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import saveAs from 'file-saver';
 import { ParsedBlock, DocumentMeta } from '../services/types';
 import { validateExport, ValidationIssue } from '../services/exportValidation';
@@ -11,14 +12,42 @@ interface UseDocxExportProps {
   parsedBlocks: ParsedBlock[];
   documentMeta: DocumentMeta;
   imageRegistry: Record<string, string>;
+  initialExportSettings?: ExportSettings;
 }
 
-const resolvePageLayoutSafely = (settings: ExportSettings) => {
+interface AppliedExportSettings {
+  settings: ExportSettings;
+  layout: ReturnType<typeof resolvePageLayout>;
+}
+
+interface InitialAppliedExportSettings {
+  applied: AppliedExportSettings;
+  error: string | null;
+}
+
+const getLayoutErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : '未知的版面設定錯誤';
+
+const resolveAppliedExportSettings = (
+  settings: ExportSettings,
+): AppliedExportSettings => ({
+  settings,
+  layout: resolvePageLayout(settings),
+});
+
+const resolveInitialAppliedExportSettings = (
+  settings: ExportSettings,
+): InitialAppliedExportSettings => {
   try {
-    return resolvePageLayout(settings);
-  } catch {
-    // ExportSettingsModal 只會 Apply 合法設定；此回退保護其他呼叫端誤寫 state 時的畫面。
-    return resolvePageLayout(DEFAULT_EXPORT_SETTINGS);
+    return {
+      applied: resolveAppliedExportSettings(settings),
+      error: null,
+    };
+  } catch (error) {
+    return {
+      applied: resolveAppliedExportSettings(DEFAULT_EXPORT_SETTINGS),
+      error: `版面設定無效：${getLayoutErrorMessage(error)}；已改用預設版面`,
+    };
   }
 };
 
@@ -27,16 +56,43 @@ export const useDocxExport = ({
   parsedBlocks,
   documentMeta,
   imageRegistry,
+  initialExportSettings = DEFAULT_EXPORT_SETTINGS,
 }: UseDocxExportProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isValidatingExport, setIsValidatingExport] = useState(false);
-  const [exportError, setExportError] = useState<string | null>(null);
+  const initialAppliedRef = useRef<InitialAppliedExportSettings | null>(null);
+  if (initialAppliedRef.current === null) {
+    initialAppliedRef.current = resolveInitialAppliedExportSettings(initialExportSettings);
+  }
+  const [exportError, setExportError] = useState<string | null>(
+    initialAppliedRef.current.error,
+  );
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
   const [showValidationIssues, setShowValidationIssues] = useState(false);
-  const [exportSettings, setExportSettings] = useState<ExportSettings>(DEFAULT_EXPORT_SETTINGS);
-  const resolvedPageLayout = useMemo(
-    () => resolvePageLayoutSafely(exportSettings),
-    [exportSettings],
+  const [appliedExportSettings, setAppliedExportSettings] = useState(
+    initialAppliedRef.current.applied,
+  );
+  const appliedExportSettingsRef = useRef(appliedExportSettings);
+  const exportSettings = appliedExportSettings.settings;
+  const resolvedPageLayout = appliedExportSettings.layout;
+
+  const setExportSettings = useCallback<Dispatch<SetStateAction<ExportSettings>>>(
+    (update) => {
+      const currentSettings = appliedExportSettingsRef.current.settings;
+
+      try {
+        const candidate = typeof update === 'function'
+          ? update(currentSettings)
+          : update;
+        const nextAppliedSettings = resolveAppliedExportSettings(candidate);
+        appliedExportSettingsRef.current = nextAppliedSettings;
+        setAppliedExportSettings(nextAppliedSettings);
+        setExportError(null);
+      } catch (error) {
+        setExportError(`版面設定無效：${getLayoutErrorMessage(error)}`);
+      }
+    },
+    [],
   );
 
   const runExportValidation = async (revealIssues = false) => {

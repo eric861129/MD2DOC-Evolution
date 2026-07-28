@@ -11,12 +11,16 @@ import { useWordCount } from './useWordCount';
 import { useSyncScroll } from './useSyncScroll';
 import { useDocxExport } from './useDocxExport';
 import { getDocumentProfile } from '../services/docx/profiles';
+import { DEFAULT_EXPORT_SETTINGS } from '../services/docx/layout/presets';
+import type { ExportSettings } from '../services/docx/layout/types';
 
 /**
  * Main hook for the Markdown Editor.
  * Refactored in v1.2.8 to act as a composition root for specialized hooks.
  */
-export const useMarkdownEditor = () => {
+export const useMarkdownEditor = (
+  initialExportSettings: ExportSettings = DEFAULT_EXPORT_SETTINGS,
+) => {
   // 1. Core Editor State (Content, Parsing, Persistence)
   const {
     content,
@@ -51,7 +55,13 @@ export const useMarkdownEditor = () => {
     resolvedPageLayout,
     handleDownload,
     handleExportMarkdown,
-  } = useDocxExport({ content, parsedBlocks, documentMeta, imageRegistry });
+  } = useDocxExport({
+    content,
+    parsedBlocks,
+    documentMeta,
+    imageRegistry,
+    initialExportSettings,
+  });
   const documentProfile = useMemo(
     () => getDocumentProfile(exportSettings.profileId),
     [exportSettings.profileId],

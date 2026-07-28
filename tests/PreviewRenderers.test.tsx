@@ -1,11 +1,24 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PreviewBlock } from '../components/editor/PreviewRenderers';
+import { getDocumentProfile } from '../services/docx/profiles';
+import type { DocumentStyleProfile } from '../services/docx/profiles';
 import { BlockType } from '../services/types';
 
-vi.mock('../contexts/EditorContext', () => ({
-  useEditor: () => ({ imageRegistry: {} }),
+const editorContextState = vi.hoisted(() => ({
+  documentProfile: undefined as DocumentStyleProfile | undefined,
 }));
+
+vi.mock('../contexts/EditorContext', () => ({
+  useEditor: () => ({
+    documentProfile: editorContextState.documentProfile,
+    imageRegistry: {},
+  }),
+}));
+
+beforeEach(() => {
+  editorContextState.documentProfile = getDocumentProfile('technical-legacy');
+});
 
 describe('PreviewBlock Callout', () => {
   it.each([
@@ -63,5 +76,85 @@ describe('PreviewBlock Callout', () => {
     expect(screen.getByText('建立可靠的工作環境。')).toBeInTheDocument();
     expect(screen.getByText('本章完成')).toBeInTheDocument();
     expect(screen.getByText('完成環境設定。')).toBeInTheDocument();
+  });
+});
+
+describe('PreviewBlock Profile 樣式', () => {
+  it('publisher code content 直接使用 profile font/color 且不受 legacy class 覆蓋', () => {
+    editorContextState.documentProfile = getDocumentProfile('publisher-exact');
+
+    render(
+      <PreviewBlock
+        block={{
+          type: BlockType.CODE_BLOCK,
+          content: 'const publisher = true;',
+          metadata: { showLineNumbers: false },
+        }}
+      />,
+    );
+
+    const code = screen.getByText('const publisher = true;');
+    expect(code).not.toHaveClass('text-slate-950');
+    expect(code.style.fontFamily).toBe('var(--publisher-code-font, monospace)');
+    expect(code.style.color).toBe('var(--publisher-body, currentColor)');
+    expect(code.parentElement).not.toHaveClass('font-mono');
+  });
+
+  it('technical-legacy code 完整保留 font-mono 與 text-slate-950 classes', () => {
+    render(
+      <PreviewBlock
+        block={{
+          type: BlockType.CODE_BLOCK,
+          content: 'const legacy = true;',
+          metadata: { showLineNumbers: false },
+        }}
+      />,
+    );
+
+    const code = screen.getByText('const legacy = true;');
+    expect(code).toHaveClass('text-slate-950');
+    expect(code.style.fontFamily).toBe('');
+    expect(code.style.color).toBe('');
+    expect(code.parentElement).toHaveClass('font-mono');
+  });
+
+  it('publisher QR label 使用 inline-code profile variable', () => {
+    editorContextState.documentProfile = getDocumentProfile('publisher-exact');
+
+    render(
+      <PreviewBlock
+        block={{
+          type: BlockType.QR,
+          content: 'Publisher QR',
+          metadata: {
+            label: 'Publisher QR',
+            url: 'https://example.com/publisher',
+          },
+        }}
+      />,
+    );
+
+    const link = screen.getByRole('link', { name: 'Publisher QR' });
+    expect(link).not.toHaveClass('text-[#9B1C1C]');
+    expect(link.style.color).toBe('var(--publisher-inline-code, #9B1C1C)');
+  });
+
+  it('technical-legacy QR label 保留既有固定色 class', () => {
+    render(
+      <PreviewBlock
+        block={{
+          type: BlockType.QR,
+          content: 'Legacy QR',
+          metadata: {
+            label: 'Legacy QR',
+            url: 'https://example.com/legacy',
+          },
+        }}
+      />,
+    );
+
+    const link = screen.getByRole('link', { name: 'Legacy QR' });
+    expect(link).toHaveClass('text-[#9B1C1C]');
+    expect(link.style.color).toBe('');
   });
 });

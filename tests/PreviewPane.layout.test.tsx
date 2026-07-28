@@ -1,10 +1,19 @@
 import React from 'react';
-import { act, render, renderHook, screen } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PreviewPane } from '../components/editor/PreviewPane';
 import { EditorProvider } from '../contexts/EditorContext';
 import { useMarkdownEditor } from '../hooks/useMarkdownEditor';
+import { generateDocx } from '../services/docxGenerator';
 import { DEFAULT_EXPORT_SETTINGS } from '../services/docx/layout/presets';
+import { resolvePageLayout } from '../services/docx/layout/resolve';
 import type {
   ExportSettings,
   ResolvedPageLayout,
@@ -14,6 +23,10 @@ import { BlockType, type ParsedBlock } from '../services/types';
 import '../services/i18n';
 
 vi.mock('../constants/meta', () => ({ APP_VERSION: 'test' }));
+vi.mock('file-saver', () => ({ default: vi.fn() }));
+vi.mock('../services/docxGenerator', () => ({
+  generateDocx: vi.fn(async () => new Blob(['docx'])),
+}));
 
 const paragraph: ParsedBlock = {
   type: BlockType.PARAGRAPH,
@@ -204,9 +217,73 @@ const createPreviewTree = ({
   </EditorProvider>
 );
 
+interface AtomicPreviewHarnessProps {
+  initialExportSettings?: ExportSettings;
+}
+
+const AtomicPreviewHarness: React.FC<AtomicPreviewHarnessProps> = ({
+  initialExportSettings,
+}) => {
+  const editorState = useMarkdownEditor(initialExportSettings);
+
+  return (
+    <EditorProvider
+      editorState={editorState}
+      darkModeState={{} as never}
+    >
+      <PreviewPane
+        parsedBlocks={editorState.parsedBlocks}
+        previewRef={editorState.previewRef}
+      />
+      <button
+        type="button"
+        onClick={() => editorState.setExportSettings(exactSettings)}
+      >
+        套用 exact
+      </button>
+      <button
+        type="button"
+        onClick={() => editorState.setExportSettings((previous) => ({
+          ...previous,
+          profileId: 'publisher-narrow',
+          marginPresetId: 'narrow',
+        }))}
+      >
+        函式切換 narrow
+      </button>
+      <button
+        type="button"
+        onClick={() => editorState.setExportSettings({
+          profileId: 'publisher-binding',
+          pageSizeId: 'custom',
+          marginPresetId: 'custom',
+        })}
+      >
+        套用無效設定
+      </button>
+      <button
+        type="button"
+        onClick={() => editorState.setContent('# 下載測試')}
+      >
+        載入下載內容
+      </button>
+      <button
+        type="button"
+        onClick={() => void editorState.handleDownload()}
+      >
+        下載 DOCX
+      </button>
+      {editorState.exportError && (
+        <div role="alert">{editorState.exportError}</div>
+      )}
+    </EditorProvider>
+  );
+};
+
 describe('PreviewPane 版面同步', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    vi.clearAllMocks();
   });
 
   it('以 Context 的 resolved layout 與 document profile 輸出頁面比例和 CSS variables', () => {
@@ -354,22 +431,68 @@ describe('useMarkdownEditor 的版面 Context', () => {
     unmount();
   });
 
-  it('意外進入無效已套用設定時回退安全版面，不讓 Preview render 崩潰', () => {
-    const { result, unmount } = renderHook(() => useMarkdownEditor());
-
-    act(() => {
-      result.current.setExportSettings({
-        profileId: 'publisher-narrow',
-        pageSizeId: 'tech',
-        marginPresetId: 'custom',
-      });
+  it('只原子套用合法 settings，invalid 後 Preview、profile 與 download 都保留上一組合法值', async () => {
+    vi.mocked(generateDocx).mockImplementation(async (_blocks, options) => {
+      resolvePageLayout(options.exportSettings);
+      return new Blob(['docx']);
     });
 
-    expect(result.current.resolvedPageLayout.page).toMatchObject({
-      widthCm: 17,
-      heightCm: 23,
-    });
-    expect(result.current.resolvedPageLayout.margins.leftCm).toBe(2.54);
-    unmount();
+    render(<AtomicPreviewHarness />);
+    const getPage = () => screen.getByRole('article', { name: '文件頁面預覽' });
+
+    fireEvent.click(screen.getByRole('button', { name: '套用 exact' }));
+    expect(getPage()).toHaveAttribute('data-profile', 'publisher-exact');
+    expect(getPage()).toHaveAttribute('data-margin-preset', 'publisher-exact');
+    expect(getPage().style.padding).toBe('2.54cm');
+
+    fireEvent.click(screen.getByRole('button', { name: '函式切換 narrow' }));
+    expect(getPage()).toHaveAttribute('data-profile', 'publisher-narrow');
+    expect(getPage()).toHaveAttribute('data-margin-preset', 'narrow');
+    expect(getPage().style.padding).toBe('1.27cm');
+
+    fireEvent.click(screen.getByRole('button', { name: '套用無效設定' }));
+    expect(getPage()).toHaveAttribute('data-profile', 'publisher-narrow');
+    expect(getPage()).toHaveAttribute('data-margin-preset', 'narrow');
+    expect(getPage()).toHaveAttribute('data-page-size', '17x23');
+    expect(getPage().style.padding).toBe('1.27cm');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      '版面設定無效：自訂紙張尺寸不可為空',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '載入下載內容' }));
+    expect(await screen.findByRole('heading', { name: '下載測試' }))
+      .toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '下載 DOCX' }));
+    await waitFor(() => expect(generateDocx).toHaveBeenCalledTimes(1));
+
+    expect(generateDocx).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({
+        exportSettings: narrowSettings,
+      }),
+    );
+    expect(screen.queryByText(/DOCX 匯出失敗/)).not.toBeInTheDocument();
+  });
+
+  it('initial hydration 無效時原子回退 default triple 並顯示錯誤', () => {
+    render(
+      <AtomicPreviewHarness
+        initialExportSettings={{
+          profileId: 'publisher-binding',
+          pageSizeId: 'custom',
+          marginPresetId: 'custom',
+        }}
+      />,
+    );
+
+    const page = screen.getByRole('article', { name: '文件頁面預覽' });
+    expect(page).toHaveAttribute('data-profile', 'technical-legacy');
+    expect(page).toHaveAttribute('data-margin-preset', 'publisher-exact');
+    expect(page).toHaveAttribute('data-page-size', '17x23');
+    expect(page.style.padding).toBe('2.54cm');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      '版面設定無效：自訂紙張尺寸不可為空；已改用預設版面',
+    );
   });
 });

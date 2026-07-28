@@ -216,7 +216,7 @@ const renderCodeBlock: PreviewRenderer = (block, globalShowLineNumbers, isPublis
         : 'group relative my-10 overflow-hidden rounded-md border border-slate-300 bg-slate-50 text-sm shadow-sm'}
       style={isPublisher ? {
         backgroundColor: 'var(--publisher-code-background)',
-        fontFamily: 'var(--publisher-code-font)',
+        fontFamily: 'var(--publisher-code-font, monospace)',
       } : undefined}
     >
       {block.metadata?.language && (
@@ -224,7 +224,7 @@ const renderCodeBlock: PreviewRenderer = (block, globalShowLineNumbers, isPublis
           {block.metadata.language}
         </div>
       )}
-      <div className="flex font-mono">
+      <div className={isPublisher ? 'flex' : 'flex font-mono'}>
         {showLineNumbers && (
           <div className="min-w-10 select-none border-r border-slate-200 bg-slate-100/70 px-2 py-4 text-right leading-relaxed text-slate-400">
             {codeLines.map((_, index) => (
@@ -232,7 +232,15 @@ const renderCodeBlock: PreviewRenderer = (block, globalShowLineNumbers, isPublis
             ))}
           </div>
         )}
-        <pre className="m-0 flex-1 overflow-x-auto whitespace-pre p-4 pt-8 leading-relaxed text-slate-950">
+        <pre
+          className={isPublisher
+            ? 'm-0 flex-1 overflow-x-auto whitespace-pre p-4 pt-8 leading-relaxed'
+            : 'm-0 flex-1 overflow-x-auto whitespace-pre p-4 pt-8 leading-relaxed text-slate-950'}
+          style={isPublisher ? {
+            color: 'var(--publisher-body, currentColor)',
+            fontFamily: 'var(--publisher-code-font, monospace)',
+          } : undefined}
+        >
           {block.content}
         </pre>
       </div>
@@ -481,7 +489,7 @@ const renderChapter: PreviewRenderer = (block) => (
   <ChapterPreview block={block} />
 );
 
-const renderQr: PreviewRenderer = (block) => {
+const renderQr: PreviewRenderer = (block, _showLineNumbers, isPublisher) => {
   const label = block.metadata?.label || block.content;
   const url = block.metadata?.url || '';
 
@@ -494,7 +502,12 @@ const renderQr: PreviewRenderer = (block) => {
         href={url}
         target="_blank"
         rel="noreferrer"
-        className="text-sm text-[#9B1C1C] underline underline-offset-4"
+        className={isPublisher
+          ? 'text-sm underline underline-offset-4'
+          : 'text-sm text-[#9B1C1C] underline underline-offset-4'}
+        style={isPublisher
+          ? { color: 'var(--publisher-inline-code, #9B1C1C)' }
+          : undefined}
       >
         {label}
       </a>
