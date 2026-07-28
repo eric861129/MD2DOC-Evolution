@@ -40,6 +40,20 @@ interface ChapterSourceSpan {
   isClosed: boolean;
 }
 
+interface SourceSpan {
+  startIndex: number;
+  endIndex: number;
+}
+
+interface ParseContext {
+  nextListInstance: number;
+}
+
+interface ManualTocEntry {
+  title: string;
+  page: string;
+}
+
 const CHAPTER_KEYS = new Set([
   'number',
   'part',
@@ -103,12 +117,25 @@ const scanPhysicalLineSpans = (source: string): PhysicalLineSpan[] => {
   return spans;
 };
 
-const scanChapterSourceSpans = (source: string): ChapterSourceSpan[] => {
+const isProtectedIndex = (
+  index: number,
+  protectedSpans: SourceSpan[],
+): boolean => protectedSpans.some((span) =>
+  index >= span.startIndex && index < span.endIndex
+);
+
+const scanChapterSourceSpans = (
+  source: string,
+  protectedSpans: SourceSpan[],
+): ChapterSourceSpan[] => {
   const lines = scanPhysicalLineSpans(source);
   const spans: ChapterSourceSpan[] = [];
 
   for (let index = 0; index < lines.length; index += 1) {
-    if (lines[index].content.trim() !== '[CHAPTER]') {
+    if (
+      lines[index].content.trim() !== '[CHAPTER]'
+      || isProtectedIndex(lines[index].startIndex, protectedSpans)
+    ) {
       continue;
     }
 
@@ -116,28 +143,29 @@ const scanChapterSourceSpans = (source: string): ChapterSourceSpan[] => {
     let closingIndex = index + 1;
     while (
       closingIndex < lines.length
-      && lines[closingIndex].content.trim() !== '[/CHAPTER]'
+      && (
+        lines[closingIndex].content.trim() !== '[/CHAPTER]'
+        || isProtectedIndex(lines[closingIndex].startIndex, protectedSpans)
+      )
     ) {
       closingIndex += 1;
     }
 
     const isClosed = closingIndex < lines.length;
-    const closingLine = isClosed
-      ? lines[closingIndex]
-      : lines[lines.length - 1];
+    const closingLine = isClosed ? lines[closingIndex] : startLine;
     const yamlStart = index + 1 < lines.length
       ? lines[index + 1].startIndex
       : startLine.endIndex;
-    const yamlEnd = isClosed ? closingLine.startIndex : source.length;
+    const yamlEnd = isClosed ? closingLine.startIndex : yamlStart;
 
     spans.push({
       startIndex: startLine.startIndex,
-      endIndex: isClosed ? closingLine.endIndex : source.length,
+      endIndex: closingLine.endIndex,
       lineOffset: startLine.lineOffset,
       yamlContent: source.slice(yamlStart, yamlEnd),
       isClosed,
     });
-    index = isClosed ? closingIndex : lines.length;
+    index = isClosed ? closingIndex : index;
   }
 
   return spans;
@@ -320,13 +348,47 @@ const parseChapterMetadata = (
   };
 };
 
-const finalizeBlocks = (blocks: ParsedBlock[]): ParsedBlock[] => {
+const isSingleLineBreak = (value: string): boolean =>
+  value === '\n' || value === '\r\n' || value === '\r';
+
+const getManualTocEntry = (
+  block: ParsedBlock,
+): ManualTocEntry | undefined => {
+  const entry = block.metadata?.manualTocEntry;
+  if (
+    !entry
+    || typeof entry.title !== 'string'
+    || typeof entry.page !== 'string'
+  ) {
+    return undefined;
+  }
+  return entry;
+};
+
+const finalizeBlocks = (
+  blocks: ParsedBlock[],
+  source: string,
+  charOffset: number,
+): ParsedBlock[] => {
   const mergedBlocks: ParsedBlock[] = [];
   for (let index = 0; index < blocks.length; index += 1) {
     const current = blocks[index];
     if (current.type === BlockType.TOC && index + 1 < blocks.length) {
+      const firstListBlock = blocks[index + 1];
+      const listStartIndex = firstListBlock.startIndex;
+      const listEndIndex = firstListBlock.endIndex;
+      const tocEndIndex = current.endIndex;
+      const relativeTocEnd = tocEndIndex === undefined
+        ? undefined
+        : tocEndIndex - charOffset;
+      const relativeListStart = listStartIndex === undefined
+        ? undefined
+        : listStartIndex - charOffset;
+      const sourceGap = relativeTocEnd === undefined
+        || relativeListStart === undefined
+        ? ''
+        : source.slice(relativeTocEnd, relativeListStart);
       let nextIndex = index + 1;
-      let manualContent = current.content || '';
 
       while (
         nextIndex < blocks.length
@@ -334,14 +396,26 @@ const finalizeBlocks = (blocks: ParsedBlock[]): ParsedBlock[] => {
           blocks[nextIndex].type === BlockType.BULLET_LIST
           || blocks[nextIndex].type === BlockType.NUMBERED_LIST
         )
+        && blocks[nextIndex].startIndex === listStartIndex
+        && blocks[nextIndex].endIndex === listEndIndex
       ) {
-        const listBlock = blocks[nextIndex];
-        const prefix = listBlock.type === BlockType.BULLET_LIST ? '- ' : '1. ';
-        manualContent += `${manualContent ? '\n' : ''}${prefix}${listBlock.content}`;
         nextIndex += 1;
       }
 
-      if (nextIndex > index + 1) {
+      const candidateBlocks = blocks.slice(index + 1, nextIndex);
+      const manualEntries = candidateBlocks.map(getManualTocEntry);
+      const isManualToc = current.content === ''
+        && isSingleLineBreak(sourceGap)
+        && candidateBlocks.length > 0
+        && candidateBlocks.every((block) => block.nestingLevel === 0)
+        && manualEntries.every(Boolean);
+
+      if (isManualToc) {
+        const manualContent = candidateBlocks.map((listBlock, entryIndex) => {
+          const prefix = listBlock.type === BlockType.BULLET_LIST ? '- ' : '1. ';
+          const entry = manualEntries[entryIndex]!;
+          return `${prefix}${entry.title} ${entry.page}`;
+        }).join('\n');
         mergedBlocks.push({
           ...current,
           content: manualContent,
@@ -356,26 +430,7 @@ const finalizeBlocks = (blocks: ParsedBlock[]): ParsedBlock[] => {
     }
     mergedBlocks.push(current);
   }
-
-  let currentListInstance: number | undefined;
-  let nextListInstance = 1;
-  return mergedBlocks.map((block) => {
-    if (block.type !== BlockType.NUMBERED_LIST) {
-      currentListInstance = undefined;
-      return block;
-    }
-    if (currentListInstance === undefined) {
-      currentListInstance = nextListInstance;
-      nextListInstance += 1;
-    }
-    return {
-      ...block,
-      metadata: {
-        ...block.metadata,
-        listInstance: currentListInstance,
-      },
-    };
-  });
+  return mergedBlocks;
 };
 
 const createNormalizedBoundaryMap = (source: string): number[] => {
@@ -394,6 +449,55 @@ const createNormalizedBoundaryMap = (source: string): number[] => {
     originalIndexByNormalizedBoundary.push(originalIndex);
   }
   return originalIndexByNormalizedBoundary;
+};
+
+const collectCodeSourceSpans = (
+  tokens: ReturnType<typeof marked.lexer>,
+  boundaryMap: number[],
+): SourceSpan[] => {
+  const spans: SourceSpan[] = [];
+  let normalizedIndex = 0;
+
+  for (const token of tokens) {
+    const rawLength = token.raw.length;
+    const normalizedEndIndex = normalizedIndex + rawLength;
+    if (token.type === 'code') {
+      spans.push({
+        startIndex: boundaryMap[normalizedIndex] ?? normalizedIndex,
+        endIndex: boundaryMap[normalizedEndIndex] ?? normalizedEndIndex,
+      });
+    }
+    normalizedIndex = normalizedEndIndex;
+  }
+  return spans;
+};
+
+const parseManualTocEntry = (
+  itemSource: string,
+  ordered: boolean,
+): ManualTocEntry | undefined => {
+  const sourceLines = scanPhysicalLineSpans(itemSource)
+    .map(({ content }) => content)
+    .filter((line) => line.trim().length > 0);
+  if (sourceLines.length !== 1) {
+    return undefined;
+  }
+
+  const markerPattern = ordered
+    ? /^\s*\d+[.)]\s+(.+?)\s*$/
+    : /^\s*[-+*]\s+(.+?)\s*$/;
+  const markerMatch = sourceLines[0].match(markerPattern);
+  if (!markerMatch) {
+    return undefined;
+  }
+  const entryMatch = markerMatch[1].match(/^(.+?)\s+(\d+)\s*$/);
+  if (!entryMatch || !entryMatch[1].trim()) {
+    return undefined;
+  }
+  return {
+    title: entryMatch[1].trim(),
+    page: entryMatch[2],
+  };
 };
 
 const parseStandaloneQrLink = (
@@ -417,8 +521,19 @@ const parseStandaloneQrLink = (
   return label && url ? { label, url } : undefined;
 };
 
-export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, charOffset: number = 0): ParsedBlock[] => {
-  const chapterSpans = scanChapterSourceSpans(markdown);
+const parseMarkdownFragment = (
+  markdown: string,
+  lineOffset: number,
+  charOffset: number,
+  context: ParseContext,
+): ParsedBlock[] => {
+  const tokens = marked.lexer(markdown);
+  const originalIndexByNormalizedBoundary =
+    createNormalizedBoundaryMap(markdown);
+  const chapterSpans = scanChapterSourceSpans(
+    markdown,
+    collectCodeSourceSpans(tokens, originalIndexByNormalizedBoundary),
+  );
   if (chapterSpans.length > 0) {
     const chapterBlocks: ParsedBlock[] = [];
     let cursor = 0;
@@ -428,10 +543,11 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
         const prefix = markdown.slice(cursor, span.startIndex);
         const prefixLineOffset = lineOffset
           + (markdown.slice(0, cursor).match(/\n/g) || []).length;
-        chapterBlocks.push(...parseMarkdownWithAST(
+        chapterBlocks.push(...parseMarkdownFragment(
           prefix,
           prefixLineOffset,
           charOffset + cursor,
+          context,
         ));
       }
 
@@ -456,20 +572,18 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
     if (cursor < markdown.length) {
       const suffixLineOffset = lineOffset
         + (markdown.slice(0, cursor).match(/\n/g) || []).length;
-      chapterBlocks.push(...parseMarkdownWithAST(
+      chapterBlocks.push(...parseMarkdownFragment(
         markdown.slice(cursor),
         suffixLineOffset,
         charOffset + cursor,
+        context,
       ));
     }
 
-    return finalizeBlocks(chapterBlocks);
+    return finalizeBlocks(chapterBlocks, markdown, charOffset);
   }
 
-  const tokens = marked.lexer(markdown);
   const blocks: ParsedBlock[] = [];
-  const originalIndexByNormalizedBoundary =
-    createNormalizedBoundaryMap(markdown);
   
   let currentLine = lineOffset;
   let currentNormalizedIndex = 0;
@@ -521,10 +635,11 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
               firstLine.startIndex,
               lastLine.endIndex,
             );
-            blocks.push(...parseMarkdownWithAST(
+            blocks.push(...parseMarkdownFragment(
               fragment,
               blockStartLine + firstLine.lineOffset,
               blockStartIndex + firstLine.startIndex,
+              context,
             ));
           };
 
@@ -565,10 +680,11 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
             }
             const firstLine = sourceLines[fragmentStart];
             const lastLine = sourceLines[fragmentEnd - 1];
-            blocks.push(...parseMarkdownWithAST(
+            blocks.push(...parseMarkdownFragment(
               tokenSource.slice(firstLine.startIndex, lastLine.endIndex),
               blockStartLine + firstLine.lineOffset,
               blockStartIndex + firstLine.startIndex,
+              context,
             ));
           };
 
@@ -707,7 +823,16 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
         break;
 
       case 'list':
-        const processListItems = (items: any[], level: number, ordered: boolean) => {
+        const processListItems = (
+          items: any[],
+          level: number,
+          ordered: boolean,
+          inheritedOrderedInstance?: number,
+        ) => {
+          const orderedInstance = ordered
+            ? inheritedOrderedInstance ?? context.nextListInstance++
+            : inheritedOrderedInstance;
+
           items.forEach(item => {
             let itemContent = '';
             const subLists: any[] = [];
@@ -731,16 +856,29 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
 
             // Clean content (checkboxes)
             const cleanText = itemContent.replace(/^\[[ x]\]\s*/, '');
+            const manualTocEntry = parseManualTocEntry(
+              item.raw ?? '',
+              ordered,
+            );
 
             addBlock({
               type: ordered ? BlockType.NUMBERED_LIST : BlockType.BULLET_LIST,
               content: cleanTextForPublishing(cleanText),
-              nestingLevel: level
+              nestingLevel: level,
+              metadata: {
+                ...(ordered ? { listInstance: orderedInstance } : {}),
+                ...(manualTocEntry ? { manualTocEntry } : {}),
+              },
             });
 
             // Process nested lists
             subLists.forEach(subList => {
-              processListItems(subList.items, level + 1, subList.ordered);
+              processListItems(
+                subList.items,
+                level + 1,
+                subList.ordered,
+                orderedInstance,
+              );
             });
           });
         };
@@ -811,5 +949,16 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
      processToken(token, blockStartLine, blockStartIndex, tokenSource);
   });
 
-  return finalizeBlocks(blocks);
+  return finalizeBlocks(blocks, markdown, charOffset);
 };
+
+export const parseMarkdownWithAST = (
+  markdown: string,
+  lineOffset: number = 0,
+  charOffset: number = 0,
+): ParsedBlock[] => parseMarkdownFragment(
+  markdown,
+  lineOffset,
+  charOffset,
+  { nextListInstance: 1 },
+);

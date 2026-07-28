@@ -1,12 +1,12 @@
 import {
   AlignmentType,
-  Bookmark,
   Paragraph,
   TextRun,
 } from 'docx';
 import type { ChapterMetadata } from '../../types';
 import { DOCUMENT_STYLE_IDS } from '../styles';
 import type { DocxConfig } from '../types';
+import { wrapBookmark } from '../bookmarks';
 import {
   createImageParagraph,
   resolveImageMedia,
@@ -34,18 +34,6 @@ const createRun = (
   font: config.profile.fonts.body,
   ...options,
 });
-
-const createChapterBookmarkId = (
-  number: string,
-  sequence: number,
-): string => {
-  const slug = number
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    || 'chapter';
-  return `chapter_${slug}_${sequence}`.slice(0, 40);
-};
 
 const createMissingImageFallback = (
   imageKey: string,
@@ -107,21 +95,18 @@ export const createChapterOpener = (
     keepNext: true,
   }));
 
-  config.counters.chapter += 1;
+  const bookmark = config.bookmarks.allocate({
+    kind: 'chapter',
+    content: chapter.number,
+  });
   paragraphs.push(new Paragraph({
-    children: [
-      new Bookmark({
-        id: createChapterBookmarkId(
-          chapter.number,
-          config.counters.chapter,
-        ),
-        children: [createRun(chapter.title, config, {
-          size: 44,
-          color: CHAPTER_COLORS.primary,
-          bold: true,
-        })],
+    children: wrapBookmark(bookmark, [
+      createRun(chapter.title, config, {
+        size: 44,
+        color: CHAPTER_COLORS.primary,
+        bold: true,
       }),
-    ],
+    ]),
     spacing: { before: 0, after: 40 },
     keepNext: true,
   }));

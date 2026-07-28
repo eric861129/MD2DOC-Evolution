@@ -311,11 +311,43 @@ describe('docxGenerator', () => {
       .toContain('第一章1是普通正文，不是手填目錄。');
   });
 
+  it.each([
+    [
+      '空白行後的普通清單',
+      ['[TOC]', '', '- 安裝需求', '- 執行步驟'].join('\n'),
+    ],
+    [
+      '直接相鄰但沒有頁碼的普通清單',
+      ['[TOC]', '- 安裝需求', '- 執行步驟'].join('\n'),
+    ],
+  ])('publisher %s 保留清單且不回報手填目錄 warning', async (
+    _caseName,
+    markdown,
+  ) => {
+    const warnings: unknown[] = [];
+    const { blocks } = parseMarkdown(markdown);
+    const blob = await generateDocx(blocks, {
+      exportSettings: {
+        profileId: 'publisher-exact',
+        pageSizeId: 'tech',
+        marginPresetId: 'publisher-exact',
+      },
+      showLineNumbers: false,
+      onWarning: (warning) => warnings.push(warning),
+    });
+
+    const documentXml = await readDocxXml(blob, 'word/document.xml');
+    expect(documentXml).toContain('安裝需求');
+    expect(documentXml).toContain('執行步驟');
+    expect(warnings).toEqual([]);
+  });
+
   it('technical-legacy 完整保留手動目錄段落與定位點', async () => {
-    const blob = await generateDocx([{
-      type: BlockType.TOC,
-      content: '- 第一章 1',
-    }], {
+    const { blocks } = parseMarkdown([
+      '[TOC]',
+      '- 第一章 1',
+    ].join('\n'));
+    const blob = await generateDocx(blocks, {
       exportSettings: {
         profileId: 'technical-legacy',
         pageSizeId: 'tech',
@@ -396,6 +428,82 @@ describe('docxGenerator', () => {
     expect(planRun?.getElementsByTagName('w:b')).toHaveLength(1);
   });
 
+  it('chapter 與 heading 共用文件級 bookmark allocator 且 start/end 一一配對', async () => {
+    const repeatedLongNumber = 'Appendix-This-Is-An-Extremely-Long-Chapter-Number';
+    const blocks = [
+      {
+        type: BlockType.CHAPTER_OPENER,
+        content: '第一個附錄',
+        metadata: {
+          chapter: {
+            number: repeatedLongNumber,
+            title: '第一個附錄',
+            goals: [],
+          },
+        },
+      },
+      { type: BlockType.HEADING_1, content: 'Shared allocator heading' },
+      {
+        type: BlockType.CHAPTER_OPENER,
+        content: '第二個附錄',
+        metadata: {
+          chapter: {
+            number: repeatedLongNumber,
+            title: '第二個附錄',
+            goals: [],
+          },
+        },
+      },
+      { type: BlockType.HEADING_2, content: 'Shared allocator heading' },
+    ];
+    const options = {
+      exportSettings: {
+        profileId: 'publisher-exact' as const,
+        pageSizeId: 'tech' as const,
+        marginPresetId: 'publisher-exact' as const,
+      },
+      showLineNumbers: false,
+    };
+
+    const readBookmarks = async (blob: Blob) => {
+      const document = new DOMParser().parseFromString(
+        await readDocxXml(blob, 'word/document.xml'),
+        'application/xml',
+      );
+      const starts = Array.from(
+        document.getElementsByTagName('w:bookmarkStart'),
+      ).map((bookmark) => ({
+        name: bookmark.getAttribute('w:name') ?? '',
+        id: bookmark.getAttribute('w:id') ?? '',
+      }));
+      const ends = Array.from(
+        document.getElementsByTagName('w:bookmarkEnd'),
+      ).map((bookmark) => bookmark.getAttribute('w:id') ?? '');
+      return { starts, ends };
+    };
+
+    const first = await readBookmarks(await generateDocx(blocks, options));
+    const second = await readBookmarks(await generateDocx(blocks, options));
+
+    expect(first).toEqual(second);
+    expect(first.starts).toHaveLength(4);
+    expect(first.ends).toHaveLength(4);
+    expect(new Set(first.starts.map(({ id }) => id)).size).toBe(4);
+    expect(new Set(first.starts.map(({ name }) => name)).size).toBe(4);
+    expect(first.starts.every(({ name }) =>
+      /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(name)
+    )).toBe(true);
+    expect(first.starts.map(({ name }) => name)).toEqual([
+      expect.stringMatching(/_1$/),
+      expect.stringMatching(/_2$/),
+      expect.stringMatching(/_3$/),
+      expect.stringMatching(/_4$/),
+    ]);
+    for (const { id } of first.starts) {
+      expect(first.ends.filter((endId) => endId === id)).toHaveLength(1);
+    }
+  });
+
   it('真實 numbering.xml 為每組相鄰有序清單建立 startOverride=1', async () => {
     const markdown = [
       '1. 第一組 A',
@@ -453,5 +561,35 @@ describe('docxGenerator', () => {
         override.getAttribute('w:val') ?? override.getAttribute('val'),
       ).toBe('1');
     }
+  });
+
+  it('真實 DOCX 的外層有序清單跨巢狀 bullet 不重啟', async () => {
+    const { blocks } = parseMarkdown([
+      '1. Parent A',
+      '   - nested bullet',
+      '     1. nested ordered',
+      '2. Parent B',
+    ].join('\n'));
+    const blob = await generateDocx(blocks, {
+      exportSettings: {
+        profileId: 'publisher-exact',
+        pageSizeId: 'tech',
+        marginPresetId: 'publisher-exact',
+      },
+      showLineNumbers: false,
+    });
+    const document = new DOMParser().parseFromString(
+      await readDocxXml(blob, 'word/document.xml'),
+      'application/xml',
+    );
+    const numIdByText = (text: string): string | null => {
+      const paragraph = Array.from(document.getElementsByTagName('w:p'))
+        .find((candidate) => candidate.textContent === text);
+      const numId = paragraph?.getElementsByTagName('w:numId')[0];
+      return numId?.getAttribute('w:val') ?? null;
+    };
+
+    expect(numIdByText('Parent A')).toBe(numIdByText('Parent B'));
+    expect(numIdByText('nested ordered')).toBe(numIdByText('Parent A'));
   });
 });

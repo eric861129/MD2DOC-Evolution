@@ -253,6 +253,137 @@ describe('出版社 Markdown 語法', () => {
     ]));
   });
 
+  it.each([
+    [
+      'fenced code',
+      [
+        '```markdown',
+        '[CHAPTER]',
+        'number: "99"',
+        'title: "程式碼範例"',
+        '[/CHAPTER]',
+        '```',
+      ].join('\n'),
+    ],
+    [
+      'indented code',
+      [
+        '    [CHAPTER]',
+        '    number: "99"',
+        '    title: "程式碼範例"',
+        '    [/CHAPTER]',
+      ].join('\n'),
+    ],
+    [
+      'CRLF fenced code',
+      [
+        '```markdown',
+        '[CHAPTER]',
+        'number: "99"',
+        'title: "程式碼範例"',
+        '[/CHAPTER]',
+        '```',
+      ].join('\r\n'),
+    ],
+    [
+      'CRLF indented code',
+      [
+        '    [CHAPTER]',
+        '    number: "99"',
+        '    title: "程式碼範例"',
+        '    [/CHAPTER]',
+      ].join('\r\n'),
+    ],
+  ])('%s 內的 CHAPTER 標記保留為程式碼', (_name, markdown) => {
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({
+      type: BlockType.CODE_BLOCK,
+      content: expect.stringContaining('[CHAPTER]'),
+    });
+    expect(blocks).not.toContainEqual(
+      expect.objectContaining({ type: BlockType.CHAPTER_OPENER }),
+    );
+  });
+
+  it('未關閉 CHAPTER 只回復 marker，後續 heading 與 paragraph 全部保留', () => {
+    const markdown = [
+      '[CHAPTER]',
+      'number: "09"',
+      'title: "尚未關閉"',
+      '',
+      '# 後續標題',
+      '',
+      '後續正文',
+    ].join('\n');
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.CHAPTER_OPENER,
+      BlockType.PARAGRAPH,
+      BlockType.HEADING_1,
+      BlockType.PARAGRAPH,
+    ]);
+    expect(blocks[0].validationIssues).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        title: '章首頁缺少 [/CHAPTER]',
+      }),
+    );
+    expect(blocks[2].content).toBe('後續標題');
+    expect(blocks[3].content).toBe('後續正文');
+    expect(blocks[0].endIndex).toBe('[CHAPTER]'.length);
+  });
+
+  it('TOC 與普通清單隔著空白行時不合併', () => {
+    const { blocks } = parseMarkdown([
+      '[TOC]',
+      '',
+      '- 第一章 1',
+      '- 第二章 8',
+    ].join('\n'));
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.TOC,
+      BlockType.BULLET_LIST,
+      BlockType.BULLET_LIST,
+    ]);
+    expect(blocks[0].metadata?.manualTocContent).toBe(false);
+  });
+
+  it('TOC 後直接相鄰但沒有頁碼的普通清單不合併', () => {
+    const { blocks } = parseMarkdown([
+      '[TOC]',
+      '- 安裝需求',
+      '- 執行步驟',
+    ].join('\n'));
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.TOC,
+      BlockType.BULLET_LIST,
+      BlockType.BULLET_LIST,
+    ]);
+    expect(blocks[0].metadata?.manualTocContent).toBe(false);
+  });
+
+  it('TOC 後直接相鄰且每列皆為標題加頁碼時合併為 legacy 手動目錄', () => {
+    const { blocks } = parseMarkdown([
+      '[TOC]',
+      '- 第一章 1',
+      '- 第二章 8',
+    ].join('\n'));
+
+    expect(blocks).toEqual([
+      expect.objectContaining({
+        type: BlockType.TOC,
+        content: '- 第一章 1\n- 第二章 8',
+        metadata: expect.objectContaining({ manualTocContent: true }),
+      }),
+    ]);
+  });
+
   it('相鄰有序清單共用 instance，並由其他 block 明確切斷', () => {
     const markdown = [
       '1. 第一項',
@@ -295,6 +426,52 @@ describe('出版社 Markdown 語法', () => {
       { content: '段落後重新開始', level: 0, instance: 3 },
       { content: '表格後重新開始', level: 0, instance: 4 },
     ]);
+  });
+
+  it('外層有序清單不會被巢狀 bullet 切斷且 ordered descendants 共用 instance', () => {
+    const markdown = [
+      '1. Parent A',
+      '   - nested bullet',
+      '     1. nested ordered',
+      '2. Parent B',
+    ].join('\n');
+
+    const firstPass = parseMarkdown(markdown).blocks;
+    const secondPass = parseMarkdown(markdown).blocks;
+    const projectListShape = (blocks: typeof firstPass) => blocks.map((block) => ({
+      type: block.type,
+      content: block.content,
+      level: block.nestingLevel,
+      instance: block.metadata?.listInstance,
+    }));
+
+    expect(projectListShape(firstPass)).toEqual([
+      {
+        type: BlockType.NUMBERED_LIST,
+        content: 'Parent A',
+        level: 0,
+        instance: 1,
+      },
+      {
+        type: BlockType.BULLET_LIST,
+        content: 'nested bullet',
+        level: 1,
+        instance: undefined,
+      },
+      {
+        type: BlockType.NUMBERED_LIST,
+        content: 'nested ordered',
+        level: 2,
+        instance: 1,
+      },
+      {
+        type: BlockType.NUMBERED_LIST,
+        content: 'Parent B',
+        level: 0,
+        instance: 1,
+      },
+    ]);
+    expect(projectListShape(secondPass)).toEqual(projectListShape(firstPass));
   });
 
   it('不同文件的有序清單 instance 都從 1 開始', () => {

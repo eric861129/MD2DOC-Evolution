@@ -6,6 +6,7 @@
 
 // --- Docx Configuration Types ---
 import type { DocumentMeta } from '../types';
+import type { BookmarkAllocator } from './bookmarks';
 import type { ExportSettings, ResolvedPageLayout } from './layout/types';
 import type { DocumentStyleProfile } from './profiles';
 
@@ -33,12 +34,11 @@ export interface DocxConfig {
   showLineNumbers: boolean;
   meta: DocumentMeta;
   imageRegistry: Record<string, string>;
+  bookmarks: BookmarkAllocator;
   reportWarning: (warning: DocxExportWarning) => void;
   counters: {
     figure: number;
     qr: number;
-    bookmark: number;
-    chapter: number;
     listInstance: number;
     outputBlock: number;
   };

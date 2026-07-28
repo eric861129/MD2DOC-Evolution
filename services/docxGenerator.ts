@@ -20,6 +20,7 @@ import type { DocumentMeta, ParsedBlock } from './types';
 
 // 區塊處理器註冊表
 import { registerDefaultHandlers } from './docx/builders/index';
+import { createBookmarkAllocator } from './docx/bookmarks';
 import { resolvePageLayout } from './docx/layout/resolve';
 import { getDocumentProfile } from './docx/profiles';
 import { docxRegistry } from './docx/registry';
@@ -143,12 +144,11 @@ export const generateDocx = async (
     showLineNumbers: options.showLineNumbers,
     meta: options.meta ?? {},
     imageRegistry: options.imageRegistry ?? {},
+    bookmarks: createBookmarkAllocator(),
     reportWarning: createWarningReporter(options.onWarning),
     counters: {
       figure: 0,
       qr: 0,
-      bookmark: 0,
-      chapter: 0,
       listInstance: 0,
       outputBlock: 0,
     },
