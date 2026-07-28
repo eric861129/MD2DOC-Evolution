@@ -40,6 +40,11 @@ interface ChapterSourceSpan {
   isClosed: boolean;
 }
 
+interface SourceSpan {
+  startIndex: number;
+  endIndex: number;
+}
+
 interface ParseContext {
   nextListInstance: number;
 }
@@ -50,6 +55,10 @@ interface ManualTocEntry {
 }
 
 export interface ChapterSpanScanMetrics {
+  characterTransitionCount: number;
+  delimiterRunCount: number;
+  delimiterRunTransitionCount: number;
+  inlineIntervalTransitionCount: number;
   lineTransitionCount: number;
   sourceLineCount: number;
 }
@@ -57,6 +66,11 @@ export interface ChapterSpanScanMetrics {
 interface FenceState {
   marker: '`' | '~';
   minimumClosingLength: number;
+}
+
+interface BacktickRun extends SourceSpan {
+  containerIndex: number;
+  length: number;
 }
 
 const CHAPTER_KEYS = new Set([
@@ -159,6 +173,7 @@ const isFenceClosing = (
 
 const scanChapterSourceSpans = (
   source: string,
+  inlineCodeSpans: SourceSpan[],
   metrics?: ChapterSpanScanMetrics,
 ): ChapterSourceSpan[] => {
   const lines = scanPhysicalLineSpans(source);
@@ -166,6 +181,7 @@ const scanChapterSourceSpans = (
   let chapterStart: PhysicalLineSpan | undefined;
   let chapterYamlStart = 0;
   let fence: FenceState | undefined;
+  let inlineCodeSpanIndex = 0;
   if (metrics) {
     metrics.sourceLineCount = lines.length;
   }
@@ -202,6 +218,22 @@ const scanChapterSourceSpans = (
       continue;
     }
 
+    while (
+      inlineCodeSpanIndex < inlineCodeSpans.length
+      && inlineCodeSpans[inlineCodeSpanIndex].endIndex <= line.startIndex
+    ) {
+      inlineCodeSpanIndex += 1;
+      if (metrics) {
+        metrics.inlineIntervalTransitionCount += 1;
+      }
+    }
+    const inlineCodeSpan = inlineCodeSpans[inlineCodeSpanIndex];
+    const isInsideInlineCode = Boolean(
+      inlineCodeSpan
+      && inlineCodeSpan.startIndex <= line.startIndex
+      && line.startIndex < inlineCodeSpan.endIndex,
+    );
+
     if (fence) {
       if (isFenceClosing(line.content, fence)) {
         fence = undefined;
@@ -215,7 +247,7 @@ const scanChapterSourceSpans = (
       continue;
     }
 
-    if (CHAPTER_OPEN_PATTERN.test(line.content)) {
+    if (!isInsideInlineCode && CHAPTER_OPEN_PATTERN.test(line.content)) {
       chapterStart = line;
       chapterYamlStart = line.endIndex;
     }
@@ -540,17 +572,177 @@ const createNormalizedBoundaryMap = (source: string): number[] => {
   return originalIndexByNormalizedBoundary;
 };
 
+const collectParagraphSourceSpans = (
+  tokens: ReturnType<typeof marked.lexer>,
+  boundaryMap: number[],
+): SourceSpan[] => {
+  const spans: SourceSpan[] = [];
+  let normalizedIndex = 0;
+
+  for (const token of tokens) {
+    const normalizedEndIndex = normalizedIndex + token.raw.length;
+    if (token.type === 'paragraph') {
+      spans.push({
+        startIndex: boundaryMap[normalizedIndex] ?? normalizedIndex,
+        endIndex: boundaryMap[normalizedEndIndex] ?? normalizedEndIndex,
+      });
+    }
+    normalizedIndex = normalizedEndIndex;
+  }
+
+  return spans;
+};
+
+const collectBacktickRuns = (
+  source: string,
+  containers: SourceSpan[],
+  metrics?: ChapterSpanScanMetrics,
+): BacktickRun[] => {
+  const runs: BacktickRun[] = [];
+  let containerIndex = 0;
+  let consecutiveBackslashes = 0;
+  let cursor = 0;
+
+  while (cursor < source.length) {
+    while (
+      containerIndex < containers.length
+      && containers[containerIndex].endIndex <= cursor
+    ) {
+      containerIndex += 1;
+      consecutiveBackslashes = 0;
+    }
+
+    const container = containers[containerIndex];
+    const isInsideContainer = Boolean(
+      container
+      && container.startIndex <= cursor
+      && cursor < container.endIndex,
+    );
+    const character = source[cursor];
+    if (!isInsideContainer || character !== '`') {
+      if (metrics) {
+        metrics.characterTransitionCount += 1;
+      }
+      consecutiveBackslashes = isInsideContainer && character === '\\'
+        ? consecutiveBackslashes + 1
+        : 0;
+      cursor += 1;
+      continue;
+    }
+
+    const rawRunStart = cursor;
+    while (
+      cursor < container.endIndex
+      && source[cursor] === '`'
+    ) {
+      if (metrics) {
+        metrics.characterTransitionCount += 1;
+      }
+      cursor += 1;
+    }
+    if (metrics) {
+      metrics.delimiterRunTransitionCount += 1;
+    }
+
+    const escapedPrefixLength = consecutiveBackslashes % 2;
+    const runStart = rawRunStart + escapedPrefixLength;
+    const runLength = cursor - runStart;
+    if (runLength > 0) {
+      runs.push({
+        startIndex: runStart,
+        endIndex: cursor,
+        containerIndex,
+        length: runLength,
+      });
+      if (metrics) {
+        metrics.delimiterRunCount += 1;
+      }
+    }
+    consecutiveBackslashes = 0;
+  }
+
+  return runs;
+};
+
+const pairBacktickRuns = (
+  runs: BacktickRun[],
+  metrics?: ChapterSpanScanMetrics,
+): SourceSpan[] => {
+  const nextRunWithSameLength = new Array<number | undefined>(runs.length);
+  const latestRunIndexByKey = new Map<string, number>();
+
+  for (let index = runs.length - 1; index >= 0; index -= 1) {
+    const run = runs[index];
+    const key = `${run.containerIndex}:${run.length}`;
+    nextRunWithSameLength[index] = latestRunIndexByKey.get(key);
+    latestRunIndexByKey.set(key, index);
+    if (metrics) {
+      metrics.delimiterRunTransitionCount += 1;
+    }
+  }
+
+  const spans: SourceSpan[] = [];
+  let runIndex = 0;
+  while (runIndex < runs.length) {
+    if (metrics) {
+      metrics.delimiterRunTransitionCount += 1;
+    }
+    const closingRunIndex = nextRunWithSameLength[runIndex];
+    if (closingRunIndex === undefined) {
+      runIndex += 1;
+      continue;
+    }
+
+    spans.push({
+      startIndex: runs[runIndex].startIndex,
+      endIndex: runs[closingRunIndex].endIndex,
+    });
+    runIndex = closingRunIndex + 1;
+  }
+
+  return spans;
+};
+
+const collectInlineCodeSourceSpans = (
+  source: string,
+  tokens: ReturnType<typeof marked.lexer>,
+  boundaryMap: number[],
+  metrics?: ChapterSpanScanMetrics,
+): SourceSpan[] => pairBacktickRuns(
+  collectBacktickRuns(
+    source,
+    collectParagraphSourceSpans(tokens, boundaryMap),
+    metrics,
+  ),
+  metrics,
+);
+
 /**
- * 回傳章首頁實體行掃描的穩定操作量，供複雜度回歸測試使用。
+ * 回傳章首頁與 inline code 掃描的穩定操作量，供複雜度回歸測試使用。
  */
 export const measureChapterSpanScanOperations = (
   markdown: string,
 ): ChapterSpanScanMetrics => {
+  const tokens = marked.lexer(markdown);
+  const boundaryMap = createNormalizedBoundaryMap(markdown);
   const metrics: ChapterSpanScanMetrics = {
+    characterTransitionCount: 0,
+    delimiterRunCount: 0,
+    delimiterRunTransitionCount: 0,
+    inlineIntervalTransitionCount: 0,
     lineTransitionCount: 0,
     sourceLineCount: 0,
   };
-  scanChapterSourceSpans(markdown, metrics);
+  scanChapterSourceSpans(
+    markdown,
+    collectInlineCodeSourceSpans(
+      markdown,
+      tokens,
+      boundaryMap,
+      metrics,
+    ),
+    metrics,
+  );
   return metrics;
 };
 
@@ -643,7 +835,14 @@ const parseMarkdownFragment = (
   const tokens = marked.lexer(markdown);
   const originalIndexByNormalizedBoundary =
     createNormalizedBoundaryMap(markdown);
-  const chapterSpans = scanChapterSourceSpans(markdown);
+  const chapterSpans = scanChapterSourceSpans(
+    markdown,
+    collectInlineCodeSourceSpans(
+      markdown,
+      tokens,
+      originalIndexByNormalizedBoundary,
+    ),
+  );
   if (chapterSpans.length > 0) {
     const chapterBlocks: ParsedBlock[] = [];
     let cursor = 0;

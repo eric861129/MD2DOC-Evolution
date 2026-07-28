@@ -468,6 +468,164 @@ describe('出版社 Markdown 語法', () => {
   });
 
   it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+  ])('%s single-backtick multiline codespan 內的 root marker 不轉成 CHAPTER', (
+    _name,
+    newline,
+  ) => {
+    const markdown = [
+      'before `inline code',
+      '[CHAPTER]',
+      'number: "100"',
+      'title: "Codespan 內容"',
+      '[/CHAPTER]',
+      'tail` after',
+    ].join(newline);
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({
+      type: BlockType.PARAGRAPH,
+      content: expect.stringContaining('[CHAPTER]'),
+    });
+  });
+
+  it.each([
+    ['double delimiter', '``', '`', '```'],
+    ['triple delimiter', '```', '``', '````'],
+  ])('%s multiline codespan 只由相同長度 run 關閉', (
+    _name,
+    delimiter,
+    shorterRun,
+    longerRun,
+  ) => {
+    const markdown = [
+      `before ${delimiter}inline ${shorterRun}`,
+      '[CHAPTER]',
+      'number: "101"',
+      'title: "不同長度 run"',
+      '[/CHAPTER]',
+      `inside ${longerRun} remains inside`,
+      `tail${delimiter} after`,
+    ].join('\n');
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({
+      type: BlockType.PARAGRAPH,
+      content: expect.stringContaining('[CHAPTER]'),
+    });
+  });
+
+  it('同一行 codespan 關閉後，下一行 root CHAPTER 仍有效', () => {
+    const markdown = [
+      'before `inline code` after',
+      '[CHAPTER]',
+      'number: "102"',
+      'title: "合法章節"',
+      '[/CHAPTER]',
+    ].join('\n');
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.PARAGRAPH,
+      BlockType.CHAPTER_OPENER,
+    ]);
+    expect(blocks[1].metadata?.chapter).toMatchObject({
+      number: '102',
+      title: '合法章節',
+    });
+  });
+
+  it('unmatched opener 不跨空白行配對並隱藏後續 root CHAPTER', () => {
+    const markdown = [
+      'before `unmatched opener',
+      '',
+      '[CHAPTER]',
+      'number: "103"',
+      'title: "合法章節"',
+      '[/CHAPTER]',
+      'unmatched closer`',
+    ].join('\n');
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.PARAGRAPH,
+      BlockType.CHAPTER_OPENER,
+      BlockType.PARAGRAPH,
+    ]);
+    expect(blocks[1].metadata?.chapter).toMatchObject({
+      number: '103',
+      title: '合法章節',
+    });
+  });
+
+  it('escaped backtick 不成為 opener，後續 root CHAPTER 仍有效', () => {
+    const markdown = [
+      'before \\`escaped delimiter',
+      '[CHAPTER]',
+      'number: "104"',
+      'title: "合法章節"',
+      '[/CHAPTER]',
+      'unmatched closer`',
+    ].join('\n');
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.PARAGRAPH,
+      BlockType.CHAPTER_OPENER,
+      BlockType.PARAGRAPH,
+    ]);
+  });
+
+  it('escaped run 的剩餘 backticks 仍依 Marked 語意形成 codespan', () => {
+    const markdown = [
+      'before \\```double delimiter after escape',
+      '[CHAPTER]',
+      'number: "105"',
+      'title: "Codespan 內容"',
+      '[/CHAPTER]',
+      'tail`` after',
+    ].join('\n');
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({
+      type: BlockType.PARAGRAPH,
+      content: expect.stringContaining('[CHAPTER]'),
+    });
+  });
+
+  it('fenced code 的 backticks 不會干擾後續 multiline inline codespan', () => {
+    const markdown = [
+      '```markdown',
+      '` fenced literal',
+      '```',
+      'before `inline code',
+      '[CHAPTER]',
+      'number: "106"',
+      'title: "Codespan 內容"',
+      '[/CHAPTER]',
+      'tail` after',
+    ].join('\n');
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.CODE_BLOCK,
+      BlockType.PARAGRAPH,
+    ]);
+    expect(blocks[1].content).toContain('[CHAPTER]');
+  });
+
+  it.each([
     ['2-space fenced code', '  ', true],
     ['4-space fenced code', '    ', true],
     ['6-space fenced code', '      ', false],
@@ -642,6 +800,24 @@ describe('出版社 Markdown 語法', () => {
       const metrics = measureChapterSpanScanOperations(markdown);
 
       expect(metrics.sourceLineCount).toBe(lineCount);
+      expect(metrics.lineTransitionCount).toBe(lineCount);
+    },
+  );
+
+  it.each([1_500, 3_000, 6_000, 12_000])(
+    '%i 行 backtick runs 的 char/run/line 操作量維持線性',
+    (lineCount) => {
+      const markdown = Array.from(
+        { length: lineCount },
+        (_, index) => `segment-${index} \`literal`,
+      ).join('\n');
+      const metrics = measureChapterSpanScanOperations(markdown);
+
+      expect(metrics.characterTransitionCount).toBe(markdown.length);
+      expect(metrics.delimiterRunCount).toBe(lineCount);
+      expect(metrics.delimiterRunTransitionCount).toBe(
+        lineCount * 2 + lineCount / 2,
+      );
       expect(metrics.lineTransitionCount).toBe(lineCount);
     },
   );
