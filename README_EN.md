@@ -47,7 +47,8 @@ To convert existing notes, transcripts, or drafts into MD2DOC-Evolution format, 
 The built-in prompt includes:
 
 - GitHub repo reference: `https://github.com/eric861129/MD2DOC-Evolution`
-- Required formatting for Frontmatter, TOC, headings, code blocks, callouts, tables, and dialogue
+- Required formatting for Frontmatter, TOC, the chapter opener, headings, code blocks, all five callouts, tables, dialogue, and explicit QR
+- Explicit QR is only for important print links; normal Markdown links remain hyperlinks
 - An output contract that asks the agent to return only the converted Markdown manuscript
 - A silent quality check before the agent answers
 

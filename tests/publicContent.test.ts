@@ -11,10 +11,21 @@ import { BlockType } from '../services/types';
 const readUtf8 = (path: string) => readFileSync(path, 'utf8');
 
 describe('public repository content', () => {
-  it('keeps README versions, demo URL, dev URL, and verify command in sync', () => {
+  it('keeps package, lockfile, and README versions in sync', () => {
     const packageJson = JSON.parse(readUtf8('package.json')) as { version: string };
+    const packageLock = JSON.parse(readUtf8('package-lock.json')) as {
+      version: string;
+      packages: {
+        '': {
+          version: string;
+        };
+      };
+    };
     const zh = readUtf8('README.md');
     const en = readUtf8('README_EN.md');
+
+    expect(packageLock.version).toBe(packageJson.version);
+    expect(packageLock.packages[''].version).toBe(packageJson.version);
 
     for (const doc of [zh, en]) {
       expect(doc).toContain(`v${packageJson.version}`);
@@ -24,6 +35,24 @@ describe('public repository content', () => {
       expect(doc).toContain('https://github.com/eric861129/MD2DOC-Evolution');
       expect(doc).not.toContain('v1.3.0');
     }
+  });
+
+  it('keeps bilingual AI guidance aligned on publisher syntax and link policy', () => {
+    const getAiGuidance = (path: string) => readUtf8(path)
+      .split('## AI Assisted Generation')[1]
+      ?.split('## Documentation')[0] ?? '';
+    const zh = getAiGuidance('README.md');
+    const en = getAiGuidance('README_EN.md');
+
+    expect(zh).toContain('章首頁');
+    expect(zh).toContain('五種 callout');
+    expect(zh).toContain('明確 QR');
+    expect(zh).toContain('一般 Markdown 連結保持 hyperlink');
+
+    expect(en).toContain('chapter opener');
+    expect(en).toContain('five callouts');
+    expect(en).toContain('explicit QR');
+    expect(en).toContain('normal Markdown links remain hyperlinks');
   });
 
   it('keeps key public strings valid UTF-8 without replacement or private-use characters', () => {
