@@ -184,6 +184,44 @@ describe('docxGenerator', () => {
     );
   });
 
+  it('上方裝訂預留的程式碼區塊與手動目錄保留完整水平內容寬度', async () => {
+    const blob = await generateDocx([
+      {
+        type: BlockType.CODE_BLOCK,
+        content: 'const topGutter = true;',
+        metadata: { showLineNumbers: false },
+      },
+      {
+        type: BlockType.TOC,
+        content: '上方裝訂 1',
+      },
+    ], {
+      exportSettings: {
+        profileId: 'publisher-exact',
+        pageSizeId: 'tech',
+        marginPresetId: 'custom',
+        customMargins: {
+          mode: 'standard',
+          topCm: 2,
+          bottomCm: 2,
+          leftCm: 2,
+          rightCm: 2,
+          gutterCm: 0.5,
+          gutterPosition: 'top',
+        },
+      },
+      showLineNumbers: false,
+    });
+
+    const documentXml = await readDocxXml(blob, 'word/document.xml');
+    expect(documentXml).toMatch(
+      /<w:tblW(?=[^>]*w:type="dxa")(?=[^>]*w:w="7370")[^>]*\/>/,
+    );
+    expect(documentXml).toMatch(
+      /<w:tab(?=[^>]*w:val="right")(?=[^>]*w:pos="7370")(?=[^>]*w:leader="dot")[^>]*\/>/,
+    );
+  });
+
   it('technical-legacy 保持頁首書名與頁尾僅頁碼的既有行為', async () => {
     const blob = await generateDocx([], {
       exportSettings: {

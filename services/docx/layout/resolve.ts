@@ -140,12 +140,20 @@ export const resolvePageLayout = (settings: ExportSettings): ResolvedPageLayout 
   const margins = toResolvedMargins(marginConfig);
   const pageWidthTwips = toTwips(page.widthCm);
   const pageHeightTwips = toTwips(page.heightCm);
-  const contentWidthCm = page.widthCm - margins.leftCm - margins.rightCm - margins.gutterCm;
-  const contentHeightCm = page.heightCm - margins.topCm - margins.bottomCm;
+  const horizontalGutterCm = margins.gutterPosition === 'left' ? margins.gutterCm : 0;
+  const verticalGutterCm = margins.gutterPosition === 'top' ? margins.gutterCm : 0;
+  const horizontalGutterTwips = margins.gutterPosition === 'left' ? margins.gutterTwips : 0;
+  const verticalGutterTwips = margins.gutterPosition === 'top' ? margins.gutterTwips : 0;
+  const contentWidthCm = page.widthCm - margins.leftCm - margins.rightCm - horizontalGutterCm;
+  const contentHeightCm = page.heightCm - margins.topCm - margins.bottomCm - verticalGutterCm;
   const contentWidthTwips = pageWidthTwips
     - margins.leftTwips
     - margins.rightTwips
-    - margins.gutterTwips;
+    - horizontalGutterTwips;
+  const contentHeightTwips = pageHeightTwips
+    - margins.topTwips
+    - margins.bottomTwips
+    - verticalGutterTwips;
   if (contentWidthCm < MINIMUM_CONTENT_WIDTH_CM) {
     throw new Error('有效內容寬度不得小於 8 公分');
   }
@@ -178,6 +186,7 @@ export const resolvePageLayout = (settings: ExportSettings): ResolvedPageLayout 
       widthCm: contentWidthCm,
       heightCm: contentHeightCm,
       widthTwips: contentWidthTwips,
+      heightTwips: contentHeightTwips,
     },
     isCustomizedFromProfile,
     warnings,

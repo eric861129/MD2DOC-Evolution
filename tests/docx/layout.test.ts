@@ -151,6 +151,29 @@ describe('resolvePageLayout', () => {
     })).toThrow('鏡像邊界不可搭配上方裝訂預留');
   });
 
+  it('上方裝訂預留只扣除內容高度並保留完整水平內容寬度', () => {
+    const layout = resolvePageLayout({
+      ...DEFAULT_EXPORT_SETTINGS,
+      marginPresetId: 'custom',
+      customMargins: {
+        mode: 'standard',
+        topCm: 2,
+        bottomCm: 2,
+        leftCm: 2,
+        rightCm: 2,
+        gutterCm: 0.5,
+        gutterPosition: 'top',
+      },
+    });
+
+    expect(layout.content).toMatchObject({
+      widthCm: 13,
+      heightCm: 18.5,
+      widthTwips: 7370,
+      heightTwips: 10488,
+    });
+  });
+
   it.each([NaN, Infinity, -Infinity])('拒絕非有限的自訂邊界數值：%s', (value) => {
     expect(() => resolvePageLayout({
       ...DEFAULT_EXPORT_SETTINGS,
