@@ -56,9 +56,8 @@ export interface ChapterSpanScanMetrics {
   tokenTransitionCount: number;
 }
 
-interface ChapterTokenBoundaries {
+interface ChapterTokenEligibility {
   eligibleStartIndices: Set<number>;
-  recoveryBoundaryIndices: number[];
 }
 
 const CHAPTER_KEYS = new Set([
@@ -129,14 +128,13 @@ const CHAPTER_CLOSE_PATTERN = /^\[\/CHAPTER\][\t ]*$/;
 
 const scanChapterSourceSpans = (
   source: string,
-  tokenBoundaries: ChapterTokenBoundaries,
+  tokenEligibility: ChapterTokenEligibility,
   metrics?: ChapterSpanScanMetrics,
 ): ChapterSourceSpan[] => {
   const lines = scanPhysicalLineSpans(source);
   const spans: ChapterSourceSpan[] = [];
   let chapterStart: PhysicalLineSpan | undefined;
   let chapterYamlStart = 0;
-  let recoveryBoundaryIndex = 0;
   if (metrics) {
     metrics.sourceLineCount = lines.length;
   }
@@ -160,22 +158,8 @@ const scanChapterSourceSpans = (
       metrics.lineTransitionCount += 1;
     }
 
-    while (
-      recoveryBoundaryIndex
-        < tokenBoundaries.recoveryBoundaryIndices.length
-      && tokenBoundaries.recoveryBoundaryIndices[recoveryBoundaryIndex]
-        <= line.startIndex
-    ) {
-      const boundaryIndex =
-        tokenBoundaries.recoveryBoundaryIndices[recoveryBoundaryIndex];
-      if (chapterStart && chapterStart.startIndex < boundaryIndex) {
-        restoreUnclosedOpener();
-      }
-      recoveryBoundaryIndex += 1;
-    }
-
     const isEligibleOpener =
-      tokenBoundaries.eligibleStartIndices.has(line.startIndex);
+      tokenEligibility.eligibleStartIndices.has(line.startIndex);
     if (chapterStart) {
       if (
         isEligibleOpener
@@ -526,13 +510,12 @@ const createNormalizedBoundaryMap = (
   return originalIndexByNormalizedBoundary;
 };
 
-const collectChapterTokenBoundaries = (
+const collectChapterTokenEligibility = (
   tokens: ReturnType<typeof marked.lexer>,
   boundaryMap: number[],
   metrics?: ChapterSpanScanMetrics,
-): ChapterTokenBoundaries => {
+): ChapterTokenEligibility => {
   const eligibleStartIndices = new Set<number>();
-  const recoveryBoundaryIndices: number[] = [];
   let normalizedIndex = 0;
 
   for (const token of tokens) {
@@ -543,15 +526,6 @@ const collectChapterTokenBoundaries = (
       eligibleStartIndices.add(startIndex);
     }
 
-    const isIndentedListContinuation = token.type === 'list'
-      && /^[\t ]/.test(token.raw);
-    if (
-      token.type !== 'paragraph'
-      && !isIndentedListContinuation
-    ) {
-      recoveryBoundaryIndices.push(startIndex);
-    }
-
     if (metrics) {
       metrics.tokenTransitionCount += 1;
     }
@@ -560,7 +534,6 @@ const collectChapterTokenBoundaries = (
 
   return {
     eligibleStartIndices,
-    recoveryBoundaryIndices,
   };
 };
 
@@ -580,7 +553,7 @@ export const measureChapterSpanScanOperations = (
   const boundaryMap = createNormalizedBoundaryMap(markdown, metrics);
   scanChapterSourceSpans(
     markdown,
-    collectChapterTokenBoundaries(
+    collectChapterTokenEligibility(
       tokens,
       boundaryMap,
       metrics,
@@ -681,7 +654,7 @@ const parseMarkdownFragment = (
     createNormalizedBoundaryMap(markdown);
   const chapterSpans = scanChapterSourceSpans(
     markdown,
-    collectChapterTokenBoundaries(
+    collectChapterTokenEligibility(
       tokens,
       originalIndexByNormalizedBoundary,
     ),

@@ -165,6 +165,105 @@ describe('出版社 Markdown 語法', () => {
     ]);
   });
 
+  it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+  ])('%s 章首頁 YAML 允許必填欄位之間有空白行', (
+    _name,
+    newline,
+  ) => {
+    const markdown = [
+      '[CHAPTER]',
+      'number: "114"',
+      '',
+      'title: "空白行仍是合法 YAML"',
+      '[/CHAPTER]',
+    ].join(newline);
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({
+      type: BlockType.CHAPTER_OPENER,
+      content: '空白行仍是合法 YAML',
+      startIndex: 0,
+      endIndex: markdown.length,
+      metadata: {
+        chapter: {
+          number: '114',
+          title: '空白行仍是合法 YAML',
+          goals: [],
+        },
+      },
+      validationIssues: [],
+    });
+  });
+
+  it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+  ])('%s 章首頁 YAML 接受 indentless goals sequence', (
+    _name,
+    newline,
+  ) => {
+    const markdown = [
+      '[CHAPTER]',
+      'number: "115"',
+      'title: "Indentless sequence"',
+      'goals:',
+      '- "第一項"',
+      '- "第二項"',
+      '[/CHAPTER]',
+    ].join(newline);
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].metadata?.chapter).toEqual({
+      number: '115',
+      title: 'Indentless sequence',
+      goals: ['第一項', '第二項'],
+    });
+    expect(blocks[0].validationIssues).toEqual([]);
+  });
+
+  it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+  ])('%s 章首頁 YAML 保留含空白行的 summary 並回報 unknown key', (
+    _name,
+    newline,
+  ) => {
+    const markdown = [
+      '[CHAPTER]',
+      'number: "116"',
+      'title: "完整 YAML"',
+      'summary: |-',
+      '  第一段',
+      '',
+      '  第二段',
+      '',
+      'futureOption: "由未來版本處理"',
+      '[/CHAPTER]',
+    ].join(newline);
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].metadata?.chapter).toMatchObject({
+      number: '116',
+      title: '完整 YAML',
+      summary: '第一段\n\n第二段',
+      goals: [],
+    });
+    expect(blocks[0].validationIssues).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        title: '章首頁包含未知欄位',
+      }),
+    ]);
+  });
+
   it('goals 缺失時正規化為空陣列且不產生錯誤', async () => {
     const markdown = [
       '[CHAPTER]',
@@ -719,52 +818,6 @@ describe('出版社 Markdown 語法', () => {
     expect(blocks[2].metadata?.chapter).toMatchObject({
       number: '109',
       title: '唯一 root chapter',
-    });
-  });
-
-  it.each([
-    ['list', '- 外層 `inline', BlockType.BULLET_LIST],
-    ['blockquote', '> 引言 `inline', BlockType.QUOTE_BLOCK],
-  ])('未關閉 opener 不跨後續 %s lazy codespan 的錯誤 closing/opener', (
-    _name,
-    containerStart,
-    containerType,
-  ) => {
-    const markdown = [
-      '[CHAPTER]',
-      'number: "111"',
-      'title: "未關閉"',
-      '',
-      containerStart,
-      '[/CHAPTER]',
-      '[CHAPTER]',
-      'number: "112"',
-      'title: "錯誤巢狀章節"',
-      '[/CHAPTER]',
-      'tail`',
-      '',
-      '[CHAPTER]',
-      'number: "113"',
-      'title: "合法 root chapter"',
-      '[/CHAPTER]',
-    ].join('\n');
-
-    const { blocks } = parseMarkdown(markdown);
-
-    expect(blocks.map(({ type }) => type)).toEqual([
-      BlockType.CHAPTER_OPENER,
-      BlockType.PARAGRAPH,
-      containerType,
-      BlockType.CHAPTER_OPENER,
-    ]);
-    expect(blocks[0].validationIssues).toContainEqual(
-      expect.objectContaining({ title: '章首頁缺少 [/CHAPTER]' }),
-    );
-    expect(blocks[2].content).toContain('[/CHAPTER]');
-    expect(blocks[2].content).toContain('[CHAPTER]');
-    expect(blocks[3].metadata?.chapter).toMatchObject({
-      number: '113',
-      title: '合法 root chapter',
     });
   });
 
