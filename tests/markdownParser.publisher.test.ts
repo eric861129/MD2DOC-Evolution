@@ -128,7 +128,8 @@ describe('出版社 Markdown 語法', () => {
       'futureOption: "由未來版本處理"',
       '[/CHAPTER]',
     ].join(newline);
-    const markdown = `前言${newline}${chapter}${newline}後記`;
+    const chapterPrefix = `前言${newline}${newline}`;
+    const markdown = `${chapterPrefix}${chapter}${newline}後記`;
 
     const { blocks } = parseMarkdown(markdown);
 
@@ -136,9 +137,9 @@ describe('出版社 Markdown 語法', () => {
     expect(blocks[1]).toMatchObject({
       type: BlockType.CHAPTER_OPENER,
       content: '工具箱',
-      sourceLine: 1,
-      startIndex: `前言${newline}`.length,
-      endIndex: `前言${newline}${chapter}`.length,
+      sourceLine: 2,
+      startIndex: chapterPrefix.length,
+      endIndex: `${chapterPrefix}${chapter}`.length,
       metadata: {
         chapter: {
           number: '02',
@@ -158,7 +159,7 @@ describe('出版社 Markdown 語法', () => {
       expect.objectContaining({
         severity: 'warning',
         title: '章首頁包含未知欄位',
-        sourceLine: 1,
+        sourceLine: 2,
         blockType: BlockType.CHAPTER_OPENER,
       }),
     ]);
@@ -520,9 +521,10 @@ describe('出版社 Markdown 語法', () => {
     });
   });
 
-  it('同一行 codespan 關閉後，下一行 root CHAPTER 仍有效', () => {
+  it('同一行 codespan 關閉且經合法 block boundary 後 root CHAPTER 有效', () => {
     const markdown = [
       'before `inline code` after',
+      '',
       '[CHAPTER]',
       'number: "102"',
       'title: "合法章節"',
@@ -568,6 +570,7 @@ describe('出版社 Markdown 語法', () => {
   it('escaped backtick 不成為 opener，後續 root CHAPTER 仍有效', () => {
     const markdown = [
       'before \\`escaped delimiter',
+      '',
       '[CHAPTER]',
       'number: "104"',
       'title: "合法章節"',
@@ -623,6 +626,180 @@ describe('出版社 Markdown 語法', () => {
       BlockType.PARAGRAPH,
     ]);
     expect(blocks[1].content).toContain('[CHAPTER]');
+  });
+
+  it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+  ])('%s list lazy codespan 內的 marker 保留完整 BULLET_LIST', (
+    _name,
+    newline,
+  ) => {
+    const markdown = [
+      '- 外層 `inline',
+      '[CHAPTER]',
+      'number: "107"',
+      'title: "Lazy list"',
+      '[/CHAPTER]',
+      'tail`',
+    ].join(newline);
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({
+      type: BlockType.BULLET_LIST,
+      content: expect.stringContaining('[CHAPTER]'),
+    });
+    expect(blocks[0].content).toContain('[/CHAPTER]');
+    expect(blocks[0].content).toContain('tail');
+  });
+
+  it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+  ])('%s blockquote lazy codespan 內的 marker 保留完整 QUOTE_BLOCK', (
+    _name,
+    newline,
+  ) => {
+    const markdown = [
+      '> 引言 `inline',
+      '[CHAPTER]',
+      'number: "108"',
+      'title: "Lazy quote"',
+      '[/CHAPTER]',
+      'tail`',
+    ].join(newline);
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({
+      type: BlockType.QUOTE_BLOCK,
+      content: expect.stringContaining('[CHAPTER]'),
+    });
+    expect(blocks[0].content).toContain('[/CHAPTER]');
+    expect(blocks[0].content).toContain('tail');
+  });
+
+  it.each([
+    ['list', '- 外層 `inline', BlockType.BULLET_LIST],
+    ['blockquote', '> 引言 `inline', BlockType.QUOTE_BLOCK],
+  ])('重複相同 raw 的兩個 %s 只有後續 root chapter 生效', (
+    _name,
+    containerStart,
+    containerType,
+  ) => {
+    const chapterLines = [
+      '[CHAPTER]',
+      'number: "109"',
+      'title: "唯一 root chapter"',
+      '[/CHAPTER]',
+    ];
+    const containerLines = [
+      containerStart,
+      ...chapterLines,
+      'tail`',
+    ];
+    const markdown = [
+      ...containerLines,
+      '',
+      ...containerLines,
+      '',
+      ...chapterLines,
+    ].join('\n');
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      containerType,
+      containerType,
+      BlockType.CHAPTER_OPENER,
+    ]);
+    expect(blocks[2].metadata?.chapter).toMatchObject({
+      number: '109',
+      title: '唯一 root chapter',
+    });
+  });
+
+  it.each([
+    ['list', '- 外層 `inline', BlockType.BULLET_LIST],
+    ['blockquote', '> 引言 `inline', BlockType.QUOTE_BLOCK],
+  ])('未關閉 opener 不跨後續 %s lazy codespan 的錯誤 closing/opener', (
+    _name,
+    containerStart,
+    containerType,
+  ) => {
+    const markdown = [
+      '[CHAPTER]',
+      'number: "111"',
+      'title: "未關閉"',
+      '',
+      containerStart,
+      '[/CHAPTER]',
+      '[CHAPTER]',
+      'number: "112"',
+      'title: "錯誤巢狀章節"',
+      '[/CHAPTER]',
+      'tail`',
+      '',
+      '[CHAPTER]',
+      'number: "113"',
+      'title: "合法 root chapter"',
+      '[/CHAPTER]',
+    ].join('\n');
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.CHAPTER_OPENER,
+      BlockType.PARAGRAPH,
+      containerType,
+      BlockType.CHAPTER_OPENER,
+    ]);
+    expect(blocks[0].validationIssues).toContainEqual(
+      expect.objectContaining({ title: '章首頁缺少 [/CHAPTER]' }),
+    );
+    expect(blocks[2].content).toContain('[/CHAPTER]');
+    expect(blocks[2].content).toContain('[CHAPTER]');
+    expect(blocks[3].metadata?.chapter).toMatchObject({
+      number: '113',
+      title: '合法 root chapter',
+    });
+  });
+
+  it.each([
+    ['文件起點', [], [BlockType.CHAPTER_OPENER]],
+    [
+      'heading 後無空行',
+      ['# 前置標題'],
+      [BlockType.HEADING_1, BlockType.CHAPTER_OPENER],
+    ],
+    [
+      'paragraph 後合法 block boundary',
+      ['前置正文', ''],
+      [BlockType.PARAGRAPH, BlockType.CHAPTER_OPENER],
+    ],
+  ])('%s 的 top-level chapter opener 有效', (
+    _name,
+    prefixLines,
+    expectedTypes,
+  ) => {
+    const markdown = [
+      ...prefixLines,
+      '[CHAPTER]',
+      'number: "110"',
+      'title: "合法章節"',
+      '[/CHAPTER]',
+    ].join('\n');
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks.map(({ type }) => type)).toEqual(expectedTypes);
+    expect(blocks.at(-1)?.metadata?.chapter).toMatchObject({
+      number: '110',
+      title: '合法章節',
+    });
   });
 
   it.each([
@@ -804,23 +981,32 @@ describe('出版社 Markdown 語法', () => {
     },
   );
 
-  it.each([1_500, 3_000, 6_000, 12_000])(
-    '%i 行 backtick runs 的 char/run/line 操作量維持線性',
-    (lineCount) => {
-      const markdown = Array.from(
-        { length: lineCount },
-        (_, index) => `segment-${index} \`literal`,
-      ).join('\n');
-      const metrics = measureChapterSpanScanOperations(markdown);
+  it('50k top-level/nested workload 的 char/token/line 操作量維持線性', () => {
+    const topLevelBlockCount = 25_000;
+    const nestedItemCount = 25_000;
+    const markdown = [
+      ...Array.from(
+        { length: topLevelBlockCount },
+        (_, index) => [`段落-${index}`, ''],
+      ).flat(),
+      '- root',
+      ...Array.from(
+        { length: nestedItemCount },
+        (_, index) => `  - child-${index}`,
+      ),
+    ].join('\n');
 
-      expect(metrics.characterTransitionCount).toBe(markdown.length);
-      expect(metrics.delimiterRunCount).toBe(lineCount);
-      expect(metrics.delimiterRunTransitionCount).toBe(
-        lineCount * 2 + lineCount / 2,
-      );
-      expect(metrics.lineTransitionCount).toBe(lineCount);
-    },
-  );
+    const metrics = measureChapterSpanScanOperations(markdown);
+
+    expect(metrics.characterTransitionCount).toBe(markdown.length);
+    expect(metrics.tokenTransitionCount).toBe(
+      topLevelBlockCount * 2 + 1,
+    );
+    expect(metrics.sourceLineCount).toBe(
+      topLevelBlockCount * 2 + nestedItemCount + 1,
+    );
+    expect(metrics.lineTransitionCount).toBe(metrics.sourceLineCount);
+  });
 
   it('未關閉 CHAPTER 只回復 marker，後續 heading 與 paragraph 全部保留', () => {
     const markdown = [
