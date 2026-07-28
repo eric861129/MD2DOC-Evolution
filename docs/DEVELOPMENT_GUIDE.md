@@ -114,14 +114,61 @@ render 的 `comparison.json`；任一頁超過 `0.015`、尺寸不同或頁面�
 baseline。若環境不同，請保留比較失敗並由維護者重新審查，而不是直接接受
 新圖片。
 
+### DOCX package 與版面驗收
+
+`npm run qa:fixture` 會在 `artifacts/docx-qa/` 產生公開
+`publisher-exact` fixture；該目錄已忽略，不可把 runtime HTML、瀏覽器
+profile、PDF 或 PNG 加入 Git。產物必須通過內建 package inspection，且 ZIP
+內不得出現 `.undefined` 媒體、未知媒體格式、遺失 relationship 或缺少
+content type。
+
+對 `publisher-narrow` 與 `publisher-binding` 的驗收應使用同一份公開
+fixture，並直接檢查 OOXML：
+
+- narrow 的 17 × 23 cm 紙張搭配四邊 1.27 cm，內容寬度必須是 14.46 cm。
+- binding 的 `w:pgMar` 必須包含上 2.00、下 2.20、內 2.20、外 1.80 cm
+  與 0.50 cm gutter，`settings.xml` 必須含有 `w:mirrorMargins`。
+- 鏡像邊界由 Word 在奇偶頁交換內外側；網頁單頁 Preview 不是雙面印刷證據。
+
+完整書稿驗收只能使用維護者有權存取的來源，輸出放在
+`artifacts/docx-qa/private-acceptance/<timestamp>/`。先確認來源與參考產生器
+是同源，再比較 page size、margins、styles、tables、media、fields、package
+relationships 與 render。若無法取得完全同源內容，必須把限制寫入驗收報告，
+不得宣稱逐頁一致。差異要分類為：
+
+1. 內容差異：來源轉換或兩份書稿內容不同。
+2. renderer 差異：Word 365 與 LibreOffice 的字型、欄位或分頁行為不同。
+3. MD2DOC defect：相同輸入下違反已定義的 OOXML／版型契約。
+
+只有第三類可以修改產品程式碼，而且必須先加入會失敗的 regression test。
+若本機有 Word 365 COM，自動化必須使用不可見視窗、唯讀開啟並在
+`finally` 關閉文件與 Word process；不得在檢查流程中覆寫私有參考檔。
+
+### Release candidate gate
+
+一般 compare 不得更新 baseline。準備 release candidate 時依序執行：
+
+```powershell
+npm run verify
+npm run qa:fixture
+npm run qa:render
+npm run qa:compare
+git diff --check
+git status --short
+```
+
+另外檢查嚴格 UTF-8、私人內容、秘密字串、staged diff 與 `npm audit`
+剩餘數量。只有 `npm run qa:baseline` 可以寫 baseline，且必須先完成固定環境
+的人工逐頁審查。
+
 ---
 
 ## 📦 發布流程 (Release Workflow)
 
 1. 完成功能開發並通過測試。
-2. 更新 `package.json` 中的版本號。
-3. 更新 `CHANGELOG.md` 記錄變更。
-4. 提交 PR 至 `main` 分支。
+2. 更新 `package.json` 中的版本號與公開 release notes。
+3. 執行完整 release candidate gate，確認預設仍為 `technical-legacy`。
+4. 建立經審查的 Conventional Commit；只有收到明確指示後才能 push 或 publish。
 
 ---
 

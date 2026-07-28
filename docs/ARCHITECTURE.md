@@ -10,14 +10,14 @@
 - **Markdown 解析**: regex-based (舊版) / AST-based (新版, migrating to `marked`)
 - **Word 生成**: `docx` library
 - **圖表渲染**: `mermaid`
-- **樣式管理**: CSS Modules + Centralized Theme Constants
+- **樣式管理**: Tailwind CSS + 集中式 Word Theme/Profile tokens
 
 ---
 
 ## 📂 目錄結構 (Directory Structure)
 
 ```text
-src/
+/
 ├── components/          # React UI 元件
 │   ├── editor/          # 編輯器核心元件 (輸入區、預覽區、Mermaid 渲染)
 │   └── ui/              # 通用 UI 元件 (按鈕、下拉選單)
@@ -28,10 +28,16 @@ src/
 ├── services/            # 核心邏輯層
 │   ├── docx/            # Word 生成邏輯
 │   │   ├── builders/    # 各種 Markdown 元素的 Word 建構器 (Paragraph, Table...)
+│   │   ├── layout/      # 紙張、邊界、鏡像與內容區幾何
+│   │   ├── profiles/    # technical-legacy 與 publisher 樣式
+│   │   ├── postprocess.ts # OOXML 後處理
+│   │   ├── quality.ts   # DOCX package inspection
 │   │   └── registry.ts  # Builder 註冊表
 │   ├── parser/          # Markdown 解析器 (AST)
 │   ├── docxGenerator.ts # Word 生成入口
 │   └── markdownParser.ts# 舊版 Regex 解析器 (維護中)
+├── scripts/qa/          # 公開 fixture、LibreOffice render 與視覺比較
+├── tests/visual/        # 固定環境審查後的 PNG baseline
 ├── utils/               # 工具函式
 └── samples/             # 範例檔案
 ```
@@ -54,13 +60,23 @@ src/
 
 文件生成採用 **Registry Pattern** 與 **Builder Pattern**，以保持程式碼的模組化與可擴充性。
 
-- **入口**: `services/docxGenerator.ts` 中的 `generateDocx` 函式。
-- **流程**:
-    1. 接收 `ParsedBlock[]`。
-    2. 遍歷每個 Block。
-    3. 透過 `BlockRegistry` (`services/docx/registry.ts`) 根據 Block 類型 (type) 查找對應的 Builder。
-    4. Builder (如 `ParagraphBuilder`, `TableBuilder`) 負責將 Block 資料轉換為 `docx` 套件的物件 (Paragraph, Table)。
-    5. 最後由 `Document` 物件將所有 `docx` 節點組合，並打包成 Blob 下載。
+完整管線是：
+
+```text
+Markdown → ParsedBlock → Layout/Profile → DOCX Builders → Packer
+→ OOXML Post-process → Package Inspection → Download
+```
+
+1. `services/markdownParser.ts` 產生 `ParsedBlock[]` 與 Frontmatter metadata。
+2. `services/docx/layout/resolve.ts` 把紙張、邊界、gutter 與 Profile 選擇解析成共用幾何；Preview 與 DOCX 使用同一份結果。
+3. `services/docx/profiles/` 提供樣式 token。`technical-legacy` 保留既有行為，三種 publisher Profile 共用出版社樣式。
+4. `services/docx/registry.ts` 依 Block 類型把內容交給 `services/docx/builders/`，建立段落、章首頁、TOC、表格、Callout、對話、圖片與明確 QR 等 DOCX 節點。
+5. `docx` 的 `Packer` 先產生 OPC package。
+6. `services/docx/postprocess.ts` 以 deterministic OOXML 後處理補上鏡像邊界、gutter、欄位更新與必要的 package 設定。
+7. `services/docx/quality.ts` 檢查 relationship、content type、媒體、副檔名與必要部件。任何 error 都會阻止下載；warning 會回報給匯出流程。
+8. 只有通過 inspection 的 Blob 才交由瀏覽器下載。
+
+版型與語法細節請見 [出版社版型與語法指南](PUBLISHER_PROFILE.md)。
 
 ### 3. Mermaid 圖表處理
 
@@ -85,7 +101,7 @@ Mermaid 圖表的轉換是本專案的技術難點之一，因為 Word 不支援
 3. **註冊**: 在 `services/docx/builders/index.ts` 中註冊新的 Builder。
 
 ### 修改樣式
-所有 Word 輸出樣式均集中管理於 `constants/theme.ts`。修改此檔案即可全域調整字體、字號、顏色與邊距，無需修改邏輯代碼。
+Word 輸出基礎 token 集中於 `constants/theme.ts`，Profile 映射位於 `services/docx/profiles/`。版面幾何屬於 `services/docx/layout/`，不要在 Builder 內加入新的紙張或邊界魔術數字。
 
 ---
 
@@ -94,7 +110,8 @@ Mermaid 圖表的轉換是本專案的技術難點之一，因為 Word 不支援
 專案使用 `vitest` 進行單元測試。
 
 - **Parser 測試**: 驗證 Markdown 字串是否正確轉換為 JSON 結構。
-- **Generator 測試**: 驗證 JSON 結構是否生成預期的 `docx` 物件結構（使用 Snapshot Testing）。
+- **Generator／package 測試**: 解開 DOCX 後驗證實際 OOXML、樣式、relationship、媒體與幾何。
+- **視覺回歸**: 公開 fixture 在固定 LibreOffice／Poppler／字型環境渲染成 PNG，再以唯讀 baseline 比較。
 
 ```bash
 npm run test

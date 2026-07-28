@@ -1,7 +1,7 @@
-# MD2DOC-Evolution | v1.4.0
+# MD2DOC-Evolution | v1.5.0
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
 [![CI](https://github.com/eric861129/MD2DOC-Evolution/actions/workflows/ci.yml/badge.svg)](https://github.com/eric861129/MD2DOC-Evolution/actions/workflows/ci.yml)
 
 [中文](README.md) | [English](README_EN.md)
@@ -12,15 +12,16 @@ MD2DOC-Evolution is an open-source Markdown-to-Word DOCX manuscript workspace fo
 
 Live demo: [https://huangchiyu.com/MD2DOC-Evolution/](https://huangchiyu.com/MD2DOC-Evolution/)
 
-## v1.4.0 Highlights
+## v1.5.0 Highlights
 
-- Professional workspace UI: compact command bar, Markdown quick-action rail, editor, and Word print preview.
-- More stable build stack: Tailwind through the Vite plugin, npm Buffer polyfill, and packaged GSAP dependencies.
-- Shared command model: the quick-action rail and slash commands now use the same command definitions.
-- Registry-style preview renderer: preview rendering now follows the same extension direction as the DOCX builder.
-- AI Agent Prompt: the header prompt includes the GitHub repo so external AI agents can follow the project format more reliably.
-- Export readiness signals: word count, block count, Frontmatter status, and DOCX readiness are visible before export.
-- Mobile editor/preview tabs: the mobile layout avoids squeezed split panes.
+- Paper and margins: 17 × 23 cm, A4, A5, B5, custom paper, and reusable or custom margin presets.
+- Publisher profiles: `publisher-exact`, `publisher-narrow`, and `publisher-binding`, while `technical-legacy` remains the default.
+- Binding layout: mirrored inside/outside margins and gutter support.
+- Publishing syntax: `[CHAPTER]`, explicit `[QR:label](URL)`, plus `IMPORTANT` and `CAUTION` callouts.
+- Word structure: named publisher styles, fixed table geometry, updateable TOC fields, and chapter bookmarks.
+- OOXML QA: package, relationship, media, and content-type inspection, with a public LibreOffice/Poppler visual regression fixture.
+
+The existing professional workspace UI, shared command model, AI Agent Prompt, and mobile editor/preview flow remain compatible.
 
 ## Supported Syntax
 
@@ -28,14 +29,16 @@ Live demo: [https://huangchiyu.com/MD2DOC-Evolution/](https://huangchiyu.com/MD2
 | :--- | :--- | :--- |
 | Frontmatter | `---` YAML block | Supports `title`, `author`, `header`, `footer`, and other metadata |
 | Table of contents | `[TOC]` | Creates a Word-style TOC block |
+| Chapter opener | `[CHAPTER]` YAML block | Chapter number, title, summary, image, and goals |
 | Headings | `#` to `###` | Maps to H1 through H3 |
 | Code blocks | <code>```ts:ln</code> / <code>```json:no-ln</code> | Supports language labels and line-number flags |
 | Mermaid | <code>```mermaid</code> | Supported in preview and DOCX export |
-| Callouts | `> [!NOTE]` / `> [!TIP]` / `> [!WARNING]` | Note, tip, and warning blocks |
+| Callouts | `NOTE` / `TIP` / `WARNING` / `IMPORTANT` / `CAUTION` | Five publishing callout types |
 | Dialogue | `User "::` / `AI ::"` / `System :":` | Left, right, and centered dialogue bubbles |
 | Tables | Markdown table | Exported as Word tables |
 | Images | `![alt](image-id-or-url)` | Supports dropped images and Markdown image syntax |
-| Links | `[text](url)` | Can export with QR Code support |
+| Links | `[text](url)` | Remains a normal hyperlink |
+| Explicit QR | `[QR:label](URL)` | Creates a QR block only for important print links |
 
 ## AI Assisted Generation
 
@@ -54,6 +57,7 @@ See the full rules in [AI Generation Guide](docs/AI_GENERATION_GUIDE.md).
 
 - [Project Overview](docs/PROJECT_OVERVIEW.md): design philosophy and core features.
 - [AI Generation Guide](docs/AI_GENERATION_GUIDE.md): conversion rules for users and AI agents.
+- [Publisher Profile](docs/PUBLISHER_PROFILE.md): paper, margins, binding, profiles, and publishing syntax.
 - [Architecture](docs/ARCHITECTURE.md): tech stack, directory structure, and core workflows.
 - [Development Guide](docs/DEVELOPMENT_GUIDE.md): local setup, testing, and debugging.
 - [Customization](CUSTOMIZATION.md): layout, styling, and export customization.

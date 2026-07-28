@@ -9,308 +9,131 @@
 const BT = "`";
 
 export const INITIAL_CONTENT_ZH = `---
-title: "MD2DOC-Evolution 使用手冊"
+title: "星圖工坊出版排版範例"
 author: "MD2DOC-Evolution Team"
 header: true
 footer: true
 ---
-# 技術書稿排版範例樣式表
-
 [TOC]
-- 第一章 基礎文字與段落樣式 1
-- 第二章 特殊文字樣式展示 2
-- 第三章 角色對話框展示 3
-- 第四章 程式碼區塊樣式 4
-- 第五章 特殊提醒與警告 5
-- 第六章 表格與圖片支援 6
-- 第七章 Mermaid 圖表支援 7
 
+[CHAPTER]
+number: "01"
+part: "第一部：建立觀測站"
+title: "點亮第一張星圖"
+englishTitle: "Lighting the First Star Map"
+summary: "星圖工坊使用完全虛構的觀測資料，示範出版社版型與 MD2DOC 語法。"
+goals:
+  - "理解四種文件 Profile 的用途。"
+  - "完成可重複驗證的公開範例。"
+[/CHAPTER]
 
-## 1. 基礎文字與段落樣式
+# 星圖工坊出版排版指南
 
-這是一段標準的正文。我們支援多種行內樣式，例如 **粗體強調** 以吸引讀者注意。當提到程式碼變數時，可以使用 ${BT}inline code${BT} 樣式。
+## 選擇出版社版型
 
-> [!TIP]
-> **新功能：斜線指令**
-> 現在您可以直接輸入 ${BT}/來選取指令，例如: ${BT}/table${BT} 插入表格，或 ${BT}/chat${BT} 插入對話框！
-
-> [!TIP]
-> **新功能：檔案拖放匯入**
-> 您可以直接將電腦上的 ${BT}.md${BT} 檔案拖入此編輯區域，系統會自動讀取並載入內容！
-
-對於書籍介面的描述，我們設計了特殊的括號樣式：點擊 【確定】 按鈕後即可完成操作。這在 Word 匯出後也會保持加粗與特殊視覺感。
-
----
-
-### 1.1 列表測試
-
-- 第一項重點內容
-- 第二項重點內容，包含 ${BT}行內程式${BT}
-- 第三項內容，測試自動換行的對齊效果
-
-## 2. 特殊文字樣式展示
-
-本工具支援多種專業出版需要的文字格式，請參考以下範例：
-
-- **粗體 (Bold)**：用於強調關鍵字，例如 **Vibe Coding**。
-- *斜體 (Italic)*：用於 *專有名詞定義* 或 *英文術語*。匯出 Word 時會呈現深藍色斜體。
-- <u>底線 (Underline)</u>：用於 <u>超連結文字</u> 或需要特別畫線的地方。
-- **智慧連結 (Smart Links)**：[GitHub專案](https://github.com/eric861129/MD2DOC-Evolution) 會自動在 Word 中生成 QR Code。
-- UI 按鈕：請點擊 【設定】 > 【進階選項】 進行調整。
-- 快捷鍵：按下 [Ctrl] + [S] 可以儲存檔案，或使用 [Cmd] + [P] 列印。
-- 書籍/專案：參考『Clean Code』一書中的概念，或是『MD2DOC-Evolution』專案。
-
----
-
-## 3. 角色對話框展示 (多元對齊效果)
-
-系統 :": 這是一個「置中」的對話框，適合用來顯示系統訊息或旁白說明。
-
-Gemini ":: 嘿！我是 Gemini。這是一個「左側」對話框，我使用了 ${BT}"::${BT} 語法。你可以自定義任何角色名稱！
-
-讀者 ::" 哇！這看起來很棒。我使用的是 ${BT}::"${BT} 語法，所以我的對話會靠右對齊。
-
----
-
-## 4. 程式碼區塊樣式
-
-### 4.1 預設樣式 (顯示行號)
-這是最常用的形式，適合講解多行程式碼，右上角會自動顯示語言名稱：
-
-${BT}${BT}${BT}typescript
-interface BookConfig {
-  title: string;
-  author: string;
-  publishDate: Date;
-}
-
-const myBook: BookConfig = {
-  title: "Vibe Coding 實戰指南",
-  author: "ChiYu",
-  publishDate: new Date()
-};
-${BT}${BT}${BT}
-
-### 4.2 強制隱藏行號 (純文字模式)
-使用 ${BT}json:no-ln${BT} 或 ${BT}:plain${BT} 語法，適合短小的設定檔或不需要參照行號的範例：
-${BT}${BT}${BT}json:no-ln
-{
-  "name": "md2doc-evolution",
-  "version": "1.3.0",
-  "private": true
-}
-${BT}${BT}${BT}
-
-### 4.3 強制顯示行號
-使用 ${BT}:ln${BT} 語法可強制開啟行號：
-
-${BT}${BT}${BT}bash:ln
-# 安裝依賴
-npm install
-
-# 啟動開發伺服器
-npm run dev
-${BT}${BT}${BT}
-
----
-
-## 5. 特殊提醒與警告 (Callouts)
-
-> [!TIP]
-> **提示 (Tip)**：通常用於分享小撇步或最佳實踐。在 Word 中會以實線邊框標註。
+MD2DOC-Evolution 預設維持 ${BT}technical-legacy${BT}，以相容既有技術書稿。${BT}publisher-exact${BT} 固定使用出版社幾何；${BT}publisher-narrow${BT} 提供較寬內容區，但頁碼會重新排列；${BT}publisher-binding${BT} 使用鏡像邊界與裝訂預留。一般文件連結如 [MD2DOC-Evolution](https://github.com/eric861129/MD2DOC-Evolution) 會保持為 hyperlink。
 
 > [!NOTE]
-> **筆記 (Note)**：用於補充背景知識。網頁預覽會呈現斜體效果，Word 中則使用虛線邊框區隔。
+> 筆記：exact 與 narrow 的內容寬度不同，因此不保證頁碼相同。
+
+> [!TIP]
+> 提示：先用公開短稿確認 Profile，再匯出完整書稿。
 
 > [!WARNING]
-> **警告 (Warning)**：非常重要的注意事項。在 Word 中會使用最粗的實線邊框，確保讀者不會遺漏。
+> 警告：缺少 Noto Sans TC 時，Word 或 LibreOffice 可能替代字型。
 
----
+> [!IMPORTANT]
+> 重要：交付前要在 Word 更新目錄並檢查欄位。
 
-## 6. 表格與圖片支援
+> [!CAUTION]
+> 注意：鏡像邊界必須以雙面頁面檢查內外側是否交換。
 
-### 6.1 表格範例 (自動識別)
+## 對話方向
 
-| 功能特姓 | 支援狀況 | 備註說明 |
-| --- | --- | --- |
-| 粗體樣式 | ✅ 支援 | 使用 ** 星號包覆 |
-| 表格排版 | ✅ 支援 | 自動生成格線 |
-| 轉檔引擎 | 🚀 快速 | 純前端運算 |
+觀測員 ":: 我會先確認左側的校準結果。
+編輯者 ::" 我會在右側記錄版型決策。
+中控台 :": 公開驗收流程已就緒。
 
-### 6.2 圖片插入指引
+## 固定表格
 
-目前支援標準 Markdown 圖片語法，但僅供寫作參考：
+| Profile | 紙張 | 邊界策略 | 頁碼相容性 |
+| :--- | :--- | :--- | :--- |
+| technical-legacy | 17 × 23 cm | 相容既有輸出 | 保持舊版行為 |
+| publisher-exact | 17 × 23 cm | 四邊 2.54 cm | 參考契約 |
+| publisher-narrow | 17 × 23 cm | 四邊 1.27 cm | 允許重排 |
+| publisher-binding | 17 × 23 cm | 鏡像＋gutter | 允許重排 |
 
-${BT}![圖片描述](https://example.com/image.jpg)${BT}
+## 程式碼與重要連結
 
-> [!NOTE]
-> **圖片匯出注意**：由於瀏覽器安全性限制 (CORS) ，直接匯出包含網路圖片的 Word 檔可能會失敗或無法顯示。
-> 建議在 Markdown 中僅標示圖片位置，匯出 Word 後再手動置入高畫質圖片以確保最佳印刷品質。
-
-## 7. Mermaid 圖表支援
-
-我們支援直接使用 Mermaid 語法繪製圖表，並自動轉換為 Word 圖片：
-
-${BT}${BT}${BT}mermaid
-graph TD
-    A[開始] --> B{是否有 Bug?}
-    B -- Yes --> C[修復 Bug]
-    C --> D[測試]
-    D --> B
-    B -- No --> E[發布 v1.3.0]
+${BT}${BT}${BT}typescript:ln
+const profile = "publisher-exact";
+const output = "public-fixture.docx";
 ${BT}${BT}${BT}
+
+[QR:星圖工坊公開說明](https://example.com/starmap-workshop)
 `;
 
 export const INITIAL_CONTENT_EN = `---
-title: "MD2DOC-Evolution Guide"
+title: "Star Map Workshop Publishing Example"
 author: "MD2DOC-Evolution Team"
 header: true
 footer: true
 ---
-# Technical Manuscript Style Guide
-
 [TOC]
-- Chapter 1: Basic Text & Paragraphs 1
-- Chapter 2: Special Text Styles 2
-- Chapter 3: Chat Dialogues 3
-- Chapter 4: Code Blocks 4
-- Chapter 5: Callouts (Tips & Warnings) 5
-- Chapter 6: Tables & Images 6
-- Chapter 7: Mermaid Charts 7
 
-## 1. Basic Text & Paragraphs
+[CHAPTER]
+number: "01"
+part: "Part One: Build the Observatory"
+title: "Light the First Star Map"
+englishTitle: "Light the First Star Map"
+summary: "The Star Map Workshop uses entirely fictional observations to demonstrate publisher layouts and MD2DOC syntax."
+goals:
+  - "Understand when to use each document profile."
+  - "Complete a repeatable public verification."
+[/CHAPTER]
 
-This is a standard paragraph. We support various inline styles, such as **Bold Emphasis** to attract the reader's attention. When referring to code variables, you can use the ${BT}inline code${BT} style.
+# Star Map Workshop Publishing Guide
 
-> [!TIP]
-> **New Feature: Slash Commands**
-> You can now type ${BT}/${BT} to bring up the quick menu!
-> Try typing ${BT}/table${BT} to insert a table or ${BT}/chat${BT} to insert a dialogue box.
+## Choose a publisher profile
 
-> [!TIP]
-> **New Feature: Drag-and-Drop Import**
-> You can now drag and drop ${BT}.md${BT} files directly from your computer into this editor to quickly load your manuscripts!
-
-For describing user interfaces (UI), we have designed special bracket styles: Click the 【Confirm】 button to complete the operation. This will remain bold and visually distinct after exporting to Word.
-
----
-
-### 1.1 List Testing
-
-- First key point.
-- Second key point, containing ${BT}inline code${BT}.
-- Third point, testing the alignment of wrapped text.
-
-## 2. Special Text Styles
-
-This tool supports various text formats required for professional publishing. Please refer to the examples below:
-
-- **Bold**: Used for emphasizing keywords, e.g., **Vibe Coding**.
-- *Italic*: Used for *definitions* or *technical terms*. It will appear as dark blue italic text in the exported Word doc.
-- <u>Underline</u>: Used for <u>hyperlinks</u> or where special underlining is needed.
-- **Smart Links**: [GitHub Repo](https://github.com/eric861129/MD2DOC-Evolution) will automatically generate a QR Code in Word.
-- UI Button: Please click 【Settings】 > 【Advanced Options】 to adjust.
-- Shortcut: Press [Ctrl] + [S] can save the file, or use [Cmd] + [P] to print.
-- Books/Projects: Refer to the concept in 『Clean Code』 or the 『MD2DOC-Evolution』 project.
-
----
-
-## 3. Chat Dialogues (Multi-Alignment Support)
-
-System :": This is a "Centered" dialogue box, perfect for system messages or narrations.
-
-Gemini ":: Hey! I'm Gemini. This is a "Left-aligned" dialogue box using ${BT}"::${BT} syntax. You can customize any role name!
-
-Reader ::" Awesome! This looks great. I'm using ${BT}::"${BT} syntax, so my dialogue is aligned to the right.
-
----
-
-## 4. Code Blocks
-
-### 4.1 Default Style (Line Numbers)
-This is the most common format, suitable for multi-line code explanations. The language name appears in the top-right corner:
-
-${BT}${BT}${BT}typescript
-interface BookConfig {
-  title: string;
-  author: string;
-  publishDate: Date;
-}
-
-const myBook: BookConfig = {
-  title: "Vibe Coding Guide",
-  author: "ChiYu",
-  publishDate: new Date()
-};
-${BT}${BT}${BT}
-
-### 4.2 Plain Text Style (Hidden Line Numbers)
-Use ${BT}json:no-ln${BT} or ${BT}:plain${BT} syntax. Ideal for short config files or examples where line numbers aren't needed:
-
-${BT}${BT}${BT}json:no-ln
-{
-  "name": "book-publisher",
-  "version": "1.3.0",
-  "private": true
-}
-${BT}${BT}${BT}
-
-### 4.3 Explicit Line Numbers
-Although enabled by default, you can use ${BT}:ln${BT} to explicitly require line numbers:
-
-${BT}${BT}${BT}bash:ln
-# Install dependencies
-npm install
-
-# Run dev server
-npm run dev
-${BT}${BT}${BT}
-
----
-
-## 5. Callouts (Tips & Warnings)
-
-> [!TIP]
-> **Tip**: Usually used for sharing tips or best practices. It will be marked with a solid border in Word.
+MD2DOC-Evolution keeps ${BT}technical-legacy${BT} as the default for existing technical manuscripts. ${BT}publisher-exact${BT} locks the publisher geometry; ${BT}publisher-narrow${BT} gives the content more width but repaginates it; ${BT}publisher-binding${BT} adds mirrored margins and a gutter. A normal link such as [MD2DOC-Evolution](https://github.com/eric861129/MD2DOC-Evolution) remains a hyperlink.
 
 > [!NOTE]
-> **Note**: Used for supplementing background knowledge. It appears italicized in the web preview and uses a dashed border in Word.
+> Note: exact and narrow use different content widths, so their page numbers cannot be guaranteed to match.
+
+> [!TIP]
+> Tip: verify the selected profile with a short public manuscript before exporting a full book.
 
 > [!WARNING]
-> **Warning**: Important notices. In Word, it uses the thickest solid border to ensure the reader doesn't miss it.
+> Warning: Word or LibreOffice may substitute fonts when Noto Sans TC is unavailable.
 
----
+> [!IMPORTANT]
+> Important: update the table of contents and fields in Word before delivery.
 
-## 6. Tables & Images
+> [!CAUTION]
+> Caution: inspect facing pages to confirm that binding inside and outside margins swap correctly.
 
-### 6.1 Table Example
+## Dialogue alignment
 
-| Feature | Status | Note |
-| --- | --- | --- |
-| Bold Style | ✅ Supported | Use ** asterisks |
-| Tables | ✅ Supported | Auto grid generation |
-| Engine | 🚀 Fast | Pure frontend |
+Observer ":: I will verify the calibration on the left.
+Editor ::" I will record the layout decision on the right.
+Console :": The public acceptance workflow is ready.
 
-### 6.2 Image Insertion Guide
+## Fixed table
 
-Standard Markdown image syntax is supported, but primarily for writing reference:
+| Profile | Paper | Margin strategy | Pagination |
+| :--- | :--- | :--- | :--- |
+| technical-legacy | 17 × 23 cm | Legacy-compatible output | Preserves legacy behavior |
+| publisher-exact | 17 × 23 cm | 2.54 cm on every side | Reference contract |
+| publisher-narrow | 17 × 23 cm | 1.27 cm on every side | Reflow expected |
+| publisher-binding | 17 × 23 cm | Mirrored plus gutter | Reflow expected |
 
-${BT}![Image Description](https://example.com/image.jpg)${BT}
+## Code and an important link
 
-> [!NOTE]
-> **Image Export Notice**: Due to browser security restrictions (CORS), directly exporting Word files with web images might fail or not display.
-> It is recommended to use placeholders in Markdown and manually insert high-quality images in Word after export for best printing quality.
-
-## 7. Mermaid Charts
-
-We support rendering Mermaid charts directly and converting them to images in Word:
-
-${BT}${BT}${BT}mermaid
-graph TD
-    A[Start] --> B{Is there a Bug?}
-    B -- Yes --> C[Fix Bug]
-    C --> D[Test]
-    D --> B
-    B -- No --> E[Release v1.3.0]
+${BT}${BT}${BT}typescript:ln
+const profile = "publisher-exact";
+const output = "public-fixture.docx";
 ${BT}${BT}${BT}
+
+[QR:Star Map Workshop public guide](https://example.com/starmap-workshop)
 `;

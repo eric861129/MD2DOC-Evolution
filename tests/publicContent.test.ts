@@ -1,5 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import {
+  INITIAL_CONTENT_EN,
+  INITIAL_CONTENT_ZH,
+} from '../constants/defaultContent';
+import { buildAIPromptFromSyntaxSpec } from '../services/aiPrompt';
+import { parseMarkdown } from '../services/markdownParser';
+import { BlockType } from '../services/types';
 
 const readUtf8 = (path: string) => readFileSync(path, 'utf8');
 
@@ -34,5 +41,50 @@ describe('public repository content', () => {
     }
     expect(readUtf8('README.md')).toContain('專業工具台 UI');
     expect(readUtf8('services/aiPrompt.ts')).toContain('只輸出「轉換後的 Markdown 原稿」');
+  });
+
+  it.each([
+    ['繁體中文', INITIAL_CONTENT_ZH],
+    ['英文', INITIAL_CONTENT_EN],
+  ])('%s 預設內容示範完整出版社語法而不把一般連結轉成 QR', (
+    _language,
+    markdown,
+  ) => {
+    const { blocks } = parseMarkdown(markdown);
+    const blockTypes = blocks.map(({ type }) => type);
+    const chatAlignments = blocks
+      .filter(({ type }) => type === BlockType.CHAT_CUSTOM)
+      .map(({ alignment }) => alignment);
+
+    expect(markdown).toContain('publisher-exact');
+    expect(markdown).toContain('publisher-narrow');
+    expect(markdown).toContain('publisher-binding');
+    expect(blockTypes).toEqual(expect.arrayContaining([
+      BlockType.CHAPTER_OPENER,
+      BlockType.CALLOUT_NOTE,
+      BlockType.CALLOUT_TIP,
+      BlockType.CALLOUT_WARNING,
+      BlockType.CALLOUT_IMPORTANT,
+      BlockType.CALLOUT_CAUTION,
+      BlockType.TABLE,
+      BlockType.QR,
+    ]));
+    expect(chatAlignments).toEqual(expect.arrayContaining([
+      'left',
+      'right',
+      'center',
+    ]));
+    expect(markdown).toContain('[MD2DOC-Evolution](https://github.com/eric861129/MD2DOC-Evolution)');
+    expect(markdown).toContain('[QR:');
+    expect(markdown).not.toContain('會自動在 Word 中生成 QR Code');
+    expect(markdown).not.toContain('will automatically generate a QR Code');
+  });
+
+  it('AI prompt 僅對重要連結要求明確 QR，普通連結保留 hyperlink', () => {
+    const prompt = buildAIPromptFromSyntaxSpec();
+
+    expect(prompt).toContain('只有需要紙本掃描的重要連結');
+    expect(prompt).toContain('[QR:標籤](URL)');
+    expect(prompt).toContain('一般 Markdown 連結保持 hyperlink');
   });
 });

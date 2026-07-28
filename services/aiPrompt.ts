@@ -54,6 +54,7 @@ ${syntaxRules}
 3. 程式碼、CLI 指令、API 名稱、檔名與設定值必須保留原文。
 4. 表格適合用於比較、欄位說明、規格、清單型資訊。
 5. 不確定的資訊請標示「待補」，不要自行補齊。
+6. 只有需要紙本掃描的重要連結才使用 \`[QR:標籤](URL)\`；一般 Markdown 連結保持 hyperlink，不得批次轉成 QR。
 
 ## Silent Quality Check Before Answering
 輸出前請逐項檢查：
@@ -66,6 +67,7 @@ ${syntaxRules}
 6. callout 是否使用 > [!NOTE]、> [!TIP]、> [!WARNING]、> [!IMPORTANT]、> [!CAUTION]。
 7. table 是否使用有效 Markdown 分隔列。
 8. Mermaid 語法是否完整且可渲染。
+9. 是否只對重要連結使用明確 QR，並讓一般 Markdown 連結保持 hyperlink。
 
 ## Source Content
 請將使用者提供的原始內容轉換為上述格式。`;
