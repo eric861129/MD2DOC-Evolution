@@ -149,6 +149,37 @@ describe('columnWidthsFor', () => {
 });
 
 describe('出版社固定表格 OOXML', () => {
+  it('tblCellMar 依 Office 2010 schema 順序輸出 top、start、bottom、end', async () => {
+    const document = await createTableDocument([
+      ['方法', '說明'],
+      ['GET', '取得資料'],
+    ]);
+    const tableProperties = elementsByName(document, 'tblPr')[0];
+    const tableMargins = directChild(tableProperties, 'tblCellMar')!;
+
+    expect(Array.from(tableMargins.children)
+      .map((margin) => margin.localName))
+      .toEqual(['top', 'start', 'bottom', 'end']);
+  });
+
+  it('只有第一列輸出 tblHeader，其他列完全省略此 schema 節點', async () => {
+    const document = await createTableDocument([
+      ['方法', '說明'],
+      ['GET', '取得資料'],
+      ['POST', '新增資料'],
+    ]);
+    const rows = elementsByName(elementsByName(document, 'tbl')[0], 'tr');
+    const tableHeaders = rows.map((row) => {
+      const rowProperties = directChild(row, 'trPr');
+      return rowProperties
+        ? directChild(rowProperties, 'tblHeader')
+        : undefined;
+    });
+
+    expect(tableHeaders[0]).toBeDefined();
+    expect(tableHeaders.slice(1)).toEqual([undefined, undefined]);
+  });
+
   it('輸出不溢出內容區的固定 DXA 幾何與可重複表頭', async () => {
     const document = await createTableDocument([
       ['方法', '說明'],

@@ -47,8 +47,8 @@ class LogicalTableCellMargins extends XmlComponent {
     super('w:tblCellMar');
     this.root.push(
       new TableMarginXmlElement('top', margins.top),
-      new TableMarginXmlElement('bottom', margins.bottom),
       new TableMarginXmlElement('start', margins.start),
+      new TableMarginXmlElement('bottom', margins.bottom),
       new TableMarginXmlElement('end', margins.end),
     );
   }
@@ -152,7 +152,7 @@ export const createTable = async (
   const contentRows = normalizedRows(rows, columnWidths.length);
   const tableRows = await Promise.all(contentRows.map(async (row, rowIndex) =>
     new TableRow({
-      tableHeader: rowIndex === 0,
+      ...(rowIndex === 0 ? { tableHeader: true } : {}),
       children: await Promise.all(row.map(async (cellText, columnIndex) =>
         new TableCell({
           children: [
