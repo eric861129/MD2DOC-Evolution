@@ -1,4 +1,4 @@
-import { MARGIN_PRESETS, PAGE_SIZE_PRESETS } from './presets';
+import { DOCUMENT_PROFILE_PRESETS, MARGIN_PRESETS, PAGE_SIZE_PRESETS } from './presets';
 import type {
   ExportSettings,
   MarginConfigCm,
@@ -14,13 +14,6 @@ const MINIMUM_CUSTOM_MARGIN_CM = 0.5;
 const MAXIMUM_CUSTOM_MARGIN_CM = 5;
 const MINIMUM_CONTENT_WIDTH_CM = 8;
 const MINIMUM_CONTENT_HEIGHT_CM = 10;
-
-const PROFILE_DEFAULTS: Record<ExportSettings['profileId'], Pick<ExportSettings, 'pageSizeId' | 'marginPresetId'>> = {
-  'technical-legacy': { pageSizeId: 'tech', marginPresetId: 'publisher-exact' },
-  'publisher-exact': { pageSizeId: 'tech', marginPresetId: 'publisher-exact' },
-  'publisher-narrow': { pageSizeId: 'tech', marginPresetId: 'narrow' },
-  'publisher-binding': { pageSizeId: 'tech', marginPresetId: 'publisher-binding' },
-};
 
 const toTwips = (centimetres: number): number => Math.round(centimetres / CENTIMETRES_PER_INCH * TWIPS_PER_INCH);
 
@@ -106,7 +99,10 @@ const toResolvedMargins = (margins: MarginConfigCm): ResolvedMargins => {
 };
 
 const isGeometryCustomized = (settings: ExportSettings): boolean => {
-  const profileDefaults = PROFILE_DEFAULTS[settings.profileId];
+  const profileDefaults = DOCUMENT_PROFILE_PRESETS.find((profile) => profile.id === settings.profileId);
+  if (!profileDefaults) {
+    throw new Error(`找不到文件版型預設：${settings.profileId}`);
+  }
   return settings.pageSizeId !== profileDefaults.pageSizeId
     || settings.marginPresetId !== profileDefaults.marginPresetId;
 };

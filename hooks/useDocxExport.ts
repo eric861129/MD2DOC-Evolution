@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import saveAs from 'file-saver';
 import { ParsedBlock, DocumentMeta } from '../services/types';
-import { PAGE_SIZES } from '../constants/meta';
 import { validateExport, ValidationIssue } from '../services/exportValidation';
+import { DEFAULT_EXPORT_SETTINGS } from '../services/docx/layout/presets';
+import { resolvePageLayout } from '../services/docx/layout/resolve';
+import type { ExportSettings } from '../services/docx/layout/types';
 
 interface UseDocxExportProps {
   content: string;
@@ -22,7 +24,11 @@ export const useDocxExport = ({
   const [exportError, setExportError] = useState<string | null>(null);
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
   const [showValidationIssues, setShowValidationIssues] = useState(false);
-  const [selectedSizeIndex, setSelectedSizeIndex] = useState(0);
+  const [exportSettings, setExportSettings] = useState<ExportSettings>(DEFAULT_EXPORT_SETTINGS);
+  const resolvedPageLayout = useMemo(
+    () => resolvePageLayout(exportSettings),
+    [exportSettings],
+  );
 
   const runExportValidation = async (revealIssues = false) => {
     if (parsedBlocks.length === 0) {
@@ -92,10 +98,10 @@ export const useDocxExport = ({
     try {
       await runExportValidation(true);
       const { generateDocx } = await import('../services/docxGenerator');
-      const sizeConfig = PAGE_SIZES[selectedSizeIndex];
       const blob = await generateDocx(parsedBlocks, {
-        widthCm: sizeConfig.width,
-        heightCm: sizeConfig.height,
+        widthCm: resolvedPageLayout.page.widthCm,
+        heightCm: resolvedPageLayout.page.heightCm,
+        exportSettings,
         showLineNumbers: true,
         meta: documentMeta,
         imageRegistry,
@@ -139,10 +145,10 @@ export const useDocxExport = ({
     validationIssues,
     showValidationIssues,
     setShowValidationIssues,
-    selectedSizeIndex,
-    setSelectedSizeIndex,
+    exportSettings,
+    setExportSettings,
+    resolvedPageLayout,
     handleDownload,
     handleExportMarkdown,
-    pageSizes: PAGE_SIZES,
   };
 };

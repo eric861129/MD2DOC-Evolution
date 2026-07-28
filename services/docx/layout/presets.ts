@@ -1,5 +1,19 @@
 import type { ExportSettings, MarginPreset, PageSizePreset } from './types';
 
+type DocumentProfilePreset = {
+  id: ExportSettings['profileId'];
+  pageSizeId: ExportSettings['pageSizeId'];
+  marginPresetId: ExportSettings['marginPresetId'];
+};
+
+/** 文件版型與其預設紙張、邊界組合，供介面選擇時一致套用。 */
+export const DOCUMENT_PROFILE_PRESETS = [
+  { id: 'technical-legacy', pageSizeId: 'tech', marginPresetId: 'publisher-exact' },
+  { id: 'publisher-exact', pageSizeId: 'tech', marginPresetId: 'publisher-exact' },
+  { id: 'publisher-narrow', pageSizeId: 'tech', marginPresetId: 'narrow' },
+  { id: 'publisher-binding', pageSizeId: 'tech', marginPresetId: 'publisher-binding' },
+] as const satisfies readonly DocumentProfilePreset[];
+
 export const PAGE_SIZE_PRESETS: readonly PageSizePreset[] = [
   { id: 'tech', widthCm: 17, heightCm: 23 },
   { id: 'a4', widthCm: 21, heightCm: 29.7 },

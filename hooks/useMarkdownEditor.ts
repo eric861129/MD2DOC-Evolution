@@ -5,14 +5,10 @@
  * See LICENSE file in the project root for full license information.
  */
 
-import { PAGE_SIZES } from '../constants/meta';
 import { useEditorState } from './useEditorState';
 import { useWordCount } from './useWordCount';
 import { useSyncScroll } from './useSyncScroll';
 import { useDocxExport } from './useDocxExport';
-
-// Re-export for compatibility
-export { PAGE_SIZES } from '../constants/meta';
 
 /**
  * Main hook for the Markdown Editor.
@@ -48,11 +44,11 @@ export const useMarkdownEditor = () => {
     validationIssues,
     showValidationIssues,
     setShowValidationIssues,
-    selectedSizeIndex,
-    setSelectedSizeIndex,
+    exportSettings,
+    setExportSettings,
+    resolvedPageLayout,
     handleDownload,
     handleExportMarkdown,
-    pageSizes
   } = useDocxExport({ content, parsedBlocks, documentMeta, imageRegistry });
 
   return {
@@ -70,8 +66,9 @@ export const useMarkdownEditor = () => {
     validationIssues,
     showValidationIssues,
     setShowValidationIssues,
-    selectedSizeIndex,
-    setSelectedSizeIndex,
+    exportSettings,
+    setExportSettings,
+    resolvedPageLayout,
     wordCount,
     language,
     
@@ -88,6 +85,5 @@ export const useMarkdownEditor = () => {
     
     // Helpers/Constants
     t,
-    pageSizes
   };
 };

@@ -19,8 +19,8 @@ import {
 import { useEditor } from '../../contexts/EditorContext';
 import { Button } from '../ui/Button';
 import { IconButton } from '../ui/IconButton';
-import { Select } from '../ui/Select';
 import { AIPromptModal } from '../AIPromptModal';
+import { ExportSettingsModal } from './ExportSettingsModal';
 
 interface EditorHeaderProps {
   activeMobilePanel: 'editor' | 'preview';
@@ -32,9 +32,9 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   onMobilePanelChange,
 }) => {
   const {
-    pageSizes,
-    selectedSizeIndex,
-    setSelectedSizeIndex,
+    exportSettings,
+    setExportSettings,
+    resolvedPageLayout,
     handleDownload,
     handleExportMarkdown,
     resetToDefault,
@@ -56,6 +56,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   } = useEditor();
 
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [isExportSettingsOpen, setIsExportSettingsOpen] = useState(false);
   const hasContent = parsedBlocks.length > 0;
   const hasFrontmatter = Boolean(documentMeta.title || documentMeta.author);
   const logoPath = `${import.meta.env.BASE_URL}logo.svg`;
@@ -67,6 +68,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
       : validationIssueCount > 0
         ? t('workspace.exportWarnings', { count: validationIssueCount })
         : t('workspace.exportValid');
+  const layoutSummary = `${resolvedPageLayout.page.widthCm.toFixed(2)}×${resolvedPageLayout.page.heightCm.toFixed(2)} cm · ${t(`layout.marginPresets.${exportSettings.marginPresetId}`)} ${resolvedPageLayout.margins.leftCm.toFixed(2)} cm`;
 
   const stats = [
     {
@@ -148,19 +150,13 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
             {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </IconButton>
 
-          <Select
-            icon={<Settings2 className="h-4 w-4" />}
-            value={selectedSizeIndex}
-            onChange={(e) => setSelectedSizeIndex(Number(e.target.value))}
-            containerClassName="min-w-[12rem]"
-            aria-label="Page size"
-          >
-            {pageSizes.map((size, index) => (
-              <option key={size.name} value={index} className="dark:bg-slate-900">
-                {t(`sizes.${size.name}`)}
-              </option>
-            ))}
-          </Select>
+          <Button variant="secondary" onClick={() => setIsExportSettingsOpen(true)}>
+            <Settings2 className="h-4 w-4" />
+            {t('layout.openSettings')}
+          </Button>
+          <span className="max-w-56 truncate text-xs font-semibold text-slate-500 dark:text-slate-400" title={layoutSummary}>
+            {layoutSummary}
+          </span>
 
           <Button onClick={handleExportMarkdown} disabled={!hasContent} variant="secondary">
             <FileText className="h-4 w-4" />
@@ -237,6 +233,13 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
       )}
 
       <AIPromptModal isOpen={isAIModalOpen} onClose={() => setIsAIModalOpen(false)} />
+      <ExportSettingsModal
+        isOpen={isExportSettingsOpen}
+        value={exportSettings}
+        onClose={() => setIsExportSettingsOpen(false)}
+        onApply={setExportSettings}
+        t={t}
+      />
     </header>
   );
 };
