@@ -1,6 +1,10 @@
-import { Paragraph, ImageRun, TextRun, AlignmentType } from "docx";
+import { Paragraph, TextRun } from "docx";
 import mermaid from "mermaid";
 import { DocxConfig } from "../types";
+import {
+  createImageParagraph,
+  resolveImageMediaBytes,
+} from './image';
 
 /**
  * Concurrency-limited Queue for Mermaid conversions
@@ -125,7 +129,12 @@ const svgToPng = (svg: string, originalWidth: number, originalHeight: number): P
   });
 };
 
-export const createMermaidBlock = async (chart: string, config: DocxConfig): Promise<Paragraph> => {
+export const createMermaidBlock = async (
+  chart: string,
+  config: DocxConfig,
+  alt = 'Mermaid 圖表',
+  title = 'Mermaid 圖表',
+): Promise<Paragraph> => {
   return mermaidQueue.add(async () => {
     try {
       // Ensure initialized with grayscale theme and custom font
@@ -159,38 +168,24 @@ export const createMermaidBlock = async (chart: string, config: DocxConfig): Pro
       const { width: svgWidth, height: svgHeight } = getSvgDimensions(svg);
 
       // 3. Convert to PNG Uint8Array
-      const { buffer, width: pxWidth, height: pxHeight } = await svgToPng(svg, svgWidth, svgHeight);
+      const { buffer } = await svgToPng(svg, svgWidth, svgHeight);
+      const media = resolveImageMediaBytes(buffer, 'image/png');
 
-      // 4. Calculate Word dimensions
-      const MAX_WIDTH_PX = 550; 
-      
-      let finalDisplayWidth = pxWidth / 3; 
-      let finalDisplayHeight = pxHeight / 3;
-
-      // Constrain width
-      if (finalDisplayWidth > MAX_WIDTH_PX) {
-          const ratio = MAX_WIDTH_PX / finalDisplayWidth;
-          finalDisplayWidth = MAX_WIDTH_PX;
-          finalDisplayHeight = finalDisplayHeight * ratio;
-      }
-
-      return new Paragraph({
-        children: [
-          new ImageRun({
-            data: buffer,
-            transformation: {
-              width: Math.round(finalDisplayWidth),
-              height: Math.round(finalDisplayHeight),
-            },
-            type: "png",
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
+      return createImageParagraph({
+        media,
+        config,
+        alt,
+        title,
         spacing: { before: 400, after: 400 },
       });
 
     } catch (error) {
-      console.warn("Mermaid generation failed for DOCX", error);
+      config.reportWarning({
+        code: 'MERMAID_GENERATION_FAILED',
+        message: error instanceof Error
+          ? `Mermaid 圖表產生失敗：${error.message}`
+          : 'Mermaid 圖表產生失敗。',
+      });
       return new Paragraph({
         children: [
           new TextRun({

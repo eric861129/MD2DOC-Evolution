@@ -17,4 +17,22 @@ describe('PreviewBlock Callout', () => {
     expect(screen.getByText(label)).toBeInTheDocument();
     expect(screen.getByText(content)).toBeInTheDocument();
   });
+
+  it('獨立 QR 預覽保留可點擊標籤且不套用一般段落 renderer', () => {
+    render(
+      <PreviewBlock
+        block={{
+          type: BlockType.QR,
+          content: 'GitHub 原始碼',
+          metadata: {
+            label: 'GitHub 原始碼',
+            url: 'https://github.com/example/repo',
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('link', { name: 'GitHub 原始碼' }))
+      .toHaveAttribute('href', 'https://github.com/example/repo');
+  });
 });

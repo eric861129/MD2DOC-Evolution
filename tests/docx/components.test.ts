@@ -1,7 +1,21 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import mermaid from 'mermaid';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { generateDocx } from '../../services/docxGenerator';
 import { BlockType, type ParsedBlock } from '../../services/types';
-import { readDocxXml } from '../helpers/readDocx';
+import { listDocxEntries, readDocxXml } from '../helpers/readDocx';
+
+const LARGE_PNG_DATA_URL = [
+  'data:image/png;base64,',
+  'iVBORw0KGgoAAAANSUhEUgAAAlgAAAEsCAYAAAAfPc2WAAAC0ElEQVR4nO3BAQ0AAADCoPdPbQ8HFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwbP5CAAFzCKwhAAAAAElFTkSuQmCC',
+].join('');
+
+const ONE_PIXEL_GIF_DATA_URL =
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+
+const JPEG_WITH_DIMENSIONS_DATA_URL = [
+  'data:image/jpeg;base64,',
+  '/9j/wAARCAABAAEDASIAAhEBAxEB/9k=',
+].join('');
 
 const publisherExportSettings = {
   profileId: 'publisher-exact' as const,
@@ -388,5 +402,328 @@ describe('DOCX 出版元件', () => {
     } finally {
       console.warn = originalWarn;
     }
+  });
+
+  it('Packer 依實際格式封裝圖片並寫入完整替代資訊與 Content Types', async () => {
+    const imageRegistry = {
+      png: LARGE_PNG_DATA_URL,
+      jpeg: JPEG_WITH_DIMENSIONS_DATA_URL,
+      gif: ONE_PIXEL_GIF_DATA_URL,
+    };
+    const blob = await generateDocx([
+      {
+        type: BlockType.IMAGE,
+        content: 'png',
+        metadata: { alt: '架構圖', title: '系統架構' },
+      },
+      {
+        type: BlockType.IMAGE,
+        content: 'jpeg',
+        metadata: { alt: '操作畫面', title: '操作畫面範例' },
+      },
+      {
+        type: BlockType.IMAGE,
+        content: 'gif',
+        metadata: { alt: '流程動畫', title: '流程動畫範例' },
+      },
+    ], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+      imageRegistry,
+    });
+
+    const entries = await listDocxEntries(blob);
+    const mediaEntries = entries.filter((entry) =>
+      /^word\/media\/[^/]+$/.test(entry)
+    );
+    expect(mediaEntries).toHaveLength(3);
+    expect(mediaEntries.every((entry) =>
+      /\.(?:png|jpe?g|gif)$/i.test(entry)
+    )).toBe(true);
+    expect(entries.some((entry) => entry.endsWith('.undefined'))).toBe(false);
+
+    const contentTypes = parseXml(await readDocxXml(blob, '[Content_Types].xml'));
+    const defaults = Array.from(contentTypes.getElementsByTagName('Default'));
+    for (const mediaEntry of mediaEntries) {
+      const extension = mediaEntry.split('.').pop()!.toLowerCase();
+      const declaration = defaults.find((candidate) =>
+        candidate.getAttribute('Extension')?.toLowerCase() === extension
+      );
+      expect(declaration, extension).toBeDefined();
+      expect(declaration?.getAttribute('ContentType')).toBe(
+        extension === 'png'
+          ? 'image/png'
+          : extension === 'gif'
+            ? 'image/gif'
+            : 'image/jpeg',
+      );
+    }
+
+    const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
+    const imageProperties = Array.from(
+      document.getElementsByTagName('wp:docPr'),
+    );
+    expect(imageProperties).toHaveLength(3);
+    expect(imageProperties.map((element) => ({
+      description: element.getAttribute('descr'),
+      title: element.getAttribute('title'),
+    }))).toEqual([
+      { description: '架構圖', title: '系統架構' },
+      { description: '操作畫面', title: '操作畫面範例' },
+      { description: '流程動畫', title: '流程動畫範例' },
+    ]);
+
+    const firstExtent = document.getElementsByTagName('wp:extent')[0];
+    expect(firstExtent.getAttribute('cx')).toBe('4680000');
+    expect(firstExtent.getAttribute('cy')).toBe('2340000');
+    expect(styledBodyParagraphs(document, 'BookCaption').map(paragraphText))
+      .toEqual([
+        '圖 1 架構圖',
+        '圖 2 操作畫面',
+        '圖 3 流程動畫',
+      ]);
+  });
+
+  it('獨立 QR 產生 2.6 公分置中圖片與 9pt 紅色可點 label', async () => {
+    const url = 'https://github.com/example/repo';
+    const blob = await generateDocx([{
+      type: BlockType.QR,
+      content: 'GitHub 原始碼',
+      metadata: { url, label: 'GitHub 原始碼' },
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+    });
+
+    const entries = await listDocxEntries(blob);
+    expect(entries.filter((entry) =>
+      /^word\/media\/[^/]+\.png$/i.test(entry)
+    )).toHaveLength(1);
+
+    const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
+    const paragraphs = bodyParagraphs(document);
+    expect(paragraphs).toHaveLength(2);
+    expect(wordAttribute(getParagraphProperty(paragraphs[0], 'jc'), 'val'))
+      .toBe('center');
+    const extent = document.getElementsByTagName('wp:extent')[0];
+    expect(extent.getAttribute('cx')).toBe('936000');
+    expect(extent.getAttribute('cy')).toBe('936000');
+
+    const qrProperties = document.getElementsByTagName('wp:docPr')[0];
+    expect(qrProperties.getAttribute('descr')).toBe('GitHub 原始碼 QR Code');
+    expect(qrProperties.getAttribute('title')).toBe('GitHub 原始碼');
+
+    const labelParagraph = paragraphs[1];
+    expect(wordAttribute(getParagraphProperty(labelParagraph, 'jc'), 'val'))
+      .toBe('center');
+    const hyperlink = elementsByName(labelParagraph, 'hyperlink')[0];
+    expect(hyperlink).toBeDefined();
+    const labelRun = elementsByName(hyperlink, 'r')[0];
+    expect(wordAttribute(directChild(directChild(labelRun, 'rPr')!, 'sz')!, 'val'))
+      .toBe('18');
+    expect(wordAttribute(directChild(directChild(labelRun, 'rPr')!, 'color')!, 'val'))
+      .toBe('9B1C1C');
+
+    const relationships = parseXml(await readDocxXml(
+      blob,
+      'word/_rels/document.xml.rels',
+    ));
+    const relationshipId = hyperlink.getAttribute('r:id');
+    const relationship = Array.from(
+      relationships.getElementsByTagName('Relationship'),
+    ).find((candidate) => candidate.getAttribute('Id') === relationshipId);
+    expect(relationship?.getAttribute('Target')).toBe(url);
+  });
+
+  it('QR 產生失敗時保留可點 label、回報 warning 且不封裝假媒體', async () => {
+    const warnings: unknown[] = [];
+    const url = `https://example.com/${'a'.repeat(5000)}`;
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(
+      () => undefined,
+    );
+    let blob: Blob;
+    try {
+      blob = await generateDocx([{
+        type: BlockType.QR,
+        content: '過長網址',
+        metadata: { url, label: '過長網址' },
+      }], {
+        exportSettings: publisherExportSettings,
+        showLineNumbers: false,
+        onWarning: (warning) => warnings.push(warning),
+      });
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+
+    expect(warnings).toEqual([
+      expect.objectContaining({
+        code: 'QR_GENERATION_FAILED',
+        message: expect.any(String),
+        url,
+      }),
+    ]);
+    expect((await listDocxEntries(blob)).filter((entry) =>
+      entry.startsWith('word/media/')
+    )).toHaveLength(0);
+
+    const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
+    const labelParagraph = findParagraph(document, '過長網址');
+    expect(elementsByName(labelParagraph, 'hyperlink')).toHaveLength(1);
+  });
+
+  it('Mermaid 成功時沿用圖片寬度、格式與 alt/title 封裝規則', async () => {
+    const renderSpy = vi.spyOn(mermaid, 'render').mockResolvedValue({
+      svg: '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300"></svg>',
+      diagramType: 'flowchart',
+    });
+    const originalImage = globalThis.Image;
+    class LoadedImage {
+      onload: ((event: Event) => void) | null = null;
+      onerror: ((event: Event) => void) | null = null;
+
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.(new Event('load')));
+      }
+    }
+    Object.defineProperty(globalThis, 'Image', {
+      configurable: true,
+      value: LoadedImage,
+    });
+
+    const createElement = document.createElement.bind(document);
+    const createElementSpy = vi.spyOn(document, 'createElement')
+      .mockImplementation(((tagName: string, options?: ElementCreationOptions) => {
+        const element = createElement(tagName, options);
+        if (tagName.toLowerCase() === 'canvas') {
+          Object.defineProperty(element, 'getContext', {
+            configurable: true,
+            value: () => ({
+              fillStyle: '',
+              fillRect: () => undefined,
+              drawImage: () => undefined,
+            }),
+          });
+          Object.defineProperty(element, 'toBlob', {
+            configurable: true,
+            value: (callback: BlobCallback) => {
+              const base64 = LARGE_PNG_DATA_URL.split(',')[1];
+              const binary = atob(base64);
+              const bytes = new Uint8Array(binary.length);
+              for (let index = 0; index < binary.length; index += 1) {
+                bytes[index] = binary.charCodeAt(index);
+              }
+              const arrayBuffer = bytes.buffer.slice(
+                bytes.byteOffset,
+                bytes.byteOffset + bytes.byteLength,
+              ) as ArrayBuffer;
+              callback(new Blob([arrayBuffer], { type: 'image/png' }));
+            },
+          });
+        }
+        return element;
+      }) as typeof document.createElement);
+
+    try {
+      const blob = await generateDocx([{
+        type: BlockType.MERMAID,
+        content: 'graph TD; A-->B;',
+        metadata: {
+          alt: '部署流程圖',
+          title: '部署流程',
+        },
+      }], {
+        exportSettings: publisherExportSettings,
+        showLineNumbers: false,
+      });
+
+      const mediaEntries = (await listDocxEntries(blob)).filter((entry) =>
+        /^word\/media\/[^/]+$/.test(entry)
+      );
+      expect(mediaEntries).toHaveLength(1);
+      expect(mediaEntries[0]).toMatch(/\.png$/);
+
+      const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
+      const imageProperties = document.getElementsByTagName('wp:docPr')[0];
+      expect(imageProperties.getAttribute('descr')).toBe('部署流程圖');
+      expect(imageProperties.getAttribute('title')).toBe('部署流程');
+      const extent = document.getElementsByTagName('wp:extent')[0];
+      expect(extent.getAttribute('cx')).toBe('4680000');
+      expect(extent.getAttribute('cy')).toBe('2340000');
+    } finally {
+      createElementSpy.mockRestore();
+      renderSpy.mockRestore();
+      Object.defineProperty(globalThis, 'Image', {
+        configurable: true,
+        value: originalImage,
+      });
+    }
+  });
+
+  it('Mermaid 失敗時回報 warning 且不封裝假媒體', async () => {
+    const warnings: unknown[] = [];
+    const blob = await generateDocx([{
+      type: BlockType.MERMAID,
+      content: 'not a mermaid diagram',
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+      onWarning: (warning) => warnings.push(warning),
+    });
+
+    expect(warnings).toEqual([
+      expect.objectContaining({
+        code: 'MERMAID_GENERATION_FAILED',
+        message: expect.any(String),
+      }),
+    ]);
+    expect((await listDocxEntries(blob)).filter((entry) =>
+      /^word\/media\/[^/]+$/.test(entry)
+    )).toHaveLength(0);
+    expect(await readDocxXml(blob, 'word/document.xml'))
+      .toContain('[Mermaid Chart Error]');
+  });
+
+  it('MIME 與 magic bytes 衝突時拒絕匯出', async () => {
+    const gifPayload = ONE_PIXEL_GIF_DATA_URL.split(',')[1];
+    await expect(generateDocx([{
+      type: BlockType.IMAGE,
+      content: 'conflict',
+      metadata: { alt: '衝突圖片', title: '衝突圖片' },
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+      imageRegistry: {
+        conflict: `data:image/png;base64,${gifPayload}`,
+      },
+    })).rejects.toThrow(/MIME.*magic bytes.*不一致/);
+
+    const pngPayload = LARGE_PNG_DATA_URL.split(',')[1];
+    await expect(generateDocx([{
+      type: BlockType.IMAGE,
+      content: 'unsupported-mime',
+      metadata: { alt: '錯誤 MIME', title: '錯誤 MIME' },
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+      imageRegistry: {
+        'unsupported-mime': `data:image/webp;base64,${pngPayload}`,
+      },
+    })).rejects.toThrow(/不支援的圖片 MIME/);
+  });
+
+  it('未知媒體格式在 Packer 前明確拒絕且不會產生 undefined 副檔名', async () => {
+    await expect(generateDocx([{
+      type: BlockType.IMAGE,
+      content: 'unknown',
+      metadata: { alt: '未知圖片', title: '未知圖片' },
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+      imageRegistry: {
+        unknown: 'data:image/webp;base64,UklGRgAAAAA=',
+      },
+    })).rejects.toThrow(/不支援的圖片 (?:格式|MIME)/);
   });
 });

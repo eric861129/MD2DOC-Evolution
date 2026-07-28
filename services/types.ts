@@ -25,7 +25,8 @@ export enum BlockType {
   TABLE = 'TABLE',
   HORIZONTAL_RULE = 'HORIZONTAL_RULE',
   TOC = 'TOC',
-  IMAGE = 'IMAGE'
+  IMAGE = 'IMAGE',
+  QR = 'QR',
 }
 
 export interface ParsedBlock {

@@ -4,7 +4,7 @@
  * Licensed under the MIT License.
  */
 
-import { marked } from 'marked';
+import { Lexer, marked } from 'marked';
 import { BlockType, ParsedBlock } from '../types';
 import { cleanTextForPublishing } from '../../utils/textProcessor';
 
@@ -13,6 +13,33 @@ marked.use({
   breaks: true,
   gfm: true,
 });
+
+interface StandaloneQrLink {
+  label: string;
+  url: string;
+}
+
+const parseStandaloneQrLink = (
+  sourceLine: string,
+): StandaloneQrLink | undefined => {
+  const trimmedLine = sourceLine.trim();
+  const inlineTokens = Lexer.lexInline(trimmedLine);
+  if (inlineTokens.length !== 1 || inlineTokens[0].type !== 'link') {
+    return undefined;
+  }
+
+  const link = inlineTokens[0];
+  if (
+    link.raw.trim() !== trimmedLine
+    || !link.text.startsWith('QR:')
+  ) {
+    return undefined;
+  }
+  return {
+    label: link.text.slice('QR:'.length).trim(),
+    url: link.href,
+  };
+};
 
 export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, charOffset: number = 0): ParsedBlock[] => {
   const tokens = marked.lexer(markdown);
@@ -46,6 +73,44 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
 
       case 'paragraph':
         const text = token.text;
+        const sourceLines = token.raw
+          .replace(/\r?\n$/, '')
+          .split(/\r?\n/);
+        const qrLines = sourceLines.map(parseStandaloneQrLink);
+
+        if (qrLines.some(Boolean)) {
+          let paragraphLines: string[] = [];
+          const flushParagraph = () => {
+            if (paragraphLines.length === 0) {
+              return;
+            }
+            addBlock({
+              type: BlockType.PARAGRAPH,
+              content: cleanTextForPublishing(paragraphLines.join('\n')),
+            });
+            paragraphLines = [];
+          };
+
+          sourceLines.forEach((line, index) => {
+            const qrLink = qrLines[index];
+            if (!qrLink) {
+              paragraphLines.push(line);
+              return;
+            }
+
+            flushParagraph();
+            addBlock({
+              type: BlockType.QR,
+              content: qrLink.label,
+              metadata: {
+                url: qrLink.url,
+                label: qrLink.label,
+              },
+            });
+          });
+          flushParagraph();
+          break;
+        }
 
         // 1. TOC (Can be [TOC] followed by manual list in the same paragraph)
         if (text.trim().startsWith('[TOC]') || text.trim().startsWith('[toc]')) {

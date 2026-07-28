@@ -9,11 +9,18 @@ import type { DocumentMeta } from '../types';
 import type { ExportSettings, ResolvedPageLayout } from './layout/types';
 import type { DocumentStyleProfile } from './profiles';
 
+export interface DocxExportWarning {
+  code: 'QR_GENERATION_FAILED' | 'MERMAID_GENERATION_FAILED';
+  message: string;
+  url?: string;
+}
+
 export interface GenerateDocxOptions {
   exportSettings: ExportSettings;
   showLineNumbers: boolean;
   meta?: DocumentMeta;
   imageRegistry?: Record<string, string>;
+  onWarning?: (warning: DocxExportWarning) => void;
 }
 
 export interface DocxConfig {
@@ -22,6 +29,7 @@ export interface DocxConfig {
   showLineNumbers: boolean;
   meta: DocumentMeta;
   imageRegistry: Record<string, string>;
+  reportWarning: (warning: DocxExportWarning) => void;
   counters: {
     figure: number;
     qr: number;

@@ -262,6 +262,27 @@ const ImageBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
   );
 };
 
+const renderQr: PreviewRenderer = (block) => {
+  const label = block.metadata?.label || block.content;
+  const url = block.metadata?.url || '';
+
+  return (
+    <figure className="my-10 flex flex-col items-center gap-3">
+      <div className="flex h-24 w-24 items-center justify-center border border-slate-300 bg-white">
+        <QrCode aria-hidden="true" className="h-16 w-16 text-slate-900" />
+      </div>
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        className="text-sm text-[#9B1C1C] underline underline-offset-4"
+      >
+        {label}
+      </a>
+    </figure>
+  );
+};
+
 const previewBlockRenderers: Partial<Record<BlockType, PreviewRenderer>> = {
   [BlockType.TOC]: renderTOC,
   [BlockType.HEADING_1]: renderHeading1,
@@ -278,6 +299,7 @@ const previewBlockRenderers: Partial<Record<BlockType, PreviewRenderer>> = {
   [BlockType.TABLE]: renderTable,
   [BlockType.HORIZONTAL_RULE]: () => <hr className="my-8 border-t-2 border-slate-950" />,
   [BlockType.IMAGE]: (block) => <ImageBlock block={block} />,
+  [BlockType.QR]: renderQr,
 };
 
 export const PreviewBlock: React.FC<{ block: ParsedBlock; showLineNumbers?: boolean }> = ({

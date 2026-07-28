@@ -13,6 +13,7 @@ export type SyntaxFeatureId =
   | 'table'
   | 'chat'
   | 'image'
+  | 'qr'
   | 'link'
   | 'inline-formatting';
 
@@ -121,6 +122,13 @@ export const SYNTAX_FEATURES: SyntaxFeature[] = [
     example: '![圖片說明](image-id)',
   },
   {
+    id: 'qr',
+    name: 'QR Code',
+    description: '獨占一行的 QR 連結會在 DOCX 中產生 QR Code 與可點擊標籤。',
+    syntax: '[QR:標籤](url)',
+    example: '[QR:GitHub 原始碼](https://github.com/example/repo)',
+  },
+  {
     id: 'link',
     name: 'Link',
     description: '支援 Markdown 連結，DOCX 匯出可搭配 QR code 視覺提示。',
@@ -158,6 +166,7 @@ export const SYNTAX_COMMANDS: SyntaxCommandSpec[] = [
   { id: 'chat-right', featureId: 'chat', label: 'AI dialogue', description: '插入右側對話泡泡', insertText: 'AI ::" 這裡輸入對話內容', group: 'Chat', quickAction: true },
   { id: 'chat-center', featureId: 'chat', label: 'System dialogue', description: '插入置中對話泡泡', insertText: 'System :": 這裡輸入系統訊息', group: 'Chat' },
   { id: 'image', featureId: 'image', label: 'Image', description: '插入圖片語法', insertText: '![圖片說明](url)', group: 'Media' },
+  { id: 'qr', featureId: 'qr', label: 'QR code', description: '插入獨立 QR 連結', insertText: '[QR:連結標籤](https://example.com)', group: 'Media' },
   { id: 'frontmatter', featureId: 'frontmatter', label: 'Frontmatter', description: '插入文件 metadata', insertText: '---\ntitle: 書稿標題\nauthor: 作者名稱\nheader: true\nfooter: true\n---\n', group: 'Metadata', quickAction: true },
   { id: 'quick-mermaid', featureId: 'mermaid', label: 'Quick mermaid', description: '插入流程圖範例', insertText: '```mermaid\ngraph TD;\n  開始-->撰寫\n  撰寫-->匯出\n```', group: 'Technical' },
 ];

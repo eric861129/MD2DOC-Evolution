@@ -26,9 +26,8 @@ export const generateQRCode = async (text: string): Promise<ArrayBuffer> => {
     // Convert Base64 Data URL to ArrayBuffer
     const res = await fetch(dataUrl);
     return await res.arrayBuffer();
-  } catch (err) {
-    console.error('QR Code generation failed:', err);
-    // Return a 1x1 empty pixel as fallback to prevent crash
+  } catch {
+    // 由呼叫端決定 fallback 與可觀察的 warning 契約。
     return new ArrayBuffer(0); 
   }
 };

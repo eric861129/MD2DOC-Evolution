@@ -16,6 +16,10 @@ import {
 } from '../../../utils/styleParser';
 import { generateQRCode } from '../../qrCodeService';
 import { DocxConfig } from '../types';
+import {
+  resolveImageMedia,
+  resolveImageMediaBytes,
+} from './image';
 
 const { FONTS, COLORS, FONT_SIZES } = WORD_THEME;
 
@@ -75,32 +79,30 @@ const createCodeRun = (
 
 const createImageRuns = (
   source: string,
+  alt: string,
   config?: DocxConfig,
 ): ParagraphChild[] => {
-  try {
-    const realSource = config?.imageRegistry[source] ?? source;
-    if (!realSource.startsWith('data:image/')) {
-      return [];
-    }
-
-    const base64Data = realSource.split(',')[1];
-    const binaryData = atob(base64Data);
-    const buffer = new Uint8Array(binaryData.length);
-    for (let index = 0; index < binaryData.length; index += 1) {
-      buffer[index] = binaryData.charCodeAt(index);
-    }
-
-    return [
-      new ImageRun({
-        data: buffer,
-        transformation: { width: 100, height: 100 },
-        type: 'png',
-      }),
-    ];
-  } catch (error) {
-    console.warn('Failed to render inline image', error);
+  const realSource = config?.imageRegistry[source] ?? source;
+  if (!realSource.startsWith('data:')) {
     return [];
   }
+
+  const media = resolveImageMedia(realSource);
+  const width = Math.min(media.width, 100);
+  const height = width * media.height / media.width;
+  const accessibleName = alt || '行內圖片';
+  return [
+    new ImageRun({
+      data: media.data,
+      transformation: { width, height },
+      type: media.type,
+      altText: {
+        name: accessibleName,
+        description: accessibleName,
+        title: accessibleName,
+      },
+    }),
+  ];
 };
 
 const createLegacyQrRuns = async (
@@ -116,13 +118,22 @@ const createLegacyQrRuns = async (
     if (qrBuffer.byteLength === 0) {
       return [];
     }
+    const media = resolveImageMediaBytes(
+      new Uint8Array(qrBuffer),
+      'image/png',
+    );
 
     return [
       new TextRun({ text: ' ', size: 4 }),
       new ImageRun({
-        data: qrBuffer,
+        data: media.data,
         transformation: { width: 45, height: 45 },
-        type: 'png',
+        type: media.type,
+        altText: {
+          name: '連結 QR Code',
+          description: '連結 QR Code',
+          title: url,
+        },
       }),
       new TextRun({ text: ' ', size: 4 }),
     ];
@@ -301,7 +312,11 @@ const renderInlineToken = async (
       );
     }
     case 'image':
-      return createImageRuns((token as Tokens.Image).href, config);
+      return createImageRuns(
+        (token as Tokens.Image).href,
+        (token as Tokens.Image).text,
+        config,
+      );
     case 'text': {
       const text = token as Tokens.Text;
       return text.tokens?.length

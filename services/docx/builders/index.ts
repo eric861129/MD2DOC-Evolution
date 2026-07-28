@@ -21,6 +21,7 @@ import { createChatBubble } from "./chat";
 import { createCallout } from "./callout";
 import { createTable } from "./table";
 import { createImageBlock } from "./image";
+import { createQrBlock } from './qr';
 
 const { SPACING, LAYOUT, COLORS } = WORD_THEME;
 
@@ -46,12 +47,31 @@ export const registerDefaultHandlers = () => {
   docxRegistry.register(
     BlockType.MERMAID,
     (block, config) => import("./mermaid")
-      .then(({ createMermaidBlock }) => createMermaidBlock(block.content, config)),
+      .then(({ createMermaidBlock }) => createMermaidBlock(
+        block.content,
+        config,
+        block.metadata?.alt || 'Mermaid 圖表',
+        block.metadata?.title || 'Mermaid 圖表',
+      )),
   );
 
   // Image
   docxRegistry.register(BlockType.IMAGE, async (block, config) => 
-    await createImageBlock(block.content, block.metadata?.alt || '', config)
+    await createImageBlock(
+      block.content,
+      block.metadata?.alt || '',
+      block.metadata?.title || '',
+      config,
+    )
+  );
+
+  docxRegistry.register(
+    BlockType.QR,
+    (block, config) => createQrBlock(
+      block.metadata?.label || block.content,
+      block.metadata?.url || '',
+      config,
+    ),
   );
 
   // Chat

@@ -56,4 +56,14 @@ describe('syntaxSpec', () => {
       '> [!NOTE]、> [!TIP]、> [!WARNING]、> [!IMPORTANT]、> [!CAUTION]',
     );
   });
+
+  it('公開獨立 QR 語法與插入命令', () => {
+    const qrFeature = SYNTAX_FEATURES.find(({ id }) => id === 'qr');
+    const qrCommand = SYNTAX_COMMANDS.find(({ id }) => id === 'qr');
+
+    expect(qrFeature?.syntax).toBe('[QR:標籤](url)');
+    expect(qrCommand?.insertText).toBe(
+      '[QR:連結標籤](https://example.com)',
+    );
+  });
 });

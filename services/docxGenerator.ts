@@ -24,13 +24,17 @@ import { getDocumentProfile } from './docx/profiles';
 import { docxRegistry } from './docx/registry';
 import { applyPageSettings } from './docx/settings';
 import { createDocumentStyles } from './docx/styles';
-import type { DocxConfig, GenerateDocxOptions } from './docx/types';
+import type {
+  DocxConfig,
+  DocxExportWarning,
+  GenerateDocxOptions,
+} from './docx/types';
 
 // 初始化預設區塊處理器
 registerDefaultHandlers();
 
 // 重新匯出生成器合約，供既有呼叫端使用
-export type { DocxConfig, GenerateDocxOptions };
+export type { DocxConfig, DocxExportWarning, GenerateDocxOptions };
 
 const createHeaders = (
   meta: DocumentMeta,
@@ -114,6 +118,7 @@ export const generateDocx = async (
     showLineNumbers: options.showLineNumbers,
     meta: options.meta ?? {},
     imageRegistry: options.imageRegistry ?? {},
+    reportWarning: options.onWarning ?? (() => undefined),
     counters: {
       figure: 0,
       qr: 0,
