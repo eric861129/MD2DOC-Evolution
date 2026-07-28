@@ -141,17 +141,23 @@ const scanChapterSourceSpans = (
 
     const startLine = lines[index];
     let closingIndex = index + 1;
-    while (
-      closingIndex < lines.length
-      && (
-        lines[closingIndex].content.trim() !== '[/CHAPTER]'
-        || isProtectedIndex(lines[closingIndex].startIndex, protectedSpans)
-      )
-    ) {
+    let isClosed = false;
+    while (closingIndex < lines.length) {
+      const candidateLine = lines[closingIndex];
+      if (isProtectedIndex(candidateLine.startIndex, protectedSpans)) {
+        closingIndex += 1;
+        continue;
+      }
+      if (candidateLine.content.trim() === '[CHAPTER]') {
+        break;
+      }
+      if (candidateLine.content.trim() === '[/CHAPTER]') {
+        isClosed = true;
+        break;
+      }
       closingIndex += 1;
     }
 
-    const isClosed = closingIndex < lines.length;
     const closingLine = isClosed ? lines[closingIndex] : startLine;
     const yamlStart = index + 1 < lines.length
       ? lines[index + 1].startIndex
@@ -430,7 +436,33 @@ const finalizeBlocks = (
     }
     mergedBlocks.push(current);
   }
-  return mergedBlocks;
+
+  const compactListInstanceByOriginal = new Map<number, number>();
+  let nextListInstance = 1;
+  return mergedBlocks.map((block) => {
+    const originalInstance = block.metadata?.listInstance;
+    if (
+      block.type !== BlockType.NUMBERED_LIST
+      || typeof originalInstance !== 'number'
+    ) {
+      return block;
+    }
+
+    if (!compactListInstanceByOriginal.has(originalInstance)) {
+      compactListInstanceByOriginal.set(
+        originalInstance,
+        nextListInstance,
+      );
+      nextListInstance += 1;
+    }
+    return {
+      ...block,
+      metadata: {
+        ...block.metadata,
+        listInstance: compactListInstanceByOriginal.get(originalInstance),
+      },
+    };
+  });
 };
 
 const createNormalizedBoundaryMap = (source: string): number[] => {
@@ -451,11 +483,84 @@ const createNormalizedBoundaryMap = (source: string): number[] => {
   return originalIndexByNormalizedBoundary;
 };
 
+const collectNestedCodeTokens = (token: any): any[] => {
+  const codeTokens: any[] = [];
+  const visitToken = (candidate: any): void => {
+    if (!candidate || typeof candidate !== 'object') {
+      return;
+    }
+    if (
+      candidate.type === 'code'
+      || (
+        candidate.type === 'codespan'
+        && candidate.raw.includes('\n')
+      )
+    ) {
+      codeTokens.push(candidate);
+      return;
+    }
+    if (Array.isArray(candidate.items)) {
+      candidate.items.forEach(visitToken);
+    }
+    if (Array.isArray(candidate.tokens)) {
+      candidate.tokens.forEach(visitToken);
+    }
+  };
+
+  visitToken(token);
+  return codeTokens;
+};
+
+const findNestedCodeSpan = (
+  codeToken: any,
+  sourceLines: PhysicalLineSpan[],
+  parentSpan: SourceSpan,
+  startLineIndex: number,
+): { span: SourceSpan; nextLineIndex: number } | undefined => {
+  const expectedLines = scanPhysicalLineSpans(codeToken.raw)
+    .map(({ content }) => content.trim());
+  if (expectedLines.length === 0) {
+    return undefined;
+  }
+
+  for (
+    let candidateIndex = startLineIndex;
+    candidateIndex < sourceLines.length;
+    candidateIndex += 1
+  ) {
+    const candidateEndIndex = candidateIndex + expectedLines.length - 1;
+    const firstLine = sourceLines[candidateIndex];
+    const lastLine = sourceLines[candidateEndIndex];
+    if (!firstLine || !lastLine || firstLine.startIndex < parentSpan.startIndex) {
+      continue;
+    }
+    if (lastLine.endIndex > parentSpan.endIndex) {
+      break;
+    }
+
+    const isMatch = expectedLines.every((expectedLine, lineIndex) =>
+      sourceLines[candidateIndex + lineIndex]?.content.trim() === expectedLine
+    );
+    if (isMatch) {
+      return {
+        span: {
+          startIndex: firstLine.startIndex,
+          endIndex: lastLine.endIndex,
+        },
+        nextLineIndex: candidateEndIndex + 1,
+      };
+    }
+  }
+  return undefined;
+};
+
 const collectCodeSourceSpans = (
+  source: string,
   tokens: ReturnType<typeof marked.lexer>,
   boundaryMap: number[],
 ): SourceSpan[] => {
   const spans: SourceSpan[] = [];
+  const sourceLines = scanPhysicalLineSpans(source);
   let normalizedIndex = 0;
 
   for (const token of tokens) {
@@ -466,10 +571,65 @@ const collectCodeSourceSpans = (
         startIndex: boundaryMap[normalizedIndex] ?? normalizedIndex,
         endIndex: boundaryMap[normalizedEndIndex] ?? normalizedEndIndex,
       });
+    } else {
+      const parentSpan = {
+        startIndex: boundaryMap[normalizedIndex] ?? normalizedIndex,
+        endIndex: boundaryMap[normalizedEndIndex] ?? normalizedEndIndex,
+      };
+      let nextLineIndex = sourceLines.findIndex((line) =>
+        line.startIndex >= parentSpan.startIndex
+      );
+      if (nextLineIndex < 0) {
+        nextLineIndex = sourceLines.length;
+      }
+
+      for (const codeToken of collectNestedCodeTokens(token)) {
+        const located = findNestedCodeSpan(
+          codeToken,
+          sourceLines,
+          parentSpan,
+          nextLineIndex,
+        );
+        if (located) {
+          spans.push(located.span);
+          nextLineIndex = located.nextLineIndex;
+        }
+      }
     }
     normalizedIndex = normalizedEndIndex;
   }
   return spans;
+};
+
+const createCodeBlock = (token: any): ParsedBlock => {
+  if (token.lang === 'mermaid') {
+    return {
+      type: BlockType.MERMAID,
+      content: token.text,
+    };
+  }
+
+  let language = token.lang || '';
+  let showLineNumbers: boolean | undefined;
+  if (language.includes(':')) {
+    const [rawLanguage, rawModifier] = language.split(':', 2);
+    language = rawLanguage.trim();
+    const modifier = rawModifier.trim().toLowerCase();
+    if (['ln', 'line', 'yes'].includes(modifier)) {
+      showLineNumbers = true;
+    } else if (['no-ln', 'plain', 'no'].includes(modifier)) {
+      showLineNumbers = false;
+    }
+  }
+
+  return {
+    type: BlockType.CODE_BLOCK,
+    content: token.text,
+    metadata: {
+      language,
+      showLineNumbers,
+    },
+  };
 };
 
 const parseManualTocEntry = (
@@ -532,7 +692,11 @@ const parseMarkdownFragment = (
     createNormalizedBoundaryMap(markdown);
   const chapterSpans = scanChapterSourceSpans(
     markdown,
-    collectCodeSourceSpans(tokens, originalIndexByNormalizedBoundary),
+    collectCodeSourceSpans(
+      markdown,
+      tokens,
+      originalIndexByNormalizedBoundary,
+    ),
   );
   if (chapterSpans.length > 0) {
     const chapterBlocks: ParsedBlock[] = [];
@@ -580,7 +744,7 @@ const parseMarkdownFragment = (
       ));
     }
 
-    return finalizeBlocks(chapterBlocks, markdown, charOffset);
+    return chapterBlocks;
   }
 
   const blocks: ParsedBlock[] = [];
@@ -758,35 +922,7 @@ const parseMarkdownFragment = (
         break;
 
       case 'code':
-        if (token.lang === 'mermaid') {
-          addBlock({
-            type: BlockType.MERMAID,
-            content: token.text
-          });
-        } else {
-          let language = token.lang || '';
-          let showLineNumbers: boolean | undefined = undefined;
-
-          if (language.includes(':')) {
-            const parts = language.split(':');
-            language = parts[0].trim();
-            const modifier = parts[1].trim().toLowerCase();
-            if (['ln', 'line', 'yes'].includes(modifier)) {
-              showLineNumbers = true;
-            } else if (['no-ln', 'plain', 'no'].includes(modifier)) {
-              showLineNumbers = false;
-            }
-          }
-
-          addBlock({
-            type: BlockType.CODE_BLOCK,
-            content: token.text,
-            metadata: {
-              language,
-              showLineNumbers
-            }
-          });
-        }
+        addBlock(createCodeBlock(token));
         break;
 
       case 'blockquote':
@@ -836,11 +972,14 @@ const parseMarkdownFragment = (
           items.forEach(item => {
             let itemContent = '';
             const subLists: any[] = [];
+            const nestedCodeBlocks: any[] = [];
 
             if (item.tokens) {
               item.tokens.forEach((t: any) => {
                 if (t.type === 'list') {
                   subLists.push(t);
+                } else if (t.type === 'code') {
+                  nestedCodeBlocks.push(t);
                 } else {
                   if (t.type === 'text' || t.type === 'html') {
                     itemContent += t.text;
@@ -855,7 +994,9 @@ const parseMarkdownFragment = (
             }
 
             // Clean content (checkboxes)
-            const cleanText = itemContent.replace(/^\[[ x]\]\s*/, '');
+            const cleanText = itemContent
+              .trim()
+              .replace(/^\[[ x]\]\s*/, '');
             const manualTocEntry = parseManualTocEntry(
               item.raw ?? '',
               ordered,
@@ -869,6 +1010,9 @@ const parseMarkdownFragment = (
                 ...(ordered ? { listInstance: orderedInstance } : {}),
                 ...(manualTocEntry ? { manualTocEntry } : {}),
               },
+            });
+            nestedCodeBlocks.forEach((codeToken) => {
+              addBlock(createCodeBlock(codeToken));
             });
 
             // Process nested lists
@@ -949,16 +1093,20 @@ const parseMarkdownFragment = (
      processToken(token, blockStartLine, blockStartIndex, tokenSource);
   });
 
-  return finalizeBlocks(blocks, markdown, charOffset);
+  return blocks;
 };
 
 export const parseMarkdownWithAST = (
   markdown: string,
   lineOffset: number = 0,
   charOffset: number = 0,
-): ParsedBlock[] => parseMarkdownFragment(
+): ParsedBlock[] => finalizeBlocks(
+  parseMarkdownFragment(
+    markdown,
+    lineOffset,
+    charOffset,
+    { nextListInstance: 1 },
+  ),
   markdown,
-  lineOffset,
   charOffset,
-  { nextListInstance: 1 },
 );

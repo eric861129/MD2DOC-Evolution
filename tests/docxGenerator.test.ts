@@ -592,4 +592,66 @@ describe('docxGenerator', () => {
     expect(numIdByText('Parent A')).toBe(numIdByText('Parent B'));
     expect(numIdByText('nested ordered')).toBe(numIdByText('Parent A'));
   });
+
+  it('numbered manual TOC 不消耗真實 DOCX 保留清單的 instance', async () => {
+    const { blocks } = parseMarkdown([
+      '[TOC]',
+      '1. 第一章 1',
+      '2. 第二章 8',
+      '',
+      '目錄後正文',
+      '',
+      '1. First retained A',
+      '2. First retained B',
+      '',
+      '群組分隔',
+      '',
+      '1. Second retained',
+    ].join('\n'));
+    const blob = await generateDocx(blocks, {
+      exportSettings: {
+        profileId: 'publisher-exact',
+        pageSizeId: 'tech',
+        marginPresetId: 'publisher-exact',
+      },
+      showLineNumbers: false,
+    });
+    const document = new DOMParser().parseFromString(
+      await readDocxXml(blob, 'word/document.xml'),
+      'application/xml',
+    );
+    const paragraphs = Array.from(document.getElementsByTagName('w:p'));
+    const numIdByText = (text: string): string | null => {
+      const paragraph = paragraphs.find((candidate) =>
+        candidate.textContent === text
+      );
+      const numId = paragraph?.getElementsByTagName('w:numId')[0];
+      return numId?.getAttribute('w:val') ?? null;
+    };
+    const firstNumId = numIdByText('First retained A');
+    const secondNumId = numIdByText('Second retained');
+
+    expect(blocks.filter(({ type }) =>
+      type === BlockType.NUMBERED_LIST
+    ).map((block) => block.metadata?.listInstance)).toEqual([1, 1, 2]);
+    expect(firstNumId).toBe(numIdByText('First retained B'));
+    expect(firstNumId).not.toBe(secondNumId);
+
+    const numbering = new DOMParser().parseFromString(
+      await readDocxXml(blob, 'word/numbering.xml'),
+      'application/xml',
+    );
+    for (const numId of [firstNumId, secondNumId]) {
+      const concreteNumbering = Array.from(
+        numbering.getElementsByTagName('w:num'),
+      ).find((element) =>
+        (element.getAttribute('w:numId') ?? element.getAttribute('numId'))
+        === numId
+      );
+      expect(concreteNumbering).toBeDefined();
+      expect(concreteNumbering!
+        .getElementsByTagName('w:startOverride')[0]
+        .getAttribute('w:val')).toBe('1');
+    }
+  });
 });

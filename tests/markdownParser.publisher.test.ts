@@ -307,6 +307,100 @@ describe('出版社 Markdown 語法', () => {
     );
   });
 
+  it.each([
+    ['2-space fenced code', '  ', true],
+    ['4-space fenced code', '    ', true],
+    ['6-space fenced code', '      ', false],
+  ])('list item 內的 %s 不會轉成 CHAPTER', (
+    _name,
+    indentation,
+    isMarkedBlockCode,
+  ) => {
+    const markdown = [
+      '- 外層項目',
+      `${indentation}\`\`\`markdown`,
+      `${indentation}[CHAPTER]`,
+      `${indentation}number: "91"`,
+      `${indentation}title: "巢狀程式碼"`,
+      `${indentation}[/CHAPTER]`,
+      `${indentation}\`\`\``,
+    ].join('\n');
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).not.toContainEqual(
+      expect.objectContaining({ type: BlockType.CHAPTER_OPENER }),
+    );
+    expect(blocks[0]).toMatchObject({
+      type: BlockType.BULLET_LIST,
+      content: expect.stringContaining('外層項目'),
+    });
+    const codeBlocks = blocks.filter(({ type }) =>
+      type === BlockType.CODE_BLOCK
+    );
+    expect(codeBlocks).toHaveLength(isMarkedBlockCode ? 1 : 0);
+    if (isMarkedBlockCode) {
+      expect(codeBlocks[0].content).toContain('[CHAPTER]');
+      expect(codeBlocks[0].content).toContain('[/CHAPTER]');
+    } else {
+      expect(blocks[0].content).toContain('[CHAPTER]');
+      expect(blocks[0].content).toContain('[/CHAPTER]');
+    }
+  });
+
+  it('list item 內 Marked 辨識的 indented code 受保護且保留 code block', () => {
+    const markdown = [
+      '- 外層項目',
+      '',
+      '      [CHAPTER]',
+      '      number: "92"',
+      '      title: "縮排程式碼"',
+      '      [/CHAPTER]',
+    ].join('\n');
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.BULLET_LIST,
+      BlockType.CODE_BLOCK,
+    ]);
+    expect(blocks[0].content).toBe('外層項目');
+    expect(blocks[1].content).toContain('[CHAPTER]');
+    expect(blocks[1].content).toContain('[/CHAPTER]');
+  });
+
+  it('CRLF list 內重複相同 fenced code raw 依序配對且全部保護', () => {
+    const repeatedCode = [
+      '  ```markdown',
+      '  [CHAPTER]',
+      '  number: "93"',
+      '  title: "重複程式碼"',
+      '  [/CHAPTER]',
+      '  ```',
+    ];
+    const markdown = [
+      '- 第一個項目',
+      ...repeatedCode,
+      '- 第二個項目',
+      ...repeatedCode,
+    ].join('\r\n');
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).not.toContainEqual(
+      expect.objectContaining({ type: BlockType.CHAPTER_OPENER }),
+    );
+    expect(blocks.filter(({ type }) =>
+      type === BlockType.BULLET_LIST
+    ).map(({ content }) => content)).toEqual([
+      '第一個項目',
+      '第二個項目',
+    ]);
+    expect(blocks.filter(({ type }) =>
+      type === BlockType.CODE_BLOCK
+    ).map(({ content }) => content)).toEqual([
+      expect.stringContaining('[CHAPTER]'),
+      expect.stringContaining('[CHAPTER]'),
+    ]);
+  });
+
   it('未關閉 CHAPTER 只回復 marker，後續 heading 與 paragraph 全部保留', () => {
     const markdown = [
       '[CHAPTER]',
@@ -335,6 +429,62 @@ describe('出版社 Markdown 語法', () => {
     expect(blocks[2].content).toBe('後續標題');
     expect(blocks[3].content).toBe('後續正文');
     expect(blocks[0].endIndex).toBe('[CHAPTER]'.length);
+  });
+
+  it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+  ])('%s 未關閉 opener 不會跨越下一個合法 CHAPTER 配對', (
+    _name,
+    newline,
+  ) => {
+    const markdown = [
+      '[CHAPTER]',
+      'number: "01"',
+      'title: "未關閉"',
+      '',
+      '# 中間標題',
+      '',
+      '中間正文',
+      '',
+      '[CHAPTER]',
+      'number: "02"',
+      'title: "合法章節"',
+      '[/CHAPTER]',
+      '',
+      'Tail',
+    ].join(newline);
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.CHAPTER_OPENER,
+      BlockType.PARAGRAPH,
+      BlockType.HEADING_1,
+      BlockType.PARAGRAPH,
+      BlockType.CHAPTER_OPENER,
+      BlockType.PARAGRAPH,
+    ]);
+    expect(blocks[0]).toMatchObject({
+      content: '',
+      endIndex: '[CHAPTER]'.length,
+      validationIssues: expect.arrayContaining([
+        expect.objectContaining({ title: '章首頁缺少 [/CHAPTER]' }),
+      ]),
+    });
+    expect(blocks[2].content).toBe('中間標題');
+    expect(blocks[3].content).toBe('中間正文');
+    expect(blocks[4]).toMatchObject({
+      content: '合法章節',
+      metadata: {
+        chapter: {
+          number: '02',
+          title: '合法章節',
+          goals: [],
+        },
+      },
+      validationIssues: [],
+    });
+    expect(blocks[5].content).toBe('Tail');
   });
 
   it('TOC 與普通清單隔著空白行時不合併', () => {
@@ -381,6 +531,43 @@ describe('出版社 Markdown 語法', () => {
         content: '- 第一章 1\n- 第二章 8',
         metadata: expect.objectContaining({ manualTocContent: true }),
       }),
+    ]);
+  });
+
+  it('numbered manual TOC 移除後只 compact 保留的 ordered group ids', () => {
+    const markdown = [
+      '[TOC]',
+      '1. 第一章 1',
+      '2. 第二章 8',
+      '',
+      '目錄後正文',
+      '',
+      '1. Parent A',
+      '   - nested bullet',
+      '     1. nested ordered',
+      '2. Parent B',
+      '',
+      '群組分隔',
+      '',
+      '1. Second group',
+    ].join('\n');
+    const { blocks } = parseMarkdown(markdown);
+    const numberedBlocks = blocks.filter(({ type }) =>
+      type === BlockType.NUMBERED_LIST
+    );
+
+    expect(blocks[0]).toMatchObject({
+      type: BlockType.TOC,
+      metadata: expect.objectContaining({ manualTocContent: true }),
+    });
+    expect(numberedBlocks.map((block) => ({
+      content: block.content,
+      instance: block.metadata?.listInstance,
+    }))).toEqual([
+      { content: 'Parent A', instance: 1 },
+      { content: 'nested ordered', instance: 1 },
+      { content: 'Parent B', instance: 1 },
+      { content: 'Second group', instance: 2 },
     ]);
   });
 
