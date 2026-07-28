@@ -8,16 +8,111 @@ import React from 'react';
 import { Maximize2, Minus, Plus, Sparkles } from 'lucide-react';
 import { BlockType, ParsedBlock } from '../../services/types';
 import { PreviewBlock, RenderRichText } from './PreviewRenderers';
-import { UI_THEME } from '../../constants/theme';
 import { useEditor } from '../../contexts/EditorContext';
 import { IconButton } from '../ui/IconButton';
+import type { ResolvedPageLayout } from '../../services/docx/layout/types';
+import type { DocumentStyleProfile } from '../../services/docx/profiles';
+import { UI_THEME } from '../../constants/theme';
 
 interface PreviewPaneProps {
   parsedBlocks: ParsedBlock[];
   previewRef: React.RefObject<HTMLDivElement>;
 }
 
-const renderList = (items: ParsedBlock[], type: BlockType) => {
+type PreviewPageStyle = React.CSSProperties & Record<`--${string}`, string>;
+
+const formatDecimal = (value: number): string => Number(value.toFixed(4)).toString();
+const formatCm = (value: number): string => `${formatDecimal(value)}cm`;
+const formatPoints = (twips: number): string => `${formatDecimal(twips / 20)}pt`;
+const formatHalfPoints = (halfPoints: number): string => `${formatDecimal(halfPoints / 2)}pt`;
+const formatColor = (color: string): string => color.startsWith('#') ? color : `#${color}`;
+
+const createFontStack = (
+  font: DocumentStyleProfile['fonts']['body'],
+  fallback: 'sans-serif' | 'monospace',
+): string => {
+  const uniqueFamilies = [...new Set([font.ascii, font.hAnsi, font.eastAsia, font.cs])];
+  return `${uniqueFamilies.map((family) => `"${family}"`).join(', ')}, ${fallback}`;
+};
+
+const createPreviewPageStyle = (
+  layout: ResolvedPageLayout,
+  profile: DocumentStyleProfile,
+): PreviewPageStyle => {
+  const { margins, page } = layout;
+  const topPaddingCm = margins.topCm
+    + (margins.gutterPosition === 'top' ? margins.gutterCm : 0);
+  const leftPaddingCm = margins.leftCm
+    + (margins.gutterPosition === 'left' ? margins.gutterCm : 0);
+  const paddingValues = [
+    topPaddingCm,
+    margins.rightCm,
+    margins.bottomCm,
+    leftPaddingCm,
+  ];
+  const padding = paddingValues.every((value) => value === paddingValues[0])
+    ? formatCm(paddingValues[0])
+    : paddingValues.map(formatCm).join(' ');
+  const aspectRatio = `${formatDecimal(page.widthCm)} / ${formatDecimal(page.heightCm)}`;
+  const isLegacy = profile.id === 'technical-legacy';
+
+  return {
+    '--page-aspect-ratio': aspectRatio,
+    '--page-width': formatCm(page.widthCm),
+    '--page-height': formatCm(page.heightCm),
+    '--page-margin-top': formatCm(margins.topCm),
+    '--page-margin-right': formatCm(margins.rightCm),
+    '--page-margin-bottom': formatCm(margins.bottomCm),
+    '--page-margin-left': formatCm(margins.leftCm),
+    '--page-margin-inside': margins.insideCm === undefined ? '' : formatCm(margins.insideCm),
+    '--page-margin-outside': margins.outsideCm === undefined ? '' : formatCm(margins.outsideCm),
+    '--page-gutter': formatCm(margins.gutterCm),
+    '--page-padding-top': formatCm(topPaddingCm),
+    '--page-padding-right': formatCm(margins.rightCm),
+    '--page-padding-bottom': formatCm(margins.bottomCm),
+    '--page-padding-left': formatCm(leftPaddingCm),
+    '--publisher-body': formatColor(profile.colors.body),
+    '--publisher-heading-1': formatColor(profile.colors.heading1),
+    '--publisher-heading-2': formatColor(profile.colors.heading2),
+    '--publisher-heading-3': formatColor(profile.colors.heading3),
+    '--publisher-inline-code': formatColor(profile.colors.inlineCode),
+    '--publisher-caption': formatColor(profile.colors.caption),
+    '--publisher-callout-text': formatColor(profile.colors.calloutText),
+    '--publisher-code-background': formatColor(profile.paragraph.code.shadingFill ?? 'FFFFFF'),
+    '--publisher-table-header-background': formatColor(profile.table.headerFill),
+    '--publisher-callout-note-background': formatColor(profile.callouts.note.fill),
+    '--publisher-callout-tip-background': formatColor(profile.callouts.tip.fill),
+    '--publisher-callout-warning-background': formatColor(profile.callouts.warning.fill),
+    '--publisher-callout-important-background': formatColor(profile.callouts.important.fill),
+    '--publisher-callout-caution-background': formatColor(profile.callouts.caution.fill),
+    '--publisher-body-font': createFontStack(profile.fonts.body, 'sans-serif'),
+    '--publisher-code-font': createFontStack(profile.fonts.code, 'monospace'),
+    '--publisher-paragraph-before': formatPoints(profile.paragraph.normal.beforeTwips),
+    '--publisher-paragraph-after': formatPoints(profile.paragraph.normal.afterTwips),
+    '--publisher-h1-size': formatHalfPoints(profile.heading.h1.sizeHalfPoints),
+    '--publisher-h1-before': formatPoints(profile.heading.h1.beforeTwips),
+    '--publisher-h1-after': formatPoints(profile.heading.h1.afterTwips),
+    '--publisher-h2-size': formatHalfPoints(profile.heading.h2.sizeHalfPoints),
+    '--publisher-h2-before': formatPoints(profile.heading.h2.beforeTwips),
+    '--publisher-h2-after': formatPoints(profile.heading.h2.afterTwips),
+    '--publisher-h3-size': formatHalfPoints(profile.heading.h3.sizeHalfPoints),
+    '--publisher-h3-before': formatPoints(profile.heading.h3.beforeTwips),
+    '--publisher-h3-after': formatPoints(profile.heading.h3.afterTwips),
+    '--publisher-callout-before': formatPoints(profile.paragraph.callout.beforeTwips),
+    '--publisher-callout-after': formatPoints(profile.paragraph.callout.afterTwips),
+    '--publisher-caption-after': formatPoints(profile.paragraph.caption.afterTwips),
+    aspectRatio,
+    boxSizing: 'border-box',
+    color: isLegacy ? undefined : 'var(--publisher-body)',
+    fontFamily: isLegacy ? UI_THEME.FONTS.PREVIEW : 'var(--publisher-body-font)',
+    maxWidth: '100%',
+    minWidth: 0,
+    padding,
+    width: '100%',
+  };
+};
+
+const renderList = (items: ParsedBlock[], type: BlockType, isPublisher: boolean) => {
   const ListTag = type === BlockType.BULLET_LIST ? 'ul' : 'ol';
 
   return (
@@ -25,7 +120,10 @@ const renderList = (items: ParsedBlock[], type: BlockType) => {
       {items.map((item, index) => (
         <li
           key={`${item.content}-${index}`}
-          style={{ marginLeft: `${(item.nestingLevel || 0) * 1.5}rem` }}
+          style={{
+            color: isPublisher ? 'var(--publisher-body)' : undefined,
+            marginLeft: `${(item.nestingLevel || 0) * 1.5}rem`,
+          }}
           className={
             type === BlockType.BULLET_LIST
               ? "relative mb-2 list-none pl-4 leading-8 text-slate-800 before:absolute before:left-0 before:top-[0.72em] before:h-2 before:w-2 before:rounded-full before:bg-slate-400"
@@ -43,8 +141,16 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
   parsedBlocks,
   previewRef,
 }) => {
-  const { t } = useEditor();
+  const {
+    documentProfile,
+    exportSettings,
+    resolvedPageLayout,
+    t,
+  } = useEditor();
   const [zoom, setZoom] = React.useState(1);
+  const isPublisher = documentProfile.id !== 'technical-legacy';
+  const isMirrored = resolvedPageLayout.margins.mode === 'mirrored';
+  const pageStyle = createPreviewPageStyle(resolvedPageLayout, documentProfile);
 
   const renderPreviewContent = () => {
     const elements: React.ReactElement[] = [];
@@ -60,7 +166,11 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
           listItems.push(parsedBlocks[index]);
           index++;
         }
-        elements.push(<React.Fragment key={`${listType}-${index}`}>{renderList(listItems, listType)}</React.Fragment>);
+        elements.push(
+          <React.Fragment key={`${listType}-${index}`}>
+            {renderList(listItems, listType, isPublisher)}
+          </React.Fragment>,
+        );
         continue;
       }
 
@@ -112,16 +222,34 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
         className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_50%_0%,rgba(52,90,112,0.10),transparent_34rem)] p-5 scroll-smooth md:p-8"
       >
         <div
-          className="mx-auto origin-top transition-transform duration-300"
+          className="mx-auto w-full origin-top transition-transform duration-300"
           style={{
             maxWidth: '860px',
             transform: `scale(${zoom})`,
             transformOrigin: 'top center',
           }}
         >
+          {isMirrored && (
+            <p
+              id="mirrored-preview-note"
+              className="mb-2 text-center text-xs leading-5 text-slate-500"
+            >
+              單頁預覽：內側顯示於左側、外側顯示於右側；實際奇偶頁以 DOCX 為準。
+            </p>
+          )}
           <article
-            className="print-paper min-h-[980px] rounded-md px-8 py-10 text-slate-950 md:px-14 md:py-14"
-            style={{ fontFamily: UI_THEME.FONTS.PREVIEW }}
+            aria-describedby={isMirrored ? 'mirrored-preview-note' : undefined}
+            aria-label="文件頁面預覽"
+            className={`print-paper min-h-0 w-full max-w-full rounded-md [overflow-wrap:anywhere] ${
+              isPublisher ? '' : 'text-slate-950'
+            }`}
+            data-gutter-position={resolvedPageLayout.margins.gutterPosition}
+            data-margin-mode={resolvedPageLayout.margins.mode}
+            data-margin-preset={exportSettings.marginPresetId}
+            data-mirrored-mapping={isMirrored ? 'inside-left-outside-right' : undefined}
+            data-page-size={`${formatDecimal(resolvedPageLayout.page.widthCm)}x${formatDecimal(resolvedPageLayout.page.heightCm)}`}
+            data-profile={documentProfile.id}
+            style={pageStyle}
           >
             {parsedBlocks.length > 0 ? (
               renderPreviewContent()

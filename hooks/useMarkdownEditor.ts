@@ -5,10 +5,12 @@
  * See LICENSE file in the project root for full license information.
  */
 
+import { useMemo } from 'react';
 import { useEditorState } from './useEditorState';
 import { useWordCount } from './useWordCount';
 import { useSyncScroll } from './useSyncScroll';
 import { useDocxExport } from './useDocxExport';
+import { getDocumentProfile } from '../services/docx/profiles';
 
 /**
  * Main hook for the Markdown Editor.
@@ -50,6 +52,10 @@ export const useMarkdownEditor = () => {
     handleDownload,
     handleExportMarkdown,
   } = useDocxExport({ content, parsedBlocks, documentMeta, imageRegistry });
+  const documentProfile = useMemo(
+    () => getDocumentProfile(exportSettings.profileId),
+    [exportSettings.profileId],
+  );
 
   return {
     // State
@@ -69,6 +75,7 @@ export const useMarkdownEditor = () => {
     exportSettings,
     setExportSettings,
     resolvedPageLayout,
+    documentProfile,
     wordCount,
     language,
     

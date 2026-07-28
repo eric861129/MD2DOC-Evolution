@@ -13,6 +13,15 @@ interface UseDocxExportProps {
   imageRegistry: Record<string, string>;
 }
 
+const resolvePageLayoutSafely = (settings: ExportSettings) => {
+  try {
+    return resolvePageLayout(settings);
+  } catch {
+    // ExportSettingsModal 只會 Apply 合法設定；此回退保護其他呼叫端誤寫 state 時的畫面。
+    return resolvePageLayout(DEFAULT_EXPORT_SETTINGS);
+  }
+};
+
 export const useDocxExport = ({
   content,
   parsedBlocks,
@@ -26,7 +35,7 @@ export const useDocxExport = ({
   const [showValidationIssues, setShowValidationIssues] = useState(false);
   const [exportSettings, setExportSettings] = useState<ExportSettings>(DEFAULT_EXPORT_SETTINGS);
   const resolvedPageLayout = useMemo(
-    () => resolvePageLayout(exportSettings),
+    () => resolvePageLayoutSafely(exportSettings),
     [exportSettings],
   );
 
