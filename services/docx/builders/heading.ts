@@ -8,6 +8,7 @@ export const createHeading = async (
   content: string,
   level: 1 | 2 | 3,
   config: DocxConfig,
+  pageBreakBefore = false,
 ): Promise<Paragraph> => {
   const style = {
     1: DOCUMENT_STYLE_IDS.heading1,
@@ -23,6 +24,7 @@ export const createHeading = async (
 
   return new Paragraph({
     style,
+    pageBreakBefore,
     children: wrapBookmark(
       bookmark,
       await parseInlineStyles(content, config),

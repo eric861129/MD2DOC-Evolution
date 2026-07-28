@@ -152,6 +152,7 @@ export const createTable = async (
   const contentRows = normalizedRows(rows, columnWidths.length);
   const tableRows = await Promise.all(contentRows.map(async (row, rowIndex) =>
     new TableRow({
+      cantSplit: true,
       ...(rowIndex === 0 ? { tableHeader: true } : {}),
       children: await Promise.all(row.map(async (cellText, columnIndex) =>
         new TableCell({

@@ -9,6 +9,7 @@ import {
   Document,
   Footer,
   Header,
+  LineRuleType,
   Packer,
   PageNumber,
   Paragraph,
@@ -16,7 +17,7 @@ import {
   TableOfContents,
   TextRun,
 } from 'docx';
-import type { DocumentMeta, ParsedBlock } from './types';
+import { BlockType, type DocumentMeta, type ParsedBlock } from './types';
 
 // 區塊處理器註冊表
 import { registerDefaultHandlers } from './docx/builders/index';
@@ -163,6 +164,19 @@ export const generateDocx = async (
   const docChildren: (Paragraph | Table | TableOfContents)[] = [];
 
   for (const block of blocks) {
+    if (
+      block.type === BlockType.TABLE
+      && docChildren.at(-1) instanceof Table
+    ) {
+      docChildren.push(new Paragraph({
+        spacing: {
+          before: 0,
+          after: 0,
+          line: 40,
+          lineRule: LineRuleType.EXACT,
+        },
+      }));
+    }
     const result = await docxRegistry.handle(block, config);
     if (result) {
       if (Array.isArray(result)) {

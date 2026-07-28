@@ -149,6 +149,47 @@ describe('columnWidthsFor', () => {
 });
 
 describe('出版社固定表格 OOXML', () => {
+  it('相鄰表格以空段落隔開，避免 LibreOffice 合併成單一表格', async () => {
+    const blob = await generateDocx([
+      {
+        type: BlockType.TABLE,
+        content: '',
+        tableRows: [['一欄'], ['星點']],
+      },
+      {
+        type: BlockType.TABLE,
+        content: '',
+        tableRows: [['編號', '星名'], ['S-01', '晨光']],
+      },
+    ], {
+      exportSettings: publisherExactSettings,
+      showLineNumbers: false,
+    });
+    const document = parseXml(
+      await readDocxXml(blob, 'word/document.xml'),
+    );
+    const body = elementsByName(document, 'body')[0];
+
+    expect(Array.from(body.children).map((child) => child.localName))
+      .toEqual(['tbl', 'p', 'tbl', 'sectPr']);
+    expect(elementsByName(body.children[1], 't')).toHaveLength(0);
+  });
+
+  it('出版社表格每一列都禁止跨頁拆分', async () => {
+    const document = await createTableDocument([
+      ['編號', '備註'],
+      ['S-05', '虛構資料'],
+    ]);
+    const rows = elementsByName(elementsByName(document, 'tbl')[0], 'tr');
+
+    expect(rows.map((row) => {
+      const rowProperties = directChild(row, 'trPr');
+      return Boolean(
+        rowProperties && directChild(rowProperties, 'cantSplit'),
+      );
+    })).toEqual([true, true]);
+  });
+
   it('tblCellMar 依 Office 2010 schema 順序輸出 top、start、bottom、end', async () => {
     const document = await createTableDocument([
       ['方法', '說明'],

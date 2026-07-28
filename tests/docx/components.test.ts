@@ -1072,6 +1072,27 @@ describe('DOCX 出版元件', () => {
       .toHaveLength(0);
   });
 
+  it('heading metadata 可要求在自身套用 pageBreakBefore', async () => {
+    const blob = await generateDocx([
+      { type: BlockType.PARAGRAPH, content: '章首頁內容' },
+      {
+        type: BlockType.HEADING_1,
+        content: '下一頁正文',
+        metadata: { pageBreakBefore: true },
+      },
+    ], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+    });
+
+    const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
+    const heading = bodyParagraphs(document)
+      .find((paragraph) => paragraphText(paragraph) === '下一頁正文')!;
+
+    expect(directChild(paragraphProperties(heading), 'pageBreakBefore'))
+      .toBeDefined();
+  });
+
   it('章首頁圖片 key 缺失時回報 warning 並以可讀文字降級', async () => {
     const warnings: unknown[] = [];
     const blob = await generateDocx([{

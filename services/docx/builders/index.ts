@@ -49,9 +49,33 @@ export const registerDefaultHandlers = () => {
   );
 
   // Headings
-  docxRegistry.register(BlockType.HEADING_1, async (block, config) => await createHeading(block.content, 1, config));
-  docxRegistry.register(BlockType.HEADING_2, async (block, config) => await createHeading(block.content, 2, config));
-  docxRegistry.register(BlockType.HEADING_3, async (block, config) => await createHeading(block.content, 3, config));
+  docxRegistry.register(
+    BlockType.HEADING_1,
+    async (block, config) => await createHeading(
+      block.content,
+      1,
+      config,
+      block.metadata?.pageBreakBefore === true,
+    ),
+  );
+  docxRegistry.register(
+    BlockType.HEADING_2,
+    async (block, config) => await createHeading(
+      block.content,
+      2,
+      config,
+      block.metadata?.pageBreakBefore === true,
+    ),
+  );
+  docxRegistry.register(
+    BlockType.HEADING_3,
+    async (block, config) => await createHeading(
+      block.content,
+      3,
+      config,
+      block.metadata?.pageBreakBefore === true,
+    ),
+  );
 
   // Paragraph
   docxRegistry.register(BlockType.PARAGRAPH, async (block, config) => await createParagraph(block.content, config));
