@@ -138,31 +138,24 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
 
         const firstToken = token.tokens[0];
         if (firstToken && firstToken.type === 'paragraph') {
-           const firstLine = firstToken.text.trim();
-           if (firstLine.startsWith('[!TIP]')) {
-             calloutType = BlockType.CALLOUT_TIP;
-             const lines = rawBlockquote.split('\n');
-             if (lines[0].includes('[!TIP]')) {
-                 lines.shift();
-             }
-             content = lines.join('\n').trim();
+          const firstLine = firstToken.text.trim();
+          const calloutTypes: Record<string, BlockType> = {
+            TIP: BlockType.CALLOUT_TIP,
+            NOTE: BlockType.CALLOUT_NOTE,
+            WARNING: BlockType.CALLOUT_WARNING,
+            IMPORTANT: BlockType.CALLOUT_IMPORTANT,
+            CAUTION: BlockType.CALLOUT_CAUTION,
+          };
+          const calloutMarker = firstLine.match(
+            /^\[!(TIP|NOTE|WARNING|IMPORTANT|CAUTION)\]/,
+          );
 
-           } else if (firstLine.startsWith('[!WARNING]')) {
-             calloutType = BlockType.CALLOUT_WARNING;
-             const lines = rawBlockquote.split('\n');
-             if (lines[0].includes('[!WARNING]')) {
-                 lines.shift();
-             }
-             content = lines.join('\n').trim();
-
-           } else if (firstLine.startsWith('[!NOTE]')) {
-             calloutType = BlockType.CALLOUT_NOTE;
-             const lines = rawBlockquote.split('\n');
-             if (lines[0].includes('[!NOTE]')) {
-                 lines.shift();
-             }
-             content = lines.join('\n').trim();
-           }
+          if (calloutMarker) {
+            calloutType = calloutTypes[calloutMarker[1]];
+            const lines = rawBlockquote.split('\n');
+            lines.shift();
+            content = lines.join('\n').trim();
+          }
         }
         
         addBlock({

@@ -155,7 +155,7 @@ describe('docxGenerator', () => {
     expect(gutterAtTopIndex).toBeLessThan(settingsChildNames.indexOf('compat'));
   });
 
-  it('程式碼區塊與手動目錄共用解析後的出版社裝訂版內容寬度', async () => {
+  it('出版社裝訂版以 CodeBlock 段落輸出程式碼且目錄使用解析後內容寬度', async () => {
     const blob = await generateDocx([
       {
         type: BlockType.CODE_BLOCK,
@@ -176,15 +176,16 @@ describe('docxGenerator', () => {
     });
 
     const documentXml = await readDocxXml(blob, 'word/document.xml');
+    expect(documentXml).not.toContain('<w:tbl');
     expect(documentXml).toMatch(
-      /<w:tblW(?=[^>]*w:type="dxa")(?=[^>]*w:w="7088")[^>]*\/>/,
+      /<w:pStyle w:val="CodeBlock"\/>[\s\S]*?<w:shd w:fill="F4F6F9"\/>[\s\S]*?<w:ind(?=[^>]*w:left="230")(?=[^>]*w:right="230")[^>]*\/>/,
     );
     expect(documentXml).toMatch(
       /<w:tab(?=[^>]*w:val="right")(?=[^>]*w:pos="7088")(?=[^>]*w:leader="dot")[^>]*\/>/,
     );
   });
 
-  it('上方裝訂預留的程式碼區塊與手動目錄保留完整水平內容寬度', async () => {
+  it('上方裝訂預留仍以 CodeBlock 段落輸出且目錄保留完整水平內容寬度', async () => {
     const blob = await generateDocx([
       {
         type: BlockType.CODE_BLOCK,
@@ -214,8 +215,9 @@ describe('docxGenerator', () => {
     });
 
     const documentXml = await readDocxXml(blob, 'word/document.xml');
+    expect(documentXml).not.toContain('<w:tbl');
     expect(documentXml).toMatch(
-      /<w:tblW(?=[^>]*w:type="dxa")(?=[^>]*w:w="7370")[^>]*\/>/,
+      /<w:pStyle w:val="CodeBlock"\/>[\s\S]*?<w:shd w:fill="F4F6F9"\/>[\s\S]*?<w:ind(?=[^>]*w:left="230")(?=[^>]*w:right="230")[^>]*\/>/,
     );
     expect(documentXml).toMatch(
       /<w:tab(?=[^>]*w:val="right")(?=[^>]*w:pos="7370")(?=[^>]*w:leader="dot")[^>]*\/>/,

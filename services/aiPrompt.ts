@@ -63,7 +63,7 @@ ${syntaxRules}
 3. 是否在 Frontmatter 後方加入 [TOC]。
 4. 是否只使用 H1 到 H3。
 5. code block 是否有語言與必要的 :ln / :no-ln。
-6. callout 是否使用 > [!NOTE]、> [!TIP]、> [!WARNING]。
+6. callout 是否使用 > [!NOTE]、> [!TIP]、> [!WARNING]、> [!IMPORTANT]、> [!CAUTION]。
 7. table 是否使用有效 Markdown 分隔列。
 8. Mermaid 語法是否完整且可渲染。
 

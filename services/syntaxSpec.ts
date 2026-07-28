@@ -95,8 +95,8 @@ export const SYNTAX_FEATURES: SyntaxFeature[] = [
   {
     id: 'callout',
     name: 'Callout',
-    description: '支援 NOTE、TIP、WARNING 三種提示區塊。',
-    syntax: '> [!NOTE] / > [!TIP] / > [!WARNING]',
+    description: '支援 NOTE、TIP、WARNING、IMPORTANT、CAUTION 五種提示區塊。',
+    syntax: '> [!NOTE] / > [!TIP] / > [!WARNING] / > [!IMPORTANT] / > [!CAUTION]',
     example: '> [!NOTE]\n> 這裡輸入提醒內容',
   },
   {
@@ -149,6 +149,8 @@ export const SYNTAX_COMMANDS: SyntaxCommandSpec[] = [
   { id: 'callout-note', featureId: 'callout', label: 'Note', description: '插入 NOTE 提示區塊', insertText: '> [!NOTE]\n> 這裡輸入提醒內容', group: 'Callout', quickAction: true },
   { id: 'callout-tip', featureId: 'callout', label: 'Tip', description: '插入 TIP 提示區塊', insertText: '> [!TIP]\n> 這裡輸入提示內容', group: 'Callout', quickAction: true },
   { id: 'callout-warning', featureId: 'callout', label: 'Warning', description: '插入 WARNING 提示區塊', insertText: '> [!WARNING]\n> 這裡輸入警告內容', group: 'Callout', quickAction: true },
+  { id: 'callout-important', featureId: 'callout', label: 'Important', description: '插入 IMPORTANT 重要資訊區塊', insertText: '> [!IMPORTANT]\n> 這裡輸入重要資訊', group: 'Callout', quickAction: true },
+  { id: 'callout-caution', featureId: 'callout', label: 'Caution', description: '插入 CAUTION 風險提醒區塊', insertText: '> [!CAUTION]\n> 這裡輸入風險提醒', group: 'Callout', quickAction: true },
   { id: 'code-block', featureId: 'code-block', label: 'Code block', description: '插入程式碼區塊與行號設定', insertText: '```typescript:ln\n// 程式碼貼在這裡\n```', cursorOffset: -4, group: 'Technical', quickAction: true },
   { id: 'mermaid', featureId: 'mermaid', label: 'Mermaid chart', description: '插入 Mermaid 圖表', insertText: '```mermaid\ngraph TD;\n  A-->B;\n```', group: 'Technical', quickAction: true },
   { id: 'table', featureId: 'table', label: 'Table', description: '插入 Markdown 表格', insertText: '| 欄位 1 | 欄位 2 |\n| :--- | :--- |\n| 內容 1 | 內容 2 |', group: 'Technical', quickAction: true },
@@ -170,6 +172,8 @@ export const QUICK_ACTION_IDS = [
   'callout-tip',
   'callout-note',
   'callout-warning',
+  'callout-important',
+  'callout-caution',
   'chat-left',
   'chat-right',
   'table',

@@ -2,10 +2,20 @@ import { Paragraph, TextRun, Table, TableRow, TableCell, WidthType, VerticalAlig
 import { WORD_THEME } from "../../../constants/theme";
 import { FONT_CONFIG_NORMAL } from "./common";
 import { DocxConfig } from "../types";
+import { DOCUMENT_STYLE_IDS } from "../styles";
 
 const { SPACING, COLORS, FONT_SIZES, LAYOUT } = WORD_THEME;
 
-export const createCodeBlock = async (content: string, config: DocxConfig, metadata?: { showLineNumbers?: boolean; language?: string }): Promise<Table> => {
+interface CodeBlockMetadata {
+  showLineNumbers?: boolean;
+  language?: string;
+}
+
+const createLegacyCodeBlock = async (
+  content: string,
+  config: DocxConfig,
+  metadata?: CodeBlockMetadata,
+): Promise<Table> => {
   const codeLines = content.split('\n');
   
   // 決定是否顯示行號：Metadata 優先，否則使用 Config 設定 (預設為 true)
@@ -140,3 +150,39 @@ export const createCodeBlock = async (content: string, config: DocxConfig, metad
     }
   });
 };
+
+const createPublisherCodeBlock = (
+  content: string,
+  config: DocxConfig,
+): Paragraph[] => {
+  const codeStyle = config.profile.paragraph.code;
+
+  return content.split('\n').map((line) => new Paragraph({
+    style: DOCUMENT_STYLE_IDS.codeBlock,
+    children: [
+      new TextRun({
+        text: line || ' ',
+        font: config.profile.fonts.code,
+      }),
+    ],
+    shading: {
+      fill: codeStyle.shadingFill ?? 'F4F6F9',
+    },
+    indent: {
+      left: codeStyle.leftIndentTwips ?? 230,
+      right: codeStyle.rightIndentTwips ?? 230,
+    },
+  }));
+};
+
+/**
+ * 出版社 Profile 使用逐行命名段落；舊版 Profile 保留 table renderer 相容性。
+ */
+export const createCodeBlock = async (
+  content: string,
+  config: DocxConfig,
+  metadata?: CodeBlockMetadata,
+): Promise<Table | Paragraph[]> =>
+  config.profile.id === 'technical-legacy'
+    ? createLegacyCodeBlock(content, config, metadata)
+    : createPublisherCodeBlock(content, config);

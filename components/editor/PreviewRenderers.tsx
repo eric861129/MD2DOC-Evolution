@@ -197,6 +197,16 @@ const calloutConfig = {
     className: 'border-2 border-slate-950 bg-slate-50 font-semibold text-slate-950',
     labelClassName: 'border-2 border-slate-950 bg-white text-slate-950',
   },
+  [BlockType.CALLOUT_IMPORTANT]: {
+    label: 'IMPORTANT',
+    className: 'border-sky-500 bg-sky-50 text-sky-950',
+    labelClassName: 'border-sky-500 bg-sky-50 text-sky-800',
+  },
+  [BlockType.CALLOUT_CAUTION]: {
+    label: 'CAUTION',
+    className: 'border-red-500 bg-red-50 text-red-950',
+    labelClassName: 'border-red-500 bg-red-50 text-red-800',
+  },
 };
 
 const renderCallout: PreviewRenderer = (block) => {
@@ -263,6 +273,8 @@ const previewBlockRenderers: Partial<Record<BlockType, PreviewRenderer>> = {
   [BlockType.CALLOUT_TIP]: renderCallout,
   [BlockType.CALLOUT_NOTE]: renderCallout,
   [BlockType.CALLOUT_WARNING]: renderCallout,
+  [BlockType.CALLOUT_IMPORTANT]: renderCallout,
+  [BlockType.CALLOUT_CAUTION]: renderCallout,
   [BlockType.TABLE]: renderTable,
   [BlockType.HORIZONTAL_RULE]: () => <hr className="my-8 border-t-2 border-slate-950" />,
   [BlockType.IMAGE]: (block) => <ImageBlock block={block} />,

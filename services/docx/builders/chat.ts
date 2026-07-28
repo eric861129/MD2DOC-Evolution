@@ -4,13 +4,11 @@
  * Licensed under the MIT License.
  */
 
-import { Paragraph, TextRun, AlignmentType } from "docx";
+import { AlignmentType, BorderStyle, Paragraph, TextRun } from "docx";
 import { ParsedBlock } from "../../types";
-import { WORD_THEME, LINE_HEIGHT } from "../../../constants/theme";
+import { LINE_HEIGHT } from "../../../constants/theme";
 import { parseInlineStyles, FONT_CONFIG_NORMAL } from "./common";
 import { DocxConfig } from "../types";
-
-const { COLORS, FONT_SIZES, LAYOUT } = WORD_THEME;
 
 export const createChatBubble = async (block: ParsedBlock, config?: DocxConfig): Promise<Paragraph> => {
   const { role, content, alignment = 'left' } = block;
@@ -24,19 +22,23 @@ export const createChatBubble = async (block: ParsedBlock, config?: DocxConfig):
       ? AlignmentType.CENTER 
       : AlignmentType.LEFT;
 
-  const bgFill = isRight 
-    ? COLORS.WHITE 
+  const bgFill = isRight
+    ? 'FFFFFF'
     : isCenter 
-      ? COLORS.BG_SHORTCUT 
-      : COLORS.BG_AI_CHAT;
+      ? 'F8FAFC'
+      : 'F2F2F2';
 
-  const borderStyle = isRight ? "dashed" : isCenter ? "double" : "dotted";
+  const borderStyle = isRight
+    ? BorderStyle.DASHED
+    : isCenter
+      ? BorderStyle.DOUBLE
+      : BorderStyle.DOTTED;
 
   const children = [
       new TextRun({ 
         text: `${role}:`, 
         bold: true, 
-        size: FONT_SIZES.LABEL, 
+        size: 18,
         font: FONT_CONFIG_NORMAL 
       }),
       new TextRun({ text: "", break: 1 }),
@@ -46,16 +48,16 @@ export const createChatBubble = async (block: ParsedBlock, config?: DocxConfig):
   return new Paragraph({
     children,
     border: {
-      top: { style: borderStyle, space: 10, color: COLORS.CHAT_BORDER },
-      bottom: { style: borderStyle, space: 10, color: COLORS.CHAT_BORDER },
-      left: { style: borderStyle, space: 10, color: COLORS.CHAT_BORDER },
-      right: { style: borderStyle, space: 10, color: COLORS.CHAT_BORDER },
+      top: { style: borderStyle, size: 8, space: 10, color: 'A6A6A6' },
+      bottom: { style: borderStyle, size: 8, space: 10, color: 'A6A6A6' },
+      left: { style: borderStyle, size: 8, space: 10, color: 'A6A6A6' },
+      right: { style: borderStyle, size: 8, space: 10, color: 'A6A6A6' },
     },
     indent: isRight 
-      ? { left: LAYOUT.INDENT.CHAT } 
+      ? { left: 1440 }
       : isCenter 
-        ? { left: 720, right: 720 } // Slight indent for center
-        : { right: LAYOUT.INDENT.CHAT }, 
+        ? { left: 720, right: 720 }
+        : { right: 1440 },
     alignment: docxAlignment,
     spacing: { before: 400, after: 400, line: LINE_HEIGHT.ONE_POINT_TWO },
     shading: { fill: bgFill }

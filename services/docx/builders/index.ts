@@ -37,16 +37,17 @@ export const registerDefaultHandlers = () => {
   docxRegistry.register(BlockType.PARAGRAPH, async (block, config) => await createParagraph(block.content, config));
 
   // Code Block
-  docxRegistry.register(BlockType.CODE_BLOCK, async (block, config) => [
-    await createCodeBlock(block.content, config, block.metadata),
-    new Paragraph({ text: "", spacing: { before: 0, after: 0 } })
-  ]);
+  docxRegistry.register(
+    BlockType.CODE_BLOCK,
+    (block, config) => createCodeBlock(block.content, config, block.metadata),
+  );
 
   // Mermaid
-  docxRegistry.register(BlockType.MERMAID, async (block, config) => [
-    await import("./mermaid").then(({ createMermaidBlock }) => createMermaidBlock(block.content, config)),
-    new Paragraph({ text: "", spacing: { before: 0, after: 0 } })
-  ]);
+  docxRegistry.register(
+    BlockType.MERMAID,
+    (block, config) => import("./mermaid")
+      .then(({ createMermaidBlock }) => createMermaidBlock(block.content, config)),
+  );
 
   // Image
   docxRegistry.register(BlockType.IMAGE, async (block, config) => 
@@ -54,20 +55,18 @@ export const registerDefaultHandlers = () => {
   );
 
   // Chat
-  const chatHandler = async (block: ParsedBlock, config: DocxConfig) => [
-    await createChatBubble(block, config),
-    new Paragraph({ text: "", spacing: { before: 0, after: 0 } })
-  ];
+  const chatHandler = (block: ParsedBlock, config: DocxConfig) =>
+    createChatBubble(block, config);
   docxRegistry.register(BlockType.CHAT_CUSTOM, chatHandler);
 
   // Callouts
-  const calloutHandler = async (block: any, config: DocxConfig) => [
-    await createCallout(block.content, block.type, config),
-    new Paragraph({ text: "", spacing: { before: 0, after: 0 } })
-  ];
+  const calloutHandler = (block: ParsedBlock, config: DocxConfig) =>
+    createCallout(block.content, block.type, config);
   docxRegistry.register(BlockType.CALLOUT_TIP, calloutHandler);
   docxRegistry.register(BlockType.CALLOUT_NOTE, calloutHandler);
   docxRegistry.register(BlockType.CALLOUT_WARNING, calloutHandler);
+  docxRegistry.register(BlockType.CALLOUT_IMPORTANT, calloutHandler);
+  docxRegistry.register(BlockType.CALLOUT_CAUTION, calloutHandler);
 
   // Lists
   docxRegistry.register(BlockType.BULLET_LIST, async (block, config) => 
@@ -88,10 +87,7 @@ export const registerDefaultHandlers = () => {
   // Table
   docxRegistry.register(BlockType.TABLE, async (block, config) => {
     if (!block.tableRows) return [];
-    return [
-      await createTable(block.tableRows, config),
-      new Paragraph({ text: "", spacing: { before: SPACING.TABLE_AFTER } })
-    ];
+    return createTable(block.tableRows, config);
   });
 
   // HR

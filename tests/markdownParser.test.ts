@@ -110,6 +110,28 @@ describe('markdownParser', () => {
     expect(blocks[0].content).toBe('This is a tip.');
   });
 
+  it('應將 IMPORTANT 與 CAUTION 解析為對應的 Callout 區塊', () => {
+    const input = [
+      '> [!IMPORTANT]',
+      '> 這是重要資訊。',
+      '',
+      '> [!CAUTION]',
+      '> 這是風險提醒。',
+    ].join('\n');
+
+    const { blocks } = parseMarkdown(input);
+
+    expect(blocks).toHaveLength(2);
+    expect(blocks[0]).toMatchObject({
+      type: BlockType.CALLOUT_IMPORTANT,
+      content: '這是重要資訊。',
+    });
+    expect(blocks[1]).toMatchObject({
+      type: BlockType.CALLOUT_CAUTION,
+      content: '這是風險提醒。',
+    });
+  });
+
   it('should parse tables correctly', () => {
     const input = [
       '| Header 1 | Header 2 |',

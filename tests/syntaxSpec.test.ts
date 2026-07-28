@@ -34,4 +34,26 @@ describe('syntaxSpec', () => {
   it('does not contain replacement or private-use mojibake markers', () => {
     expect(JSON.stringify({ SYNTAX_FEATURES, SYNTAX_COMMANDS })).not.toMatch(/\uFFFD|[\uE000-\uF8FF]/);
   });
+
+  it('公開 IMPORTANT 與 CAUTION 的語法及快速插入命令', () => {
+    const calloutFeature = SYNTAX_FEATURES.find(({ id }) => id === 'callout');
+    const commandsById = Object.fromEntries(
+      SYNTAX_COMMANDS.map((command) => [command.id, command]),
+    );
+
+    expect(calloutFeature?.syntax).toContain('> [!IMPORTANT]');
+    expect(calloutFeature?.syntax).toContain('> [!CAUTION]');
+    expect(commandsById['callout-important'].insertText)
+      .toContain('> [!IMPORTANT]');
+    expect(commandsById['callout-caution'].insertText)
+      .toContain('> [!CAUTION]');
+    expect(QUICK_ACTION_IDS).toEqual(expect.arrayContaining([
+      'callout-important',
+      'callout-caution',
+    ]));
+    const prompt = buildAIPromptFromSyntaxSpec();
+    expect(prompt).toContain(
+      '> [!NOTE]、> [!TIP]、> [!WARNING]、> [!IMPORTANT]、> [!CAUTION]',
+    );
+  });
 });
