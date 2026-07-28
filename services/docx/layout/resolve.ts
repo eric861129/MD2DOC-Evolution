@@ -47,6 +47,9 @@ const resolvePageSize = (settings: ExportSettings) => {
   if (!settings.customPageSizeCm) {
     throw new Error('自訂紙張尺寸不可為空');
   }
+  if (!Number.isFinite(settings.customPageSizeCm.width) || !Number.isFinite(settings.customPageSizeCm.height)) {
+    throw new Error('自訂紙張尺寸必須為有限數值');
+  }
   return {
     id: 'custom' as const,
     widthCm: settings.customPageSizeCm.width,
@@ -65,11 +68,16 @@ const resolveMargins = (settings: ExportSettings): MarginConfigCm => {
 };
 
 const validateCustomMargins = (margins: MarginConfigCm): void => {
-  const values = margins.mode === 'standard'
+  const edgeValues = margins.mode === 'standard'
     ? [margins.topCm, margins.bottomCm, margins.leftCm, margins.rightCm]
     : [margins.topCm, margins.bottomCm, margins.insideCm, margins.outsideCm];
+  const values = [...edgeValues, margins.gutterCm];
 
-  if (values.some((value) => value < MINIMUM_CUSTOM_MARGIN_CM || value > MAXIMUM_CUSTOM_MARGIN_CM)) {
+  if (values.some((value) => !Number.isFinite(value))) {
+    throw new Error('自訂邊界必須為有限數值');
+  }
+
+  if (edgeValues.some((value) => value < MINIMUM_CUSTOM_MARGIN_CM || value > MAXIMUM_CUSTOM_MARGIN_CM)) {
     throw new Error('自訂邊界必須介於 0.50 至 5.00 公分之間');
   }
 };

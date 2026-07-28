@@ -99,6 +99,30 @@ describe('resolvePageLayout', () => {
     })).toThrow('自訂邊界必須介於 0.50 至 5.00 公分之間');
   });
 
+  it.each([NaN, Infinity, -Infinity])('拒絕非有限的自訂邊界數值：%s', (value) => {
+    expect(() => resolvePageLayout({
+      ...DEFAULT_EXPORT_SETTINGS,
+      marginPresetId: 'custom',
+      customMargins: {
+        mode: 'standard',
+        topCm: value,
+        bottomCm: 2,
+        leftCm: 2,
+        rightCm: 2,
+        gutterCm: 0,
+        gutterPosition: 'left',
+      },
+    })).toThrow('自訂邊界必須為有限數值');
+  });
+
+  it.each([NaN, Infinity, -Infinity])('拒絕非有限的自訂紙張尺寸：%s', (value) => {
+    expect(() => resolvePageLayout({
+      ...DEFAULT_EXPORT_SETTINGS,
+      pageSizeId: 'custom',
+      customPageSizeCm: { width: value, height: 20 },
+    })).toThrow('自訂紙張尺寸必須為有限數值');
+  });
+
   it('覆寫出版社一致版幾何時標記為已自訂並提出頁碼警告', () => {
     const layout = resolvePageLayout({
       ...DEFAULT_EXPORT_SETTINGS,
