@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { generateDocx } from '../services/docxGenerator';
+import { parseMarkdown } from '../services/markdownParser';
 import { BlockType } from '../services/types';
 import { listDocxEntries, readDocxXml } from './helpers/readDocx';
 
@@ -155,7 +156,7 @@ describe('docxGenerator', () => {
     expect(gutterAtTopIndex).toBeLessThan(settingsChildNames.indexOf('compat'));
   });
 
-  it('出版社裝訂版以 CodeBlock 段落輸出程式碼且目錄使用解析後內容寬度', async () => {
+  it('出版社裝訂版以 CodeBlock 段落輸出程式碼且目錄使用動態 Word 欄位', async () => {
     const blob = await generateDocx([
       {
         type: BlockType.CODE_BLOCK,
@@ -180,12 +181,12 @@ describe('docxGenerator', () => {
     expect(documentXml).toMatch(
       /<w:pStyle w:val="CodeBlock"\/>[\s\S]*?<w:shd w:fill="F4F6F9"\/>[\s\S]*?<w:ind(?=[^>]*w:left="230")(?=[^>]*w:right="230")[^>]*\/>/,
     );
-    expect(documentXml).toMatch(
-      /<w:tab(?=[^>]*w:val="right")(?=[^>]*w:pos="7088")(?=[^>]*w:leader="dot")[^>]*\/>/,
-    );
+    expect(documentXml).toContain('<w:sdt>');
+    expect(documentXml).toContain('TOC \\h \\o &quot;1-3&quot;');
+    expect(documentXml).not.toContain('<w:tabs>');
   });
 
-  it('上方裝訂預留仍以 CodeBlock 段落輸出且目錄保留完整水平內容寬度', async () => {
+  it('上方裝訂預留仍以 CodeBlock 段落輸出且目錄使用動態 Word 欄位', async () => {
     const blob = await generateDocx([
       {
         type: BlockType.CODE_BLOCK,
@@ -219,9 +220,9 @@ describe('docxGenerator', () => {
     expect(documentXml).toMatch(
       /<w:pStyle w:val="CodeBlock"\/>[\s\S]*?<w:shd w:fill="F4F6F9"\/>[\s\S]*?<w:ind(?=[^>]*w:left="230")(?=[^>]*w:right="230")[^>]*\/>/,
     );
-    expect(documentXml).toMatch(
-      /<w:tab(?=[^>]*w:val="right")(?=[^>]*w:pos="7370")(?=[^>]*w:leader="dot")[^>]*\/>/,
-    );
+    expect(documentXml).toContain('<w:sdt>');
+    expect(documentXml).toContain('TOC \\h \\o &quot;1-3&quot;');
+    expect(documentXml).not.toContain('<w:tabs>');
   });
 
   it('technical-legacy 保持頁首書名與頁尾僅頁碼的既有行為', async () => {
@@ -245,5 +246,212 @@ describe('docxGenerator', () => {
     const footerXml = await readDocxXml(blob, 'word/footer1.xml');
     expect(footerXml).not.toContain('舊版技術書稿');
     expect(footerXml).toMatch(/<w:instrText[^>]*>PAGE<\/w:instrText>/);
+  });
+
+  it('publisher [TOC] 產生 heading 1–3 hyperlink 欄位並觀察緊鄰手填內容 warning', async () => {
+    const warnings: unknown[] = [];
+    const { blocks } = parseMarkdown([
+      '[TOC]',
+      '- 第一章 1',
+      '- 第二章 8',
+      '',
+      '普通正文中的第一章 1 不在重複目錄偵測範圍',
+    ].join('\n'));
+    const blob = await generateDocx(blocks, {
+      exportSettings: {
+        profileId: 'publisher-exact',
+        pageSizeId: 'tech',
+        marginPresetId: 'publisher-exact',
+      },
+      showLineNumbers: false,
+      onWarning: (warning) => warnings.push(warning),
+    });
+
+    const documentXml = await readDocxXml(blob, 'word/document.xml');
+    const document = new DOMParser().parseFromString(
+      documentXml,
+      'application/xml',
+    );
+    const instructions = Array.from(
+      document.getElementsByTagName('w:instrText'),
+    ).map((element) => element.textContent ?? '');
+    expect(instructions).toContain('TOC \\h \\o "1-3"');
+    expect(document.getElementsByTagName('w:sdt')).toHaveLength(1);
+    expect(documentXml).not.toContain('第二章 8');
+    expect(documentXml).toContain('普通正文中的第一章1');
+    expect(warnings).toEqual([
+      expect.objectContaining({
+        code: 'PUBLISHER_TOC_MANUAL_CONTENT',
+        message: expect.stringContaining('手填目錄'),
+      }),
+    ]);
+
+    const settingsXml = await readDocxXml(blob, 'word/settings.xml');
+    expect(settingsXml).toMatch(/<w:updateFields(?:\s+w:val="true")?\s*\/>/);
+  });
+
+  it('publisher 空白 [TOC] 與普通正文不會誤報手填目錄 warning', async () => {
+    const warnings: unknown[] = [];
+    const { blocks } = parseMarkdown([
+      '[TOC]',
+      '第一章 1 是普通正文，不是手填目錄。',
+    ].join('\n'));
+    const blob = await generateDocx(blocks, {
+      exportSettings: {
+        profileId: 'publisher-exact',
+        pageSizeId: 'tech',
+        marginPresetId: 'publisher-exact',
+      },
+      showLineNumbers: false,
+      onWarning: (warning) => warnings.push(warning),
+    });
+
+    expect(warnings).toEqual([]);
+    expect(await readDocxXml(blob, 'word/document.xml'))
+      .toContain('第一章1是普通正文，不是手填目錄。');
+  });
+
+  it('technical-legacy 完整保留手動目錄段落與定位點', async () => {
+    const blob = await generateDocx([{
+      type: BlockType.TOC,
+      content: '- 第一章 1',
+    }], {
+      exportSettings: {
+        profileId: 'technical-legacy',
+        pageSizeId: 'tech',
+        marginPresetId: 'publisher-exact',
+      },
+      showLineNumbers: false,
+    });
+
+    const documentXml = await readDocxXml(blob, 'word/document.xml');
+    expect(documentXml).toContain('目 錄');
+    expect(documentXml).toContain('第一章');
+    expect(documentXml).toMatch(
+      /<w:tab(?=[^>]*w:val="right")(?=[^>]*w:leader="dot")[^>]*\/>/,
+    );
+    expect(documentXml).not.toContain('<w:sdt');
+  });
+
+  it('heading bookmark 名稱唯一、確定且不破壞樣式與行內格式', async () => {
+    const blocks = [
+      { type: BlockType.HEADING_1, content: 'Release **Plan**' },
+      { type: BlockType.HEADING_2, content: 'Release Plan' },
+      { type: BlockType.HEADING_3, content: '純中文標題' },
+      { type: BlockType.HEADING_2, content: 'C# / .NET 8 工具' },
+      {
+        type: BlockType.HEADING_1,
+        content: 'An extremely long heading title that must remain deterministic after truncation',
+      },
+    ];
+    const options = {
+      exportSettings: {
+        profileId: 'publisher-exact' as const,
+        pageSizeId: 'tech' as const,
+        marginPresetId: 'publisher-exact' as const,
+      },
+      showLineNumbers: false,
+    };
+
+    const firstBlob = await generateDocx(blocks, options);
+    const secondBlob = await generateDocx(blocks, options);
+    const readBookmarkNames = async (blob: Blob): Promise<string[]> => {
+      const document = new DOMParser().parseFromString(
+        await readDocxXml(blob, 'word/document.xml'),
+        'application/xml',
+      );
+      return Array.from(document.getElementsByTagName('w:bookmarkStart'))
+        .map((bookmark) =>
+          bookmark.getAttribute('w:name') ?? bookmark.getAttribute('name') ?? ''
+        );
+    };
+    const firstNames = await readBookmarkNames(firstBlob);
+    const secondNames = await readBookmarkNames(secondBlob);
+
+    expect(firstNames).toEqual([
+      'h1_release_plan_1',
+      'h2_release_plan_2',
+      'h3_heading_3_3',
+      'h2_c_net_8_4',
+      expect.stringMatching(/^h1_an_extremely_long_heading_[a-z0-9_]*_5$/),
+    ]);
+    expect(secondNames).toEqual(firstNames);
+    expect(new Set(firstNames).size).toBe(firstNames.length);
+    expect(firstNames.every((name) =>
+      /^[A-Za-z0-9_]+$/.test(name) && name.length <= 40
+    )).toBe(true);
+
+    const document = new DOMParser().parseFromString(
+      await readDocxXml(firstBlob, 'word/document.xml'),
+      'application/xml',
+    );
+    const firstHeading = Array.from(document.getElementsByTagName('w:p'))
+      .find((paragraph) => paragraph.textContent?.includes('Release Plan'));
+    expect(firstHeading).toBeDefined();
+    expect(firstHeading!.getElementsByTagName('w:pStyle')[0]
+      .getAttribute('w:val')).toBe('Heading1');
+    expect(firstHeading!.getElementsByTagName('w:bookmarkStart')).toHaveLength(1);
+    const planRun = Array.from(firstHeading!.getElementsByTagName('w:r'))
+      .find((run) => run.textContent === 'Plan');
+    expect(planRun?.getElementsByTagName('w:b')).toHaveLength(1);
+  });
+
+  it('真實 numbering.xml 為每組相鄰有序清單建立 startOverride=1', async () => {
+    const markdown = [
+      '1. 第一組 A',
+      '2. 第一組 B',
+      '',
+      '中斷段落',
+      '',
+      '1. 第二組 A',
+      '2. 第二組 B',
+      '',
+      '- 無序中斷',
+      '',
+      '1. 第三組 A',
+    ].join('\n');
+    const { blocks } = parseMarkdown(markdown);
+    const blob = await generateDocx(blocks, {
+      exportSettings: {
+        profileId: 'publisher-exact',
+        pageSizeId: 'tech',
+        marginPresetId: 'publisher-exact',
+      },
+      showLineNumbers: false,
+    });
+
+    const document = new DOMParser().parseFromString(
+      await readDocxXml(blob, 'word/document.xml'),
+      'application/xml',
+    );
+    const numberedParagraphs = Array.from(document.getElementsByTagName('w:p'))
+      .filter((paragraph) => paragraph.textContent?.includes('組'));
+    const numIds = numberedParagraphs.map((paragraph) => {
+      const numId = paragraph.getElementsByTagName('w:numId')[0];
+      return numId.getAttribute('w:val') ?? numId.getAttribute('val');
+    });
+    expect(numIds[0]).toBe(numIds[1]);
+    expect(numIds[2]).toBe(numIds[3]);
+    expect(numIds[0]).not.toBe(numIds[2]);
+    expect(numIds[2]).not.toBe(numIds[4]);
+
+    const numbering = new DOMParser().parseFromString(
+      await readDocxXml(blob, 'word/numbering.xml'),
+      'application/xml',
+    );
+    for (const numId of new Set(numIds)) {
+      const concreteNumbering = Array.from(
+        numbering.getElementsByTagName('w:num'),
+      ).find((element) =>
+        (element.getAttribute('w:numId') ?? element.getAttribute('numId'))
+        === numId
+      );
+      expect(concreteNumbering, `numId=${numId}`).toBeDefined();
+      const override = concreteNumbering!
+        .getElementsByTagName('w:startOverride')[0];
+      expect(
+        override.getAttribute('w:val') ?? override.getAttribute('val'),
+      ).toBe('1');
+    }
   });
 });

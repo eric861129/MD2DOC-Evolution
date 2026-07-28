@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { validateExport } from '../services/exportValidation';
 import { parseMarkdown } from '../services/markdownParser';
 import { BlockType } from '../services/types';
 
@@ -104,5 +105,203 @@ describe('出版社 Markdown 語法', () => {
       { type: BlockType.TOC, content: '' },
       { type: BlockType.QR, content: '文件' },
     ]);
+  });
+
+  it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+  ])('%s 章首頁 YAML 保留引號、多行摘要與精確 source map', (_name, newline) => {
+    const chapter = [
+      '[CHAPTER]',
+      'number: "02"',
+      'part: "第一部：心法與準備"',
+      'title: "工具箱"',
+      'englishTitle: "Developer Toolbox"',
+      'summary: >-',
+      '  建立能開發、能復原，',
+      '  也能保護機密的工作環境。',
+      'image: "toolbox-cover"',
+      'goals:',
+      '  - "完成基礎開發環境與 AI 工具設定。"',
+      '  - "使用 Git、GitHub 與知識庫保存專案脈絡。"',
+      'futureOption: "由未來版本處理"',
+      '[/CHAPTER]',
+    ].join(newline);
+    const markdown = `前言${newline}${chapter}${newline}後記`;
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks).toHaveLength(3);
+    expect(blocks[1]).toMatchObject({
+      type: BlockType.CHAPTER_OPENER,
+      content: '工具箱',
+      sourceLine: 1,
+      startIndex: `前言${newline}`.length,
+      endIndex: `前言${newline}${chapter}`.length,
+      metadata: {
+        chapter: {
+          number: '02',
+          part: '第一部：心法與準備',
+          title: '工具箱',
+          englishTitle: 'Developer Toolbox',
+          summary: '建立能開發、能復原， 也能保護機密的工作環境。',
+          image: 'toolbox-cover',
+          goals: [
+            '完成基礎開發環境與 AI 工具設定。',
+            '使用 Git、GitHub 與知識庫保存專案脈絡。',
+          ],
+        },
+      },
+    });
+    expect(blocks[1].validationIssues).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        title: '章首頁包含未知欄位',
+        sourceLine: 1,
+        blockType: BlockType.CHAPTER_OPENER,
+      }),
+    ]);
+  });
+
+  it('goals 缺失時正規化為空陣列且不產生錯誤', async () => {
+    const markdown = [
+      '[CHAPTER]',
+      'number: "03"',
+      'title: "可靠交付"',
+      '[/CHAPTER]',
+    ].join('\n');
+
+    const { blocks, meta } = parseMarkdown(markdown);
+    expect(blocks[0].metadata?.chapter).toEqual({
+      number: '03',
+      title: '可靠交付',
+      goals: [],
+    });
+
+    const issues = await validateExport({
+      content: markdown,
+      blocks,
+      meta,
+      imageRegistry: {},
+    });
+    expect(issues.filter(({ blockType }) =>
+      blockType === BlockType.CHAPTER_OPENER
+    )).toEqual([]);
+  });
+
+  it('錯誤型別、缺少必填欄位與無效 YAML 轉成 ValidationIssue 而不中斷後續解析', async () => {
+    const markdown = [
+      '[CHAPTER]',
+      'number: 4',
+      'englishTitle: 99',
+      'goals: "不是陣列"',
+      '[/CHAPTER]',
+      '',
+      '章後正文',
+      '',
+      '[CHAPTER]',
+      'number: "05"',
+      'title: [不完整',
+      '[/CHAPTER]',
+      '',
+      '仍可解析的正文',
+    ].join('\n');
+
+    const { blocks, meta } = parseMarkdown(markdown);
+    expect(blocks.map(({ type }) => type)).toEqual([
+      BlockType.CHAPTER_OPENER,
+      BlockType.PARAGRAPH,
+      BlockType.CHAPTER_OPENER,
+      BlockType.PARAGRAPH,
+    ]);
+    expect(blocks[0].metadata?.chapter).toEqual({
+      number: '',
+      title: '',
+      goals: [],
+    });
+
+    const issues = await validateExport({
+      content: markdown,
+      blocks,
+      meta,
+      imageRegistry: {},
+    });
+    const chapterIssues = issues.filter(({ blockType }) =>
+      blockType === BlockType.CHAPTER_OPENER
+    );
+    expect(chapterIssues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        severity: 'error',
+        title: '章首頁 number 必須是字串',
+      }),
+      expect.objectContaining({
+        severity: 'error',
+        title: '章首頁缺少 title',
+      }),
+      expect.objectContaining({
+        severity: 'warning',
+        title: '章首頁 englishTitle 必須是字串',
+      }),
+      expect.objectContaining({
+        severity: 'warning',
+        title: '章首頁 goals 必須是字串陣列',
+      }),
+      expect.objectContaining({
+        severity: 'error',
+        title: '章首頁 YAML 無法解析',
+      }),
+    ]));
+  });
+
+  it('相鄰有序清單共用 instance，並由其他 block 明確切斷', () => {
+    const markdown = [
+      '1. 第一項',
+      '   1. 第一層',
+      '      1. 第二層',
+      '2. 第二項',
+      '',
+      '- 無序項目',
+      '',
+      '1. 無序後重新開始',
+      '2. 同組第二項',
+      '',
+      '段落切斷',
+      '',
+      '1. 段落後重新開始',
+      '',
+      '| 欄位 | 值 |',
+      '| :--- | :--- |',
+      '| A | B |',
+      '',
+      '1. 表格後重新開始',
+    ].join('\n');
+
+    const { blocks } = parseMarkdown(markdown);
+    const numberedBlocks = blocks.filter(({ type }) =>
+      type === BlockType.NUMBERED_LIST
+    );
+
+    expect(numberedBlocks.map((block) => ({
+      content: block.content,
+      level: block.nestingLevel,
+      instance: block.metadata?.listInstance,
+    }))).toEqual([
+      { content: '第一項', level: 0, instance: 1 },
+      { content: '第一層', level: 1, instance: 1 },
+      { content: '第二層', level: 2, instance: 1 },
+      { content: '第二項', level: 0, instance: 1 },
+      { content: '無序後重新開始', level: 0, instance: 2 },
+      { content: '同組第二項', level: 0, instance: 2 },
+      { content: '段落後重新開始', level: 0, instance: 3 },
+      { content: '表格後重新開始', level: 0, instance: 4 },
+    ]);
+  });
+
+  it('不同文件的有序清單 instance 都從 1 開始', () => {
+    const first = parseMarkdown('1. 第一份文件').blocks[0];
+    const second = parseMarkdown('1. 第二份文件').blocks[0];
+
+    expect(first.metadata?.listInstance).toBe(1);
+    expect(second.metadata?.listInstance).toBe(1);
   });
 });

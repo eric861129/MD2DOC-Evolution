@@ -66,4 +66,15 @@ describe('syntaxSpec', () => {
       '[QR:連結標籤](https://example.com)',
     );
   });
+
+  it('公開章首頁 YAML 語法與快速插入命令', () => {
+    const chapterFeature = SYNTAX_FEATURES.find(({ id }) => id === 'chapter');
+    const chapterCommand = SYNTAX_COMMANDS.find(({ id }) => id === 'chapter');
+
+    expect(chapterFeature?.syntax).toContain('[CHAPTER]');
+    expect(chapterFeature?.syntax).toContain('goals:');
+    expect(chapterCommand?.insertText).toContain('number: "01"');
+    expect(chapterCommand?.insertText).toContain('[/CHAPTER]');
+    expect(QUICK_ACTION_IDS).toContain('chapter');
+  });
 });

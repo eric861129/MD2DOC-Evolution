@@ -32,7 +32,7 @@ export interface ResolvedImageMedia {
   height: number;
 }
 
-interface ImageParagraphOptions {
+export interface ImageParagraphOptions {
   media: ResolvedImageMedia;
   config: DocxConfig;
   alt: string;
@@ -42,6 +42,7 @@ interface ImageParagraphOptions {
     before: number;
     after: number;
   };
+  keepNext?: boolean;
 }
 
 const startsWithBytes = (
@@ -348,6 +349,7 @@ export const createImageParagraph = (
   alignment: AlignmentType.CENTER,
   children: [createImageRun(options)],
   spacing: options.spacing ?? { before: 200, after: 100 },
+  keepNext: options.keepNext,
 });
 
 export const createImageBlock = async (

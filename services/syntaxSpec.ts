@@ -2,6 +2,7 @@ import { GITHUB_REPO_URL } from '../constants/project';
 
 export type SyntaxFeatureId =
   | 'frontmatter'
+  | 'chapter'
   | 'toc'
   | 'heading'
   | 'list'
@@ -50,6 +51,24 @@ export const SYNTAX_FEATURES: SyntaxFeature[] = [
     description: '使用 [TOC] 產生 Word 目錄標記，可接手動目錄列。',
     syntax: '[TOC]',
     example: '[TOC]\n- 第一章 1',
+  },
+  {
+    id: 'chapter',
+    name: 'Chapter opener',
+    description: '使用 YAML 定義章號、標題、摘要、圖片與本章完成目標。',
+    syntax: '[CHAPTER]\\nnumber: "01"\\ntitle: "章節標題"\\ngoals:\\n  - "本章目標"\\n[/CHAPTER]',
+    example: [
+      '[CHAPTER]',
+      'number: "01"',
+      'part: "第一部：準備"',
+      'title: "章節標題"',
+      'englishTitle: "Chapter Title"',
+      'summary: "本章摘要。"',
+      'image: "chapter-cover"',
+      'goals:',
+      '  - "完成本章目標。"',
+      '[/CHAPTER]',
+    ].join('\n'),
   },
   {
     id: 'heading',
@@ -154,6 +173,26 @@ export const SYNTAX_COMMANDS: SyntaxCommandSpec[] = [
   { id: 'quote', featureId: 'quote', label: 'Quote', description: '插入引用段落', insertText: '> ', group: 'Basic' },
   { id: 'divider', featureId: 'divider', label: 'Divider', description: '插入水平分隔線', insertText: '---\n', group: 'Basic' },
   { id: 'toc', featureId: 'toc', label: 'Table of contents', description: '插入 Word 目錄標記', insertText: '[TOC]\n', group: 'Basic', quickAction: true },
+  {
+    id: 'chapter',
+    featureId: 'chapter',
+    label: 'Chapter opener',
+    description: '插入章首頁 YAML',
+    insertText: [
+      '[CHAPTER]',
+      'number: "01"',
+      'part: "第一部：準備"',
+      'title: "章節標題"',
+      'englishTitle: "Chapter Title"',
+      'summary: "本章摘要。"',
+      'image: "chapter-cover"',
+      'goals:',
+      '  - "完成本章目標。"',
+      '[/CHAPTER]',
+    ].join('\n'),
+    group: 'Basic',
+    quickAction: true,
+  },
   { id: 'callout-note', featureId: 'callout', label: 'Note', description: '插入 NOTE 提示區塊', insertText: '> [!NOTE]\n> 這裡輸入提醒內容', group: 'Callout', quickAction: true },
   { id: 'callout-tip', featureId: 'callout', label: 'Tip', description: '插入 TIP 提示區塊', insertText: '> [!TIP]\n> 這裡輸入提示內容', group: 'Callout', quickAction: true },
   { id: 'callout-warning', featureId: 'callout', label: 'Warning', description: '插入 WARNING 提示區塊', insertText: '> [!WARNING]\n> 這裡輸入警告內容', group: 'Callout', quickAction: true },
@@ -176,6 +215,7 @@ export const QUICK_ACTION_IDS = [
   'h2',
   'h3',
   'frontmatter',
+  'chapter',
   'code-block',
   'mermaid',
   'callout-tip',
@@ -191,6 +231,7 @@ export const QUICK_ACTION_IDS = [
 
 export const CORE_SYNTAX_FEATURE_IDS: SyntaxFeatureId[] = [
   'frontmatter',
+  'chapter',
   'toc',
   'heading',
   'code-block',

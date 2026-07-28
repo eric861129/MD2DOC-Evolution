@@ -13,6 +13,7 @@ import {
   PageNumber,
   Paragraph,
   Table,
+  TableOfContents,
   TextRun,
 } from 'docx';
 import type { DocumentMeta, ParsedBlock } from './types';
@@ -147,19 +148,25 @@ export const generateDocx = async (
       figure: 0,
       qr: 0,
       bookmark: 0,
+      chapter: 0,
       listInstance: 0,
+      outputBlock: 0,
     },
   };
 
-  const docChildren: (Paragraph | Table)[] = [];
+  const docChildren: (Paragraph | Table | TableOfContents)[] = [];
 
   for (const block of blocks) {
     const result = await docxRegistry.handle(block, config);
     if (result) {
       if (Array.isArray(result)) {
         docChildren.push(...result);
+        if (result.length > 0) {
+          config.counters.outputBlock += 1;
+        }
       } else {
         docChildren.push(result);
+        config.counters.outputBlock += 1;
       }
     }
   }
@@ -181,7 +188,7 @@ export const generateDocx = async (
         {
           reference: "default-numbering",
           levels: [
-            { level: 0, format: "decimal", text: "%1.", alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 720, hanging: 360 } } } },
+            { level: 0, format: "decimal", text: "%1.", start: 1, alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 720, hanging: 360 } } } },
             { level: 1, format: "decimal", text: "%2.", alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 1440, hanging: 360 } } } },
             { level: 2, format: "decimal", text: "%3.", alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 2160, hanging: 360 } } } },
           ],

@@ -1,15 +1,11 @@
-import { BlockType, DocumentMeta, ParsedBlock } from './types';
+import {
+  BlockType,
+  type DocumentMeta,
+  type ParsedBlock,
+  type ValidationIssue,
+} from './types';
 
-export type ValidationSeverity = 'warning' | 'error';
-
-export interface ValidationIssue {
-  id: string;
-  severity: ValidationSeverity;
-  title: string;
-  message: string;
-  sourceLine?: number;
-  blockType?: BlockType;
-}
+export type { ValidationIssue, ValidationSeverity } from './types';
 
 export interface ExportValidationInput {
   content: string;
@@ -76,6 +72,8 @@ const collectBlockIssues = (
   const issues: ValidationIssue[] = [];
 
   blocks.forEach((block, index) => {
+    issues.push(...(block.validationIssues ?? []));
+
     if (block.type === BlockType.CODE_BLOCK && !hasValue(block.metadata?.language)) {
       issues.push({
         id: `code-language-${index}`,

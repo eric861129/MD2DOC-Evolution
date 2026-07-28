@@ -13,7 +13,8 @@ import { DOCUMENT_STYLE_IDS } from "../styles";
 import { parseInlineStyles } from "./common";
 
 // Builders
-import { createManualTOC } from "./toc";
+import { createTOC } from './toc';
+import { createChapterOpener } from './chapter';
 import { createHeading } from "./heading";
 import { createParagraph } from "./paragraph";
 import { createCodeBlock } from "./codeBlock";
@@ -27,7 +28,25 @@ const { SPACING, LAYOUT, COLORS } = WORD_THEME;
 
 export const registerDefaultHandlers = () => {
   // TOC
-  docxRegistry.register(BlockType.TOC, (block, config) => createManualTOC(block.content, config));
+  docxRegistry.register(
+    BlockType.TOC,
+    (block, config) => createTOC(
+      block.content,
+      config,
+      block.metadata?.manualTocContent === true,
+    ),
+  );
+
+  docxRegistry.register(
+    BlockType.CHAPTER_OPENER,
+    (block, config) => block.metadata?.chapter
+      ? createChapterOpener(
+        block.metadata.chapter,
+        config,
+        config.counters.outputBlock > 0,
+      )
+      : [],
+  );
 
   // Headings
   docxRegistry.register(BlockType.HEADING_1, async (block, config) => await createHeading(block.content, 1, config));
@@ -100,7 +119,11 @@ export const registerDefaultHandlers = () => {
     new Paragraph({ 
       style: DOCUMENT_STYLE_IDS.normal,
       children: await parseInlineStyles(block.content, config),
-      numbering: { reference: "default-numbering", level: block.nestingLevel || 0 },
+      numbering: {
+        reference: 'default-numbering',
+        level: block.nestingLevel || 0,
+        instance: block.metadata?.listInstance ?? 0,
+      },
     })
   );
 

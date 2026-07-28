@@ -10,7 +10,11 @@ import type { ExportSettings, ResolvedPageLayout } from './layout/types';
 import type { DocumentStyleProfile } from './profiles';
 
 export interface DocxExportWarning {
-  code: 'QR_GENERATION_FAILED' | 'MERMAID_GENERATION_FAILED';
+  code:
+    | 'QR_GENERATION_FAILED'
+    | 'MERMAID_GENERATION_FAILED'
+    | 'CHAPTER_IMAGE_MISSING'
+    | 'PUBLISHER_TOC_MANUAL_CONTENT';
   message: string;
   url?: string;
 }
@@ -34,6 +38,8 @@ export interface DocxConfig {
     figure: number;
     qr: number;
     bookmark: number;
+    chapter: number;
     listInstance: number;
+    outputBlock: number;
   };
 }

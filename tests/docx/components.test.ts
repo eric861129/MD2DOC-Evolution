@@ -932,4 +932,176 @@ describe('DOCX 出版元件', () => {
       },
     })).rejects.toThrow(/不支援的圖片 (?:格式|MIME)/);
   });
+
+  it('章首頁依權威順序輸出字級、色彩、9.8 公分圖片與本章完成清單', async () => {
+    const blob = await generateDocx([{
+      type: BlockType.CHAPTER_OPENER,
+      content: '工具箱',
+      metadata: {
+        chapter: {
+          number: '02',
+          part: '第一部：心法與準備',
+          title: '工具箱',
+          englishTitle: 'Developer Toolbox',
+          summary: '建立能開發、能復原，也能保護機密的工作環境。',
+          image: 'toolbox-cover',
+          goals: [
+            '完成基礎開發環境與 AI 工具設定。',
+            '使用 Git、GitHub 與知識庫保存專案脈絡。',
+          ],
+        },
+      },
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+      imageRegistry: {
+        'toolbox-cover': LARGE_PNG_DATA_URL,
+      },
+    });
+
+    const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
+    const paragraphs = bodyParagraphs(document);
+    expect(paragraphs.map(paragraphText)).toEqual([
+      '第一部：心法與準備',
+      '02',
+      '工具箱',
+      'Developer Toolbox',
+      '建立能開發、能復原，也能保護機密的工作環境。',
+      '',
+      '本章完成',
+      '完成基礎開發環境與 AI 工具設定。',
+      '使用 Git、GitHub 與知識庫保存專案脈絡。',
+    ]);
+
+    const expectedRuns = [
+      ['第一部：心法與準備', '18', '2E8B8B', true, false],
+      ['02', '68', '0B2545', true, false],
+      ['工具箱', '44', '0B2545', true, false],
+      ['Developer Toolbox', '19', '2E74B5', false, true],
+      ['建立能開發、能復原，也能保護機密的工作環境。', '21', '333333', false, false],
+      ['本章完成', '21', 'C55A3A', true, false],
+    ] as const;
+    for (const [text, size, color, bold, italic] of expectedRuns) {
+      const run = elementsByName(document, 'r')
+        .find((candidate) =>
+          elementsByName(candidate, 't')
+            .some((node) => node.textContent === text)
+        );
+      expect(run, text).toBeDefined();
+      const properties = directChild(run!, 'rPr');
+      expect(wordAttribute(directChild(properties!, 'sz')!, 'val')).toBe(size);
+      expect(wordAttribute(directChild(properties!, 'color')!, 'val')).toBe(color);
+      expect(Boolean(directChild(properties!, 'b'))).toBe(bold);
+      expect(Boolean(directChild(properties!, 'i'))).toBe(italic);
+    }
+
+    const extent = document.getElementsByTagName('wp:extent')[0];
+    expect(extent.getAttribute('cx')).toBe('3528000');
+    expect(extent.getAttribute('cy')).toBe('1764000');
+    const goalParagraphs = paragraphs.slice(-2);
+    expect(goalParagraphs.every((paragraph) =>
+      Boolean(directChild(paragraphProperties(paragraph), 'numPr'))
+    )).toBe(true);
+  });
+
+  it.each([
+    {
+      name: '章首頁是第一個 block',
+      blocks: [
+        {
+          type: BlockType.CHAPTER_OPENER,
+          content: '第一章',
+          metadata: {
+            chapter: { number: '01', title: '第一章', goals: [] },
+          },
+        },
+      ],
+      expectedBreakTitles: [],
+    },
+    {
+      name: '章首頁位於正文後',
+      blocks: [
+        { type: BlockType.PARAGRAPH, content: '前文' },
+        {
+          type: BlockType.CHAPTER_OPENER,
+          content: '第一章',
+          metadata: {
+            chapter: { number: '01', title: '第一章', goals: [] },
+          },
+        },
+      ],
+      expectedBreakTitles: ['01'],
+    },
+    {
+      name: '連續章首頁',
+      blocks: [
+        {
+          type: BlockType.CHAPTER_OPENER,
+          content: '第一章',
+          metadata: {
+            chapter: { number: '01', title: '第一章', goals: [] },
+          },
+        },
+        {
+          type: BlockType.CHAPTER_OPENER,
+          content: '第二章',
+          metadata: {
+            chapter: { number: '02', title: '第二章', goals: [] },
+          },
+        },
+      ],
+      expectedBreakTitles: ['02'],
+    },
+  ])('$name 不以獨立 break 段落製造空白頁', async ({
+    blocks,
+    expectedBreakTitles,
+  }) => {
+    const blob = await generateDocx(blocks as ParsedBlock[], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+    });
+
+    const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
+    const breakParagraphs = bodyParagraphs(document)
+      .filter((paragraph) =>
+        Boolean(directChild(paragraphProperties(paragraph), 'pageBreakBefore'))
+      );
+    expect(breakParagraphs.map(paragraphText)).toEqual(expectedBreakTitles);
+    expect(elementsByName(document, 'br')
+      .filter((element) => wordAttribute(element, 'type') === 'page'))
+      .toHaveLength(0);
+  });
+
+  it('章首頁圖片 key 缺失時回報 warning 並以可讀文字降級', async () => {
+    const warnings: unknown[] = [];
+    const blob = await generateDocx([{
+      type: BlockType.CHAPTER_OPENER,
+      content: '缺圖章節',
+      metadata: {
+        chapter: {
+          number: '06',
+          title: '缺圖章節',
+          image: 'missing-cover',
+          goals: [],
+        },
+      },
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+      imageRegistry: {},
+      onWarning: (warning) => warnings.push(warning),
+    });
+
+    expect(warnings).toEqual([
+      expect.objectContaining({
+        code: 'CHAPTER_IMAGE_MISSING',
+        message: expect.stringContaining('missing-cover'),
+      }),
+    ]);
+    expect((await listDocxEntries(blob)).filter((entry) =>
+      /^word\/media\/[^/]+$/.test(entry)
+    )).toHaveLength(0);
+    expect(await readDocxXml(blob, 'word/document.xml'))
+      .toContain('[缺少章首頁圖片：missing-cover]');
+  });
 });

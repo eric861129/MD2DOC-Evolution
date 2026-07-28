@@ -25,8 +25,31 @@ export enum BlockType {
   TABLE = 'TABLE',
   HORIZONTAL_RULE = 'HORIZONTAL_RULE',
   TOC = 'TOC',
+  CHAPTER_OPENER = 'CHAPTER_OPENER',
   IMAGE = 'IMAGE',
   QR = 'QR',
+}
+
+export type ValidationSeverity = 'warning' | 'error';
+
+export interface ValidationIssue {
+  id: string;
+  severity: ValidationSeverity;
+  title: string;
+  message: string;
+  sourceLine?: number;
+  blockType?: BlockType;
+}
+
+/** 章首頁 YAML 經嚴格型別正規化後的資料。 */
+export interface ChapterMetadata {
+  number: string;
+  part?: string;
+  title: string;
+  englishTitle?: string;
+  summary?: string;
+  image?: string;
+  goals: string[];
 }
 
 export interface ParsedBlock {
@@ -41,8 +64,11 @@ export interface ParsedBlock {
   metadata?: {
     showLineNumbers?: boolean;
     language?: string;
+    chapter?: ChapterMetadata;
+    listInstance?: number;
     [key: string]: any;
   };
+  validationIssues?: ValidationIssue[];
   nestingLevel?: number; // For lists
 }
 

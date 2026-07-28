@@ -17,6 +17,7 @@ describe('editorCommands', () => {
       'callout-tip',
       'table',
       'toc',
+      'chapter',
     ]));
     expect(new Set(commandIds).size).toBe(commandIds.length);
     expect(getQuickActions().map((command) => command.id)).toEqual(QUICK_ACTION_IDS);
@@ -31,6 +32,7 @@ describe('editorCommands', () => {
     expect(byId['callout-tip'].insertText).toContain('> [!TIP]');
     expect(byId['frontmatter'].insertText).toContain('title: 書稿標題');
     expect(byId['chat-left'].insertText).toContain('User "::');
+    expect(byId['chapter'].insertText).toContain('[CHAPTER]');
   });
 
   it('does not contain replacement or private-use mojibake markers', () => {

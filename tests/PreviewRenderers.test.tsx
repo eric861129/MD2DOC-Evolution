@@ -35,4 +35,33 @@ describe('PreviewBlock Callout', () => {
     expect(screen.getByRole('link', { name: 'GitHub 原始碼' }))
       .toHaveAttribute('href', 'https://github.com/example/repo');
   });
+
+  it('章首頁預覽顯示章號、標題、摘要與本章完成目標', () => {
+    render(
+      <PreviewBlock
+        block={{
+          type: BlockType.CHAPTER_OPENER,
+          content: '工具箱',
+          metadata: {
+            chapter: {
+              number: '02',
+              part: '第一部：心法與準備',
+              title: '工具箱',
+              englishTitle: 'Developer Toolbox',
+              summary: '建立可靠的工作環境。',
+              goals: ['完成環境設定。'],
+            },
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText('02')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '工具箱' }))
+      .toBeInTheDocument();
+    expect(screen.getByText('Developer Toolbox')).toBeInTheDocument();
+    expect(screen.getByText('建立可靠的工作環境。')).toBeInTheDocument();
+    expect(screen.getByText('本章完成')).toBeInTheDocument();
+    expect(screen.getByText('完成環境設定。')).toBeInTheDocument();
+  });
 });

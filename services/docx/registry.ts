@@ -4,11 +4,15 @@
  * Licensed under the MIT License.
  */
 
-import { Paragraph, Table } from "docx";
+import { Paragraph, Table, TableOfContents } from 'docx';
 import { ParsedBlock } from "../types";
 import { DocxConfig } from "./types";
 
-export type DocxBlockResult = Paragraph | Table | (Paragraph | Table)[];
+export type DocxBlockResult =
+  | Paragraph
+  | Table
+  | TableOfContents
+  | (Paragraph | Table | TableOfContents)[];
 
 export type DocxBlockHandler = (block: ParsedBlock, config: DocxConfig) => DocxBlockResult | Promise<DocxBlockResult>;
 

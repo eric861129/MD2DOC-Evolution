@@ -1,4 +1,11 @@
-import { Paragraph, TextRun, AlignmentType, TabStopType, LeaderType } from "docx";
+import {
+  AlignmentType,
+  LeaderType,
+  Paragraph,
+  TableOfContents,
+  TabStopType,
+  TextRun,
+} from 'docx';
 import { WORD_THEME, LINE_HEIGHT } from "../../../constants/theme";
 import { FONT_CONFIG_NORMAL } from "./common";
 import { DocxConfig } from "../types";
@@ -53,4 +60,29 @@ export const createManualTOC = (content: string, pageConfig: DocxConfig): Paragr
   });
 
   return tocParagraphs;
+};
+
+/**
+ * Publisher profile 使用真正 Word TOC 欄位；legacy 完整保留手動目錄。
+ */
+export const createTOC = (
+  content: string,
+  config: DocxConfig,
+  hasManualContent: boolean,
+): TableOfContents | Paragraph[] => {
+  if (config.profile.id === 'technical-legacy') {
+    return createManualTOC(content, config);
+  }
+
+  if (hasManualContent && content.trim()) {
+    config.reportWarning({
+      code: 'PUBLISHER_TOC_MANUAL_CONTENT',
+      message: 'Publisher 目錄會由 Word 動態更新；已忽略 [TOC] 後緊鄰的手填目錄內容。',
+    });
+  }
+
+  return new TableOfContents('目錄', {
+    headingStyleRange: '1-3',
+    hyperlink: true,
+  });
 };

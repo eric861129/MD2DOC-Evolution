@@ -5,7 +5,13 @@
  */
 
 import { Lexer, marked } from 'marked';
-import { BlockType, ParsedBlock } from '../types';
+import yaml from 'js-yaml';
+import {
+  BlockType,
+  type ChapterMetadata,
+  type ParsedBlock,
+  type ValidationIssue,
+} from '../types';
 import { cleanTextForPublishing } from '../../utils/textProcessor';
 
 // Configure marked options if needed
@@ -25,6 +31,42 @@ interface PhysicalLineSpan {
   startIndex: number;
   endIndex: number;
 }
+
+interface ChapterSourceSpan {
+  startIndex: number;
+  endIndex: number;
+  lineOffset: number;
+  yamlContent: string;
+  isClosed: boolean;
+}
+
+const CHAPTER_KEYS = new Set([
+  'number',
+  'part',
+  'title',
+  'englishTitle',
+  'summary',
+  'image',
+  'goals',
+]);
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+const createChapterIssue = (
+  sourceLine: number,
+  code: string,
+  severity: ValidationIssue['severity'],
+  title: string,
+  message: string,
+): ValidationIssue => ({
+  id: `chapter-${sourceLine}-${code}`,
+  severity,
+  title,
+  message,
+  sourceLine,
+  blockType: BlockType.CHAPTER_OPENER,
+});
 
 const scanPhysicalLineSpans = (source: string): PhysicalLineSpan[] => {
   const spans: PhysicalLineSpan[] = [];
@@ -59,6 +101,281 @@ const scanPhysicalLineSpans = (source: string): PhysicalLineSpan[] => {
     });
   }
   return spans;
+};
+
+const scanChapterSourceSpans = (source: string): ChapterSourceSpan[] => {
+  const lines = scanPhysicalLineSpans(source);
+  const spans: ChapterSourceSpan[] = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    if (lines[index].content.trim() !== '[CHAPTER]') {
+      continue;
+    }
+
+    const startLine = lines[index];
+    let closingIndex = index + 1;
+    while (
+      closingIndex < lines.length
+      && lines[closingIndex].content.trim() !== '[/CHAPTER]'
+    ) {
+      closingIndex += 1;
+    }
+
+    const isClosed = closingIndex < lines.length;
+    const closingLine = isClosed
+      ? lines[closingIndex]
+      : lines[lines.length - 1];
+    const yamlStart = index + 1 < lines.length
+      ? lines[index + 1].startIndex
+      : startLine.endIndex;
+    const yamlEnd = isClosed ? closingLine.startIndex : source.length;
+
+    spans.push({
+      startIndex: startLine.startIndex,
+      endIndex: isClosed ? closingLine.endIndex : source.length,
+      lineOffset: startLine.lineOffset,
+      yamlContent: source.slice(yamlStart, yamlEnd),
+      isClosed,
+    });
+    index = isClosed ? closingIndex : lines.length;
+  }
+
+  return spans;
+};
+
+const normalizeOptionalChapterString = (
+  raw: Record<string, unknown>,
+  key: 'part' | 'englishTitle' | 'summary' | 'image',
+  sourceLine: number,
+  issues: ValidationIssue[],
+): string | undefined => {
+  const value = raw[key];
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== 'string') {
+    issues.push(createChapterIssue(
+      sourceLine,
+      `${key}-type`,
+      'warning',
+      `章首頁 ${key} 必須是字串`,
+      `已忽略 ${key}；請在 [CHAPTER] YAML 中使用字串。`,
+    ));
+    return undefined;
+  }
+  const normalized = value.trim();
+  return normalized || undefined;
+};
+
+const normalizeRequiredChapterString = (
+  raw: Record<string, unknown>,
+  key: 'number' | 'title',
+  sourceLine: number,
+  issues: ValidationIssue[],
+): string => {
+  const value = raw[key];
+  if (value === undefined || value === null || value === '') {
+    issues.push(createChapterIssue(
+      sourceLine,
+      `${key}-missing`,
+      'error',
+      `章首頁缺少 ${key}`,
+      `請在 [CHAPTER] YAML 補上字串欄位 ${key}。`,
+    ));
+    return '';
+  }
+  if (typeof value !== 'string') {
+    issues.push(createChapterIssue(
+      sourceLine,
+      `${key}-type`,
+      'error',
+      `章首頁 ${key} 必須是字串`,
+      `${key} 不會自動轉型；若需保留前導零，請使用引號包住值。`,
+    ));
+    return '';
+  }
+  const normalized = value.trim();
+  if (!normalized) {
+    issues.push(createChapterIssue(
+      sourceLine,
+      `${key}-missing`,
+      'error',
+      `章首頁缺少 ${key}`,
+      `請在 [CHAPTER] YAML 補上非空白字串欄位 ${key}。`,
+    ));
+  }
+  return normalized;
+};
+
+const parseChapterMetadata = (
+  yamlContent: string,
+  sourceLine: number,
+  isClosed: boolean,
+): { chapter: ChapterMetadata; issues: ValidationIssue[] } => {
+  const issues: ValidationIssue[] = [];
+  const emptyChapter: ChapterMetadata = {
+    number: '',
+    title: '',
+    goals: [],
+  };
+
+  if (!isClosed) {
+    issues.push(createChapterIssue(
+      sourceLine,
+      'closing-marker',
+      'error',
+      '章首頁缺少 [/CHAPTER]',
+      '請補上章首頁結束標記，避免後續正文被視為 YAML。',
+    ));
+  }
+
+  let parsedYaml: unknown;
+  try {
+    parsedYaml = yaml.load(yamlContent, { schema: yaml.DEFAULT_SCHEMA });
+  } catch {
+    issues.push(createChapterIssue(
+      sourceLine,
+      'yaml',
+      'error',
+      '章首頁 YAML 無法解析',
+      '請檢查縮排、引號與陣列格式；其餘文件內容仍會繼續解析。',
+    ));
+    return { chapter: emptyChapter, issues };
+  }
+
+  if (!isRecord(parsedYaml)) {
+    issues.push(createChapterIssue(
+      sourceLine,
+      'yaml-object',
+      'error',
+      '章首頁 YAML 必須是物件',
+      '請使用 number、title 等鍵值欄位，不要使用純量或頂層陣列。',
+    ));
+    return { chapter: emptyChapter, issues };
+  }
+
+  const unknownKeys = Object.keys(parsedYaml)
+    .filter((key) => !CHAPTER_KEYS.has(key))
+    .sort();
+  if (unknownKeys.length > 0) {
+    issues.push(createChapterIssue(
+      sourceLine,
+      'unknown-keys',
+      'warning',
+      '章首頁包含未知欄位',
+      `已忽略未知欄位：${unknownKeys.join('、')}。`,
+    ));
+  }
+
+  let goals: string[] = [];
+  if (parsedYaml.goals !== undefined) {
+    if (
+      Array.isArray(parsedYaml.goals)
+      && parsedYaml.goals.every((goal) => typeof goal === 'string')
+    ) {
+      goals = parsedYaml.goals
+        .map((goal) => goal.trim())
+        .filter(Boolean);
+    } else {
+      issues.push(createChapterIssue(
+        sourceLine,
+        'goals-type',
+        'warning',
+        '章首頁 goals 必須是字串陣列',
+        '已將 goals 正規化為空陣列；請使用 YAML 清單輸入每個學習目標。',
+      ));
+    }
+  }
+
+  return {
+    chapter: {
+      number: normalizeRequiredChapterString(
+        parsedYaml,
+        'number',
+        sourceLine,
+        issues,
+      ),
+      ...Object.fromEntries(
+        (['part', 'englishTitle', 'summary', 'image'] as const)
+          .map((key) => [
+            key,
+            normalizeOptionalChapterString(
+              parsedYaml,
+              key,
+              sourceLine,
+              issues,
+            ),
+          ])
+          .filter(([, value]) => value !== undefined),
+      ),
+      title: normalizeRequiredChapterString(
+        parsedYaml,
+        'title',
+        sourceLine,
+        issues,
+      ),
+      goals,
+    },
+    issues,
+  };
+};
+
+const finalizeBlocks = (blocks: ParsedBlock[]): ParsedBlock[] => {
+  const mergedBlocks: ParsedBlock[] = [];
+  for (let index = 0; index < blocks.length; index += 1) {
+    const current = blocks[index];
+    if (current.type === BlockType.TOC && index + 1 < blocks.length) {
+      let nextIndex = index + 1;
+      let manualContent = current.content || '';
+
+      while (
+        nextIndex < blocks.length
+        && (
+          blocks[nextIndex].type === BlockType.BULLET_LIST
+          || blocks[nextIndex].type === BlockType.NUMBERED_LIST
+        )
+      ) {
+        const listBlock = blocks[nextIndex];
+        const prefix = listBlock.type === BlockType.BULLET_LIST ? '- ' : '1. ';
+        manualContent += `${manualContent ? '\n' : ''}${prefix}${listBlock.content}`;
+        nextIndex += 1;
+      }
+
+      if (nextIndex > index + 1) {
+        mergedBlocks.push({
+          ...current,
+          content: manualContent,
+          metadata: {
+            ...current.metadata,
+            manualTocContent: true,
+          },
+        });
+        index = nextIndex - 1;
+        continue;
+      }
+    }
+    mergedBlocks.push(current);
+  }
+
+  let currentListInstance: number | undefined;
+  let nextListInstance = 1;
+  return mergedBlocks.map((block) => {
+    if (block.type !== BlockType.NUMBERED_LIST) {
+      currentListInstance = undefined;
+      return block;
+    }
+    if (currentListInstance === undefined) {
+      currentListInstance = nextListInstance;
+      nextListInstance += 1;
+    }
+    return {
+      ...block,
+      metadata: {
+        ...block.metadata,
+        listInstance: currentListInstance,
+      },
+    };
+  });
 };
 
 const createNormalizedBoundaryMap = (source: string): number[] => {
@@ -101,6 +418,54 @@ const parseStandaloneQrLink = (
 };
 
 export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, charOffset: number = 0): ParsedBlock[] => {
+  const chapterSpans = scanChapterSourceSpans(markdown);
+  if (chapterSpans.length > 0) {
+    const chapterBlocks: ParsedBlock[] = [];
+    let cursor = 0;
+
+    for (const span of chapterSpans) {
+      if (cursor < span.startIndex) {
+        const prefix = markdown.slice(cursor, span.startIndex);
+        const prefixLineOffset = lineOffset
+          + (markdown.slice(0, cursor).match(/\n/g) || []).length;
+        chapterBlocks.push(...parseMarkdownWithAST(
+          prefix,
+          prefixLineOffset,
+          charOffset + cursor,
+        ));
+      }
+
+      const sourceLine = lineOffset + span.lineOffset;
+      const { chapter, issues } = parseChapterMetadata(
+        span.yamlContent,
+        sourceLine,
+        span.isClosed,
+      );
+      chapterBlocks.push({
+        type: BlockType.CHAPTER_OPENER,
+        content: chapter.title,
+        metadata: { chapter },
+        validationIssues: issues,
+        sourceLine,
+        startIndex: charOffset + span.startIndex,
+        endIndex: charOffset + span.endIndex,
+      });
+      cursor = span.endIndex;
+    }
+
+    if (cursor < markdown.length) {
+      const suffixLineOffset = lineOffset
+        + (markdown.slice(0, cursor).match(/\n/g) || []).length;
+      chapterBlocks.push(...parseMarkdownWithAST(
+        markdown.slice(cursor),
+        suffixLineOffset,
+        charOffset + cursor,
+      ));
+    }
+
+    return finalizeBlocks(chapterBlocks);
+  }
+
   const tokens = marked.lexer(markdown);
   const blocks: ParsedBlock[] = [];
   const originalIndexByNormalizedBoundary =
@@ -184,6 +549,43 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
             fragmentStart = index + 1;
           });
           flushSemanticFragment(sourceLines.length);
+          break;
+        }
+
+        const tocLineIndexes = sourceLines
+          .map(({ content }, index) =>
+            content.trim().toLowerCase() === '[toc]' ? index : -1
+          )
+          .filter((index) => index >= 0);
+        if (tocLineIndexes.length > 0) {
+          let fragmentStart = 0;
+          const flushTocFragment = (fragmentEnd: number) => {
+            if (fragmentStart >= fragmentEnd) {
+              return;
+            }
+            const firstLine = sourceLines[fragmentStart];
+            const lastLine = sourceLines[fragmentEnd - 1];
+            blocks.push(...parseMarkdownWithAST(
+              tokenSource.slice(firstLine.startIndex, lastLine.endIndex),
+              blockStartLine + firstLine.lineOffset,
+              blockStartIndex + firstLine.startIndex,
+            ));
+          };
+
+          for (const tocLineIndex of tocLineIndexes) {
+            flushTocFragment(tocLineIndex);
+            const tocLine = sourceLines[tocLineIndex];
+            blocks.push({
+              type: BlockType.TOC,
+              content: '',
+              metadata: { manualTocContent: false },
+              sourceLine: blockStartLine + tocLine.lineOffset,
+              startIndex: blockStartIndex + tocLine.startIndex,
+              endIndex: blockStartIndex + tocLine.endIndex,
+            });
+            fragmentStart = tocLineIndex + 1;
+          }
+          flushTocFragment(sourceLines.length);
           break;
         }
 
@@ -409,33 +811,5 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
      processToken(token, blockStartLine, blockStartIndex, tokenSource);
   });
 
-  // Post-processing: Merge adjacent TOC and List blocks if they are intended to be a manual TOC
-  const mergedBlocks: ParsedBlock[] = [];
-  for (let i = 0; i < blocks.length; i++) {
-    const current = blocks[i];
-    if (current.type === BlockType.TOC && i + 1 < blocks.length) {
-      let nextIndex = i + 1;
-      let manualContent = current.content || '';
-      
-      while (nextIndex < blocks.length && 
-             (blocks[nextIndex].type === BlockType.BULLET_LIST || 
-              blocks[nextIndex].type === BlockType.NUMBERED_LIST)) {
-        
-        const listBlock = blocks[nextIndex];
-        // Reconstruct manual TOC line
-        const prefix = listBlock.type === BlockType.BULLET_LIST ? '- ' : '1. ';
-        manualContent += (manualContent ? '\n' : '') + prefix + listBlock.content;
-        nextIndex++;
-      }
-      
-      if (nextIndex > i + 1) {
-        mergedBlocks.push({ ...current, content: manualContent });
-        i = nextIndex - 1;
-        continue;
-      }
-    }
-    mergedBlocks.push(current);
-  }
-
-  return mergedBlocks;
+  return finalizeBlocks(blocks);
 };

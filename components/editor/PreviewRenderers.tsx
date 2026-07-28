@@ -262,6 +262,60 @@ const ImageBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
   );
 };
 
+const ChapterPreview: React.FC<{ block: ParsedBlock }> = ({ block }) => {
+  const { imageRegistry } = useEditor();
+  const chapter = block.metadata?.chapter;
+  if (!chapter) {
+    return null;
+  }
+  const imageSource = chapter.image
+    ? imageRegistry[chapter.image] ?? chapter.image
+    : undefined;
+
+  return (
+    <section className="my-16 border-y border-slate-200 py-12">
+      {chapter.part && (
+        <p className="mb-1 text-xs font-bold text-teal-700">{chapter.part}</p>
+      )}
+      <p className="text-5xl font-bold leading-none text-[#0B2545]">
+        {chapter.number}
+      </p>
+      <h1 className="mt-2 text-3xl font-bold text-[#0B2545]">
+        {chapter.title}
+      </h1>
+      {chapter.englishTitle && (
+        <p className="mt-1 text-sm italic text-[#2E74B5]">
+          {chapter.englishTitle}
+        </p>
+      )}
+      {chapter.summary && (
+        <p className="mt-4 leading-relaxed text-slate-700">
+          {chapter.summary}
+        </p>
+      )}
+      {imageSource && (
+        <img
+          src={imageSource}
+          alt={`章首頁：${chapter.title}`}
+          className="mx-auto mt-6 h-auto max-w-[70%]"
+        />
+      )}
+      <h2 className="mt-6 text-sm font-bold text-[#C55A3A]">本章完成</h2>
+      {chapter.goals.length > 0 && (
+        <ul className="mt-2 list-disc space-y-1 pl-6">
+          {chapter.goals.map((goal, index) => (
+            <li key={`${index}-${goal}`}>{goal}</li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+};
+
+const renderChapter: PreviewRenderer = (block) => (
+  <ChapterPreview block={block} />
+);
+
 const renderQr: PreviewRenderer = (block) => {
   const label = block.metadata?.label || block.content;
   const url = block.metadata?.url || '';
@@ -285,6 +339,7 @@ const renderQr: PreviewRenderer = (block) => {
 
 const previewBlockRenderers: Partial<Record<BlockType, PreviewRenderer>> = {
   [BlockType.TOC]: renderTOC,
+  [BlockType.CHAPTER_OPENER]: renderChapter,
   [BlockType.HEADING_1]: renderHeading1,
   [BlockType.HEADING_2]: renderHeading2,
   [BlockType.HEADING_3]: renderHeading3,

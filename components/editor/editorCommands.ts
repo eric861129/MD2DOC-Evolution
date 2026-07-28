@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   BarChart,
+  BookOpen,
   Bot,
   CheckSquare,
   Code,
@@ -37,6 +38,7 @@ const commandIcons = {
   quote: Quote,
   divider: Minus,
   toc: ListTree,
+  chapter: BookOpen,
   'callout-note': StickyNote,
   'callout-tip': Info,
   'callout-warning': AlertTriangle,
