@@ -363,7 +363,7 @@ describe('inspectDocxPackage', () => {
         'word/_rels/document.xml.rels',
         `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="image" Target="../customXml/圖%20片.xml?version=1#section"/>
+  <Relationship Id="rId1" Type="image" Target="../customXml/%E5%9C%96%20%E7%89%87.xml?version=%E4%B8%80#section-%E4%BA%8C"/>
   <Relationship Id="rId2" Type="hyperlink" Target="https://example.com/docs" TargetMode="External"/>
 </Relationships>`,
       );
@@ -446,6 +446,82 @@ describe('inspectDocxPackage', () => {
     }));
   });
 
+  it.each([
+    'word/document%00.xml',
+    'word/space document.xml',
+    'word/tab\tdocument.xml',
+    `word/control${String.fromCharCode(0x7f)}document.xml`,
+    'word/文件.xml',
+  ])('即使同名 ZIP entry 存在，raw/decoded 非 URI 字元仍回傳 RELATIONSHIP_TARGET_INVALID：%s', async (target) => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(target, DOCUMENT_XML);
+      zip.file(
+        '_rels/.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="officeDocument" Target="${target}"/>
+</Relationships>`,
+      );
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'RELATIONSHIP_TARGET_INVALID',
+      entry: '_rels/.rels',
+    }));
+  });
+
+  it.each([
+    'word/document.xml?bad query',
+    'word/document.xml?bad=%ZZ',
+    'word/document.xml#raw-文件',
+  ])('relationship query/fragment 的無效 URI 字元回傳 RELATIONSHIP_TARGET_INVALID：%s', async (target) => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(
+        '_rels/.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="officeDocument" Target="${target}"/>
+</Relationships>`,
+      );
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'RELATIONSHIP_TARGET_INVALID',
+      entry: '_rels/.rels',
+    }));
+  });
+
+  it.each([
+    {
+      target: "word/media/a:@!$&amp;'()*+,;=.bin",
+      entry: "word/media/a:@!$&'()*+,;=.bin",
+    },
+    {
+      target: 'word/media/a%3Fb%23c.bin',
+      entry: 'word/media/a?b#c.bin',
+    },
+  ])('relationship segment 保留合法 pchar 或 encoded ?/#：$entry', async ({ target, entry }) => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(entry, new Uint8Array([1]));
+      zip.file(
+        '_rels/.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="custom" Target="${target}"/>
+</Relationships>`,
+      );
+    }));
+
+    expect(issues).not.toContainEqual(expect.objectContaining({
+      code: 'RELATIONSHIP_TARGET_INVALID',
+    }));
+    expect(issues).not.toContainEqual(expect.objectContaining({
+      code: 'RELATIONSHIP_TARGET_MISSING',
+    }));
+  });
+
   it('大小寫不同但 OPC 等價的 ZIP part 回傳 PART_NAME_COLLISION', async () => {
     const issues = await inspectDocxPackage(await createPackage((zip) => {
       zip.file('WORD/DOCUMENT.XML', DOCUMENT_XML);
@@ -514,6 +590,61 @@ describe('inspectDocxPackage', () => {
       severity: 'error',
       code: 'CONTENT_TYPES_INVALID',
       entry: '[Content_Types].xml',
+    }));
+  });
+
+  it.each([
+    '/word/media/cover%00.png',
+    '/word/media/space cover.png',
+    '/word/media/tab\tcover.png',
+    `/word/media/control${String.fromCharCode(0x7f)}cover.png`,
+    '/word/media/封面.png',
+  ])('Override 即使同名 ZIP entry 存在，raw/decoded 非 URI 字元仍回傳 CONTENT_TYPES_INVALID：%s', async (partName) => {
+    const xml = CONTENT_TYPES.replace(
+      '</Types>',
+      `<Override PartName="${partName}" ContentType="image/png"/></Types>`,
+    );
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file('[Content_Types].xml', xml);
+      zip.file(partName.slice(1), new Uint8Array([1]));
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'CONTENT_TYPES_INVALID',
+      entry: '[Content_Types].xml',
+    }));
+  });
+
+  it.each([
+    {
+      partName: '/word/media/%E5%B0%81%E9%9D%A2.webp',
+      entry: 'word/media/封面.webp',
+    },
+    {
+      partName: "/word/media/a:@!$&amp;'()*+,;=.webp",
+      entry: "word/media/a:@!$&'()*+,;=.webp",
+    },
+    {
+      partName: '/word/media/a%3Fb%23c.webp',
+      entry: 'word/media/a?b#c.webp',
+    },
+  ])('Override 保留 percent-encoded Unicode、合法 pchar 或 encoded ?/#：$entry', async ({ partName, entry }) => {
+    const xml = CONTENT_TYPES.replace(
+      '</Types>',
+      `<Override PartName="${partName}" ContentType="image/webp"/></Types>`,
+    );
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file('[Content_Types].xml', xml);
+      zip.file(entry, new Uint8Array([1]));
+    }));
+
+    expect(issues).not.toContainEqual(expect.objectContaining({
+      code: 'CONTENT_TYPES_INVALID',
+    }));
+    expect(issues).not.toContainEqual(expect.objectContaining({
+      code: 'MEDIA_CONTENT_TYPE_MISSING',
+      entry,
     }));
   });
 

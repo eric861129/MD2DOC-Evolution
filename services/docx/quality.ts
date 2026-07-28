@@ -21,6 +21,11 @@ const MEDIA_PATH_PATTERN = /(?:^|\/)media\/[^/]+$/i;
 const URI_SCHEME_PATTERN = /^[A-Za-z][A-Za-z0-9+.-]*:/;
 const INVALID_PERCENT_ENCODING_PATTERN = /%(?![0-9A-Fa-f]{2})/;
 const ENCODED_SEPARATOR_PATTERN = /%(?:2f|5c)/i;
+const URI_PATH_REFERENCE_PATTERN =
+  /^[A-Za-z0-9\-._~!$&'()*+,;=:@%/]*$/;
+const URI_QUERY_FRAGMENT_PATTERN =
+  /^[A-Za-z0-9\-._~!$&'()*+,;=:@%/?]*$/;
+const DECODED_CONTROL_PATTERN = /[\u0000-\u001F\u007F-\u009F]/;
 const EXPECTED_IMAGE_CONTENT_TYPES: Readonly<Record<string, readonly string[]>> = {
   png: ['image/png'],
   jpg: ['image/jpeg', 'image/jpg'],
@@ -86,14 +91,44 @@ const decodeUriSegment = (segment: string): string => {
     throw new Error('Target 包含無效的 URI 編碼。');
   }
 
-  const decoded = decodeURIComponent(segment);
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(segment);
+  } catch {
+    throw new Error('Target 包含無效的 UTF-8 URI 編碼。');
+  }
+  if (DECODED_CONTROL_PATTERN.test(decoded)) {
+    throw new Error('Target 解碼後不得包含控制字元。');
+  }
   if (decoded.includes('/') || decoded.includes('\\')) {
     throw new Error('Target 不得以 URI encoding 隱藏路徑分隔符號。');
   }
   return decoded;
 };
 
-const assertSafeRelativeReference = (reference: string): void => {
+const assertValidUriComponent = (
+  value: string,
+  kind: 'path' | 'query-or-fragment',
+): void => {
+  if (INVALID_PERCENT_ENCODING_PATTERN.test(value)) {
+    throw new Error('Target 包含無效的 URI 編碼。');
+  }
+  const pattern = kind === 'path'
+    ? URI_PATH_REFERENCE_PATTERN
+    : URI_QUERY_FRAGMENT_PATTERN;
+  if (!pattern.test(value)) {
+    throw new Error('Target 必須只使用合法 ASCII URI 字元；非 ASCII 字元必須 percent-encode。');
+  }
+};
+
+const assertValidPackagePathReference = (reference: string): void => {
+  assertValidUriComponent(reference, 'path');
+  if (ENCODED_SEPARATOR_PATTERN.test(reference)) {
+    throw new Error('Internal Target 不得編碼路徑分隔符號。');
+  }
+};
+
+const assertSafeRelationshipReference = (reference: string): void => {
   if (
     URI_SCHEME_PATTERN.test(reference)
     || reference.startsWith('//')
@@ -101,20 +136,46 @@ const assertSafeRelativeReference = (reference: string): void => {
   ) {
     throw new Error('Internal Target 必須是相對 package URI。');
   }
-  if (reference.includes('\\')) {
-    throw new Error('Internal Target 不得使用反斜線。');
+  assertValidPackagePathReference(reference);
+};
+
+const splitRelationshipTarget = (
+  target: string,
+): {
+  reference: string;
+  query?: string;
+  fragment?: string;
+} => {
+  const fragmentIndex = target.indexOf('#');
+  const beforeFragment = fragmentIndex >= 0
+    ? target.slice(0, fragmentIndex)
+    : target;
+  const fragment = fragmentIndex >= 0
+    ? target.slice(fragmentIndex + 1)
+    : undefined;
+  const queryIndex = beforeFragment.indexOf('?');
+  const reference = queryIndex >= 0
+    ? beforeFragment.slice(0, queryIndex)
+    : beforeFragment;
+  const query = queryIndex >= 0
+    ? beforeFragment.slice(queryIndex + 1)
+    : undefined;
+
+  if (query !== undefined) {
+    assertValidUriComponent(query, 'query-or-fragment');
   }
-  if (ENCODED_SEPARATOR_PATTERN.test(reference)) {
-    throw new Error('Internal Target 不得編碼路徑分隔符號。');
+  if (fragment !== undefined) {
+    assertValidUriComponent(fragment, 'query-or-fragment');
   }
+  return { reference, query, fragment };
 };
 
 const resolveRelationshipTarget = (
   relationshipsPath: string,
   target: string,
 ): string => {
-  const reference = target.split(/[?#]/, 1)[0];
-  assertSafeRelativeReference(reference);
+  const { reference } = splitRelationshipTarget(target);
+  assertSafeRelationshipReference(reference);
   const sourcePart = getRelationshipSourcePart(relationshipsPath);
   const segments = sourcePart ? sourcePart.split('/').slice(0, -1) : [];
 
@@ -161,7 +222,7 @@ const normalizeOverridePartName = (partName: string): string => {
   ) {
     throw new Error('Override PartName 必須是絕對 package part name。');
   }
-  assertSafeRelativeReference(reference);
+  assertValidPackagePathReference(reference);
 
   const segments = reference.split('/').map((encodedSegment) => {
     if (!encodedSegment) {
