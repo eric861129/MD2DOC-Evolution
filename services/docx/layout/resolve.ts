@@ -12,6 +12,10 @@ const TWIPS_PER_INCH = 1440;
 const CENTIMETRES_PER_INCH = 2.54;
 const MINIMUM_CUSTOM_MARGIN_CM = 0.5;
 const MAXIMUM_CUSTOM_MARGIN_CM = 5;
+const MINIMUM_GUTTER_CM = 0;
+const MAXIMUM_GUTTER_CM = 5;
+const MINIMUM_CUSTOM_PAGE_SIZE_CM = 10;
+const MAXIMUM_CUSTOM_PAGE_SIZE_CM = 100;
 const MINIMUM_CONTENT_WIDTH_CM = 8;
 const MINIMUM_CONTENT_HEIGHT_CM = 10;
 
@@ -43,6 +47,14 @@ const resolvePageSize = (settings: ExportSettings) => {
   if (!Number.isFinite(settings.customPageSizeCm.width) || !Number.isFinite(settings.customPageSizeCm.height)) {
     throw new Error('自訂紙張尺寸必須為有限數值');
   }
+  if (
+    settings.customPageSizeCm.width < MINIMUM_CUSTOM_PAGE_SIZE_CM
+    || settings.customPageSizeCm.width > MAXIMUM_CUSTOM_PAGE_SIZE_CM
+    || settings.customPageSizeCm.height < MINIMUM_CUSTOM_PAGE_SIZE_CM
+    || settings.customPageSizeCm.height > MAXIMUM_CUSTOM_PAGE_SIZE_CM
+  ) {
+    throw new Error('自訂紙張尺寸必須介於 10.00 至 100.00 公分之間');
+  }
   return {
     id: 'custom' as const,
     widthCm: settings.customPageSizeCm.width,
@@ -72,6 +84,9 @@ const validateCustomMargins = (margins: MarginConfigCm): void => {
 
   if (edgeValues.some((value) => value < MINIMUM_CUSTOM_MARGIN_CM || value > MAXIMUM_CUSTOM_MARGIN_CM)) {
     throw new Error('自訂邊界必須介於 0.50 至 5.00 公分之間');
+  }
+  if (margins.gutterCm < MINIMUM_GUTTER_CM || margins.gutterCm > MAXIMUM_GUTTER_CM) {
+    throw new Error('裝訂預留必須介於 0.00 至 5.00 公分之間');
   }
 };
 

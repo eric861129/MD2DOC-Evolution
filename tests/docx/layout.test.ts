@@ -99,6 +99,41 @@ describe('resolvePageLayout', () => {
     })).toThrow('自訂邊界必須介於 0.50 至 5.00 公分之間');
   });
 
+  it('允許 0 公分裝訂預留且不產生邊界列印風險', () => {
+    const layout = resolvePageLayout({
+      ...DEFAULT_EXPORT_SETTINGS,
+      marginPresetId: 'custom',
+      customMargins: {
+        mode: 'standard',
+        topCm: 2,
+        bottomCm: 2,
+        leftCm: 2,
+        rightCm: 2,
+        gutterCm: 0,
+        gutterPosition: 'left',
+      },
+    });
+
+    expect(layout.margins.gutterCm).toBe(0);
+    expect(layout.warnings).not.toContain('邊界小於 1 公分，列印時可能有裁切風險。');
+  });
+
+  it.each([-0.01, 5.01])('拒絕超出 0.00 至 5.00 公分範圍的裝訂預留：%s', (gutterCm) => {
+    expect(() => resolvePageLayout({
+      ...DEFAULT_EXPORT_SETTINGS,
+      marginPresetId: 'custom',
+      customMargins: {
+        mode: 'mirrored',
+        topCm: 2,
+        bottomCm: 2,
+        insideCm: 2,
+        outsideCm: 2,
+        gutterCm,
+        gutterPosition: 'left',
+      },
+    })).toThrow('裝訂預留必須介於 0.00 至 5.00 公分之間');
+  });
+
   it.each([NaN, Infinity, -Infinity])('拒絕非有限的自訂邊界數值：%s', (value) => {
     expect(() => resolvePageLayout({
       ...DEFAULT_EXPORT_SETTINGS,
@@ -121,6 +156,14 @@ describe('resolvePageLayout', () => {
       pageSizeId: 'custom',
       customPageSizeCm: { width: value, height: 20 },
     })).toThrow('自訂紙張尺寸必須為有限數值');
+  });
+
+  it.each([9.99, 100.01])('拒絕超出 10.00 至 100.00 公分範圍的自訂紙張寬度：%s', (width) => {
+    expect(() => resolvePageLayout({
+      ...DEFAULT_EXPORT_SETTINGS,
+      pageSizeId: 'custom',
+      customPageSizeCm: { width, height: 20 },
+    })).toThrow('自訂紙張尺寸必須介於 10.00 至 100.00 公分之間');
   });
 
   it('覆寫出版社一致版幾何時標記為已自訂並提出頁碼警告', () => {

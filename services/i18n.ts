@@ -9,7 +9,7 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { APP_VERSION } from '../constants/meta';
 
-const resources = {
+export const resources = {
   zh: {
     translation: {
       title: 'MD2DOC-Evolution',

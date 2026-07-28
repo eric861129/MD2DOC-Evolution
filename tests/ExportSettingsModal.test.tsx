@@ -2,39 +2,18 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ExportSettingsModal } from '../components/editor/ExportSettingsModal';
+import { formatLayoutSummary } from '../components/editor/EditorHeader';
 import { DEFAULT_EXPORT_SETTINGS } from '../services/docx/layout/presets';
+import { resources } from '../services/i18n';
 
-const translations: Record<string, string> = {
-  'layout.openSettings': '版面設定',
-  'layout.profile': '文件版型',
-  'layout.pageSize': '紙張尺寸',
-  'layout.marginPreset': '頁面邊界',
-  'layout.standardMargins': '一般邊界',
-  'layout.mirroredMargins': '鏡像邊界',
-  'layout.marginMode': '邊界模式',
-  'layout.topMargin': '上邊界',
-  'layout.bottomMargin': '下邊界',
-  'layout.leftMargin': '左邊界',
-  'layout.rightMargin': '右邊界',
-  'layout.insideMargin': '內側邊界',
-  'layout.outsideMargin': '外側邊界',
-  'layout.gutter': '裝訂預留',
-  'layout.gutterPosition': '裝訂預留位置',
-  'layout.gutterLeft': '左側',
-  'layout.gutterTop': '上方',
-  'layout.pageWidth': '紙張寬度',
-  'layout.pageHeight': '紙張高度',
-  'layout.contentArea': '有效內容區域',
-  'layout.apply': '套用版面設定',
-  'layout.cancel': '取消',
-  'layout.custom': '自訂',
-  'layout.notAvailable': '無法計算',
-  'layout.invalidGeometry': '目前的紙張與邊界設定無法產生有效內容區域。',
-  'layout.customizedWarning': '已自訂出版社版型，頁碼可能與參考稿不同。',
-  'layout.printRiskWarning': '邊界小於 1 公分，部分印表機可能無法完整列印。',
-};
+vi.mock('../constants/meta', () => ({ APP_VERSION: 'test' }));
 
-const t = (key: string) => translations[key] ?? key;
+const t = (key: string): string => key.split('.').reduce<unknown>((value, segment) => (
+  typeof value === 'object' && value !== null
+    ? (value as Record<string, unknown>)[segment]
+    : undefined
+), resources.zh.translation) as string ?? key;
+const cmLabel = (key: string) => `${t(key)} (cm)`;
 
 describe('ExportSettingsModal', () => {
   it('loads the narrow profile page and margin defaults before applying settings', () => {
@@ -50,10 +29,10 @@ describe('ExportSettingsModal', () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText('文件版型'), {
+    fireEvent.change(screen.getByLabelText(t('layout.profile')), {
       target: { value: 'publisher-narrow' },
     });
-    fireEvent.click(screen.getByRole('button', { name: '套用版面設定' }));
+    fireEvent.click(screen.getByRole('button', { name: t('layout.apply') }));
 
     expect(onApply).toHaveBeenCalledWith(expect.objectContaining({
       profileId: 'publisher-narrow',
@@ -73,14 +52,14 @@ describe('ExportSettingsModal', () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText('頁面邊界'), {
+    fireEvent.change(screen.getByLabelText(t('layout.marginPreset')), {
       target: { value: 'custom' },
     });
-    fireEvent.change(screen.getByLabelText('上邊界 (cm)'), {
+    fireEvent.change(screen.getByLabelText(cmLabel('layout.topMargin')), {
       target: { value: '0.8' },
     });
 
-    expect(screen.getByText('邊界小於 1 公分，部分印表機可能無法完整列印。')).toBeInTheDocument();
+    expect(screen.getByText(t('layout.printRiskWarning'))).toBeInTheDocument();
   });
 
   it('disables apply when the selected geometry leaves too little content width', () => {
@@ -94,14 +73,35 @@ describe('ExportSettingsModal', () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText('紙張尺寸'), {
+    fireEvent.change(screen.getByLabelText(t('layout.pageSize')), {
       target: { value: 'custom' },
     });
-    fireEvent.change(screen.getByLabelText('紙張寬度 (cm)'), {
+    fireEvent.change(screen.getByLabelText(cmLabel('layout.pageWidth')), {
       target: { value: '10' },
     });
 
-    expect(screen.getByRole('button', { name: '套用版面設定' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: t('layout.apply') })).toBeDisabled();
+  });
+
+  it('disables apply when a custom page is smaller than 10 centimetres', () => {
+    render(
+      <ExportSettingsModal
+        isOpen
+        value={DEFAULT_EXPORT_SETTINGS}
+        onClose={vi.fn()}
+        onApply={vi.fn()}
+        t={t}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(t('layout.pageSize')), {
+      target: { value: 'custom' },
+    });
+    fireEvent.change(screen.getByLabelText(cmLabel('layout.pageWidth')), {
+      target: { value: '9.99' },
+    });
+
+    expect(screen.getByRole('button', { name: t('layout.apply') })).toBeDisabled();
   });
 
   it('warns that an overridden exact publisher profile may change pagination', () => {
@@ -115,11 +115,11 @@ describe('ExportSettingsModal', () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText('頁面邊界'), {
+    fireEvent.change(screen.getByLabelText(t('layout.marginPreset')), {
       target: { value: 'narrow' },
     });
 
-    expect(screen.getByText('已自訂出版社版型，頁碼可能與參考稿不同。')).toBeInTheDocument();
+    expect(screen.getByText(t('layout.customizedWarning'))).toBeInTheDocument();
   });
 
   it('shows mirrored inside, outside, and gutter controls for binding margins', () => {
@@ -133,8 +133,16 @@ describe('ExportSettingsModal', () => {
       />,
     );
 
-    expect(screen.getByLabelText('內側邊界 (cm)')).toBeInTheDocument();
-    expect(screen.getByLabelText('外側邊界 (cm)')).toBeInTheDocument();
-    expect(screen.getByLabelText('裝訂預留 (cm)')).toBeInTheDocument();
+    expect(screen.getByLabelText(cmLabel('layout.insideMargin'))).toBeInTheDocument();
+    expect(screen.getByLabelText(cmLabel('layout.outsideMargin'))).toBeInTheDocument();
+    expect(screen.getByLabelText(cmLabel('layout.gutter'))).toBeInTheDocument();
+  });
+
+  it('uses real Traditional Chinese layout resources and the published separators', () => {
+    expect(resources.zh.translation.layout.openSettings).toBe('版面設定');
+    expect(resources.zh.translation.layout.gutter).toBe('裝訂預留');
+    expect(resources.zh.translation.layout.printRiskWarning).toBe('邊界小於 1 公分，部分印表機可能無法完整列印。');
+    expect(formatLayoutSummary({ widthCm: 17, heightCm: 23, leftMarginCm: 2 }, t('layout.marginPresets.balanced')))
+      .toBe('17.00×23.00 cm · 平衡 2.00 cm');
   });
 });

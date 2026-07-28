@@ -27,6 +27,11 @@ interface EditorHeaderProps {
   onMobilePanelChange: (panel: 'editor' | 'preview') => void;
 }
 
+export const formatLayoutSummary = (
+  layout: { widthCm: number; heightCm: number; leftMarginCm: number },
+  marginPresetLabel: string,
+) => `${layout.widthCm.toFixed(2)}×${layout.heightCm.toFixed(2)} cm · ${marginPresetLabel} ${layout.leftMarginCm.toFixed(2)} cm`;
+
 export const EditorHeader: React.FC<EditorHeaderProps> = ({
   activeMobilePanel,
   onMobilePanelChange,
@@ -68,7 +73,11 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
       : validationIssueCount > 0
         ? t('workspace.exportWarnings', { count: validationIssueCount })
         : t('workspace.exportValid');
-  const layoutSummary = `${resolvedPageLayout.page.widthCm.toFixed(2)}×${resolvedPageLayout.page.heightCm.toFixed(2)} cm · ${t(`layout.marginPresets.${exportSettings.marginPresetId}`)} ${resolvedPageLayout.margins.leftCm.toFixed(2)} cm`;
+  const layoutSummary = formatLayoutSummary({
+    widthCm: resolvedPageLayout.page.widthCm,
+    heightCm: resolvedPageLayout.page.heightCm,
+    leftMarginCm: resolvedPageLayout.margins.leftCm,
+  }, t(`layout.marginPresets.${exportSettings.marginPresetId}`));
 
   const stats = [
     {

@@ -40,7 +40,7 @@ const getDraftMargins = (settings: ExportSettings): MarginConfigCm =>
 
 const createCustomMargins = (margins: MarginConfigCm): MarginConfigCm => ({
   ...margins,
-  gutterCm: Math.max(0.5, margins.gutterCm),
+  gutterCm: Math.max(0, margins.gutterCm),
 });
 
 const toNumber = (value: string): number => Number(value);
@@ -167,7 +167,7 @@ export const ExportSettingsModal: React.FC<ExportSettingsModalProps> = ({
         disabled={!isCustomMargin}
         type="number"
         step="0.01"
-        min="0.5"
+        min={field === 'gutterCm' ? '0' : '0.5'}
         max="5"
         value={inputValue}
         onChange={(event) => updateMarginValue(field, event.target.value)}
