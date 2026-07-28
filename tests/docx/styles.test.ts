@@ -102,6 +102,39 @@ describe('DOCX 文件樣式 Profile', () => {
       h3: { sizeHalfPoints: 24, beforeTwips: 300, afterTwips: 150 },
     });
   });
+
+  it('technical-legacy 不替未定義行距的樣式注入 line 設定', () => {
+    const profile = getDocumentProfile('technical-legacy');
+    const profileTokens = [
+      profile.paragraph.normal,
+      profile.heading.h1,
+      profile.heading.h2,
+      profile.heading.h3,
+      profile.paragraph.caption,
+      profile.table,
+    ];
+
+    for (const token of profileTokens) {
+      expect(token).not.toHaveProperty('lineTwips');
+    }
+
+    const styles = createDocumentStyles(profile);
+    const normal = styles.paragraphStyles?.find(({ id }) => id === 'Normal');
+    const caption = styles.paragraphStyles?.find(({ id }) => id === 'BookCaption');
+    const generatedSpacing = [
+      styles.default?.document?.paragraph?.spacing,
+      styles.default?.heading1?.paragraph?.spacing,
+      styles.default?.heading2?.paragraph?.spacing,
+      styles.default?.heading3?.paragraph?.spacing,
+      normal?.paragraph?.spacing,
+      caption?.paragraph?.spacing,
+    ];
+
+    for (const spacing of generatedSpacing) {
+      expect(spacing).not.toHaveProperty('line');
+      expect(spacing).not.toHaveProperty('lineRule');
+    }
+  });
 });
 
 describe('createDocumentStyles', () => {

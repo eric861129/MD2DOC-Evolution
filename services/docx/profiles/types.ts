@@ -11,7 +11,7 @@ export interface ParagraphStyleToken {
   sizeHalfPoints: number;
   beforeTwips: number;
   afterTwips: number;
-  lineTwips: number;
+  lineTwips?: number;
   color?: string;
   bold?: boolean;
   italics?: boolean;
@@ -45,7 +45,7 @@ export interface TableStyleToken {
   };
   bodySizeHalfPoints: number;
   paragraphAfterTwips: number;
-  lineTwips: number;
+  lineTwips?: number;
 }
 
 export interface DocumentStyleProfile {

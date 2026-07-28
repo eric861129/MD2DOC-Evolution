@@ -36,8 +36,12 @@ const createParagraphStyle = (token: ParagraphStyleToken) => ({
   spacing: {
     before: token.beforeTwips,
     after: token.afterTwips,
-    line: token.lineTwips,
-    lineRule: LineRuleType.AUTO,
+    ...(token.lineTwips === undefined
+      ? {}
+      : {
+          line: token.lineTwips,
+          lineRule: LineRuleType.AUTO,
+        }),
   },
   indent:
     token.leftIndentTwips === undefined && token.rightIndentTwips === undefined
