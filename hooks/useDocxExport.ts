@@ -6,6 +6,7 @@ import { validateExport, ValidationIssue } from '../services/exportValidation';
 import { DEFAULT_EXPORT_SETTINGS } from '../services/docx/layout/presets';
 import { resolvePageLayout } from '../services/docx/layout/resolve';
 import type { ExportSettings } from '../services/docx/layout/types';
+import type { DocxQualityIssue } from '../services/docx/quality';
 
 interface UseDocxExportProps {
   content: string;
@@ -27,6 +28,24 @@ interface InitialAppliedExportSettings {
 
 const getLayoutErrorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : '未知的版面設定錯誤';
+
+const isDocxQualityError = (
+  error: unknown,
+): error is Error & { issues: DocxQualityIssue[] } =>
+  error instanceof Error
+  && error.name === 'DocxQualityError'
+  && Array.isArray((error as { issues?: unknown }).issues);
+
+const getDocxQualityErrorMessage = (
+  issues: DocxQualityIssue[],
+): string => {
+  const messages = issues
+    .filter((issue) => issue.severity === 'error')
+    .map((issue) => issue.message);
+  return messages.length > 0
+    ? `DOCX 封裝品質檢查失敗：${messages.join('；')}`
+    : 'DOCX 封裝品質檢查失敗。';
+};
 
 const resolveAppliedExportSettings = (
   settings: ExportSettings,
@@ -94,7 +113,10 @@ export const useDocxExport = ({
     [],
   );
 
-  const runExportValidation = async (revealIssues = false) => {
+  const runExportValidation = async (
+    revealIssues = false,
+    appliedSettings = appliedExportSettingsRef.current,
+  ) => {
     if (parsedBlocks.length === 0) {
       setValidationIssues([]);
       setShowValidationIssues(false);
@@ -107,6 +129,8 @@ export const useDocxExport = ({
       blocks: parsedBlocks,
       meta: documentMeta,
       imageRegistry,
+      exportSettings: appliedSettings.settings,
+      resolvedPageLayout: appliedSettings.layout,
     });
 
     setValidationIssues(issues);
@@ -133,11 +157,14 @@ export const useDocxExport = ({
 
     const timer = window.setTimeout(async () => {
       setIsValidatingExport(true);
+      const appliedSettings = appliedExportSettingsRef.current;
       const issues = await validateExport({
         content,
         blocks: parsedBlocks,
         meta: documentMeta,
         imageRegistry,
+        exportSettings: appliedSettings.settings,
+        resolvedPageLayout: appliedSettings.layout,
       });
 
       if (isActive) {
@@ -153,17 +180,29 @@ export const useDocxExport = ({
       isActive = false;
       window.clearTimeout(timer);
     };
-  }, [content, parsedBlocks, documentMeta, imageRegistry]);
+  }, [
+    content,
+    parsedBlocks,
+    documentMeta,
+    imageRegistry,
+    appliedExportSettings,
+  ]);
 
   const handleDownload = async () => {
     if (parsedBlocks.length === 0) return;
     setIsGenerating(true);
     setExportError(null);
     try {
-      await runExportValidation(true);
+      const appliedSettings = appliedExportSettingsRef.current;
+      const issues = await runExportValidation(true, appliedSettings);
+      if (issues.some((issue) => issue.severity === 'error')) {
+        setExportError('匯出前檢查發現錯誤，請先修正後再下載 DOCX。');
+        return;
+      }
+
       const { generateDocx } = await import('../services/docxGenerator');
       const blob = await generateDocx(parsedBlocks, {
-        exportSettings: appliedExportSettingsRef.current.settings,
+        exportSettings: appliedSettings.settings,
         showLineNumbers: true,
         meta: documentMeta,
         imageRegistry,
@@ -176,7 +215,9 @@ export const useDocxExport = ({
       saveAs(blob, `${safeTitle}.docx`);
     } catch (error) {
       console.error('Word Generation Failed:', error);
-      setExportError('DOCX 匯出失敗，請檢查 Markdown、Mermaid 或圖片內容是否有效。');
+      setExportError(isDocxQualityError(error)
+        ? getDocxQualityErrorMessage(error.issues)
+        : 'DOCX 匯出失敗，請檢查 Markdown、Mermaid 或圖片內容是否有效。');
     } finally {
       setIsGenerating(false);
     }

@@ -1,0 +1,321 @@
+import JSZip from 'jszip';
+import { Packer } from 'docx';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { generateDocx } from '../../services/docxGenerator';
+import { resolvePageLayout } from '../../services/docx/layout/resolve';
+import { postProcessDocx } from '../../services/docx/postprocess';
+import {
+  DocxQualityError,
+  inspectDocxPackage,
+} from '../../services/docx/quality';
+import { readDocxXml } from '../helpers/readDocx';
+
+const CONTENT_TYPES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Default Extension="png" ContentType="image/png"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>`;
+
+const DOCUMENT_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body><w:p/></w:body>
+</w:document>`;
+
+const SETTINGS_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:displayBackgroundShape/>
+  <w:updateFields w:val="true"/>
+  <w:compat/>
+</w:settings>`;
+
+const bindingSettings = {
+  profileId: 'publisher-binding',
+  pageSizeId: 'tech',
+  marginPresetId: 'publisher-binding',
+} as const;
+
+const exactSettings = {
+  profileId: 'publisher-exact',
+  pageSizeId: 'tech',
+  marginPresetId: 'publisher-exact',
+} as const;
+
+const createPackage = async (
+  mutate?: (zip: JSZip) => void,
+): Promise<Blob> => {
+  const zip = new JSZip();
+  zip.file('[Content_Types].xml', CONTENT_TYPES);
+  zip.file('word/document.xml', DOCUMENT_XML);
+  zip.file('word/settings.xml', SETTINGS_XML);
+  mutate?.(zip);
+  return new Blob(
+    [await zip.generateAsync({ type: 'uint8array' })],
+    {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    },
+  );
+};
+
+const readSettingsChildren = async (blob: Blob): Promise<string[]> => {
+  const settingsXml = await readDocxXml(blob, 'word/settings.xml');
+  const settings = new DOMParser().parseFromString(
+    settingsXml,
+    'application/xml',
+  );
+  return Array.from(settings.documentElement.children)
+    .map((element) => element.localName);
+};
+
+beforeAll(() => {
+  if (typeof Blob.prototype.arrayBuffer === 'function') {
+    return;
+  }
+
+  Object.defineProperty(Blob.prototype, 'arrayBuffer', {
+    configurable: true,
+    value(this: Blob): Promise<ArrayBuffer> {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as ArrayBuffer);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsArrayBuffer(this);
+      });
+    },
+  });
+});
+
+describe('postProcessDocx', () => {
+  it('重複處理鏡像版面仍只保留一個 mirrorMargins，且位於合法 CT_Settings 順序', async () => {
+    const source = await createPackage((zip) => {
+      zip.file(
+        'word/settings.xml',
+        SETTINGS_XML.replace(
+          '<w:updateFields w:val="true"/>',
+          '<w:mirrorMargins/><w:updateFields w:val="true"/>',
+        ),
+      );
+    });
+    const layout = resolvePageLayout(bindingSettings);
+
+    const once = await postProcessDocx(source, { layout });
+    const twice = await postProcessDocx(once, { layout });
+    const children = await readSettingsChildren(twice);
+
+    expect(children.filter((name) => name === 'mirrorMargins')).toHaveLength(1);
+    expect(children.indexOf('mirrorMargins'))
+      .toBe(children.indexOf('displayBackgroundShape') + 1);
+    expect(children.indexOf('mirrorMargins'))
+      .toBeLessThan(children.indexOf('updateFields'));
+    expect(children.indexOf('mirrorMargins'))
+      .toBeLessThan(children.indexOf('compat'));
+    expect(children).not.toContain('gutterAtTop');
+  });
+
+  it('非鏡像版面會移除殘留 mirrorMargins，且不破壞 gutterAtTop 互斥規則', async () => {
+    const source = await createPackage((zip) => {
+      zip.file(
+        'word/settings.xml',
+        SETTINGS_XML.replace(
+          '<w:updateFields w:val="true"/>',
+          '<w:mirrorMargins/><w:gutterAtTop/><w:updateFields w:val="true"/>',
+        ),
+      );
+    });
+
+    const processed = await postProcessDocx(source, {
+      layout: resolvePageLayout(exactSettings),
+    });
+
+    await expect(readSettingsChildren(processed)).resolves.not.toContain(
+      'mirrorMargins',
+    );
+    await expect(readSettingsChildren(processed)).resolves.not.toContain(
+      'gutterAtTop',
+    );
+  });
+
+  it('publisher-binding 的真實封裝包含鏡像設定與 283 twips gutter', async () => {
+    const blob = await generateDocx([], {
+      exportSettings: bindingSettings,
+      showLineNumbers: false,
+    });
+
+    const settingsXml = await readDocxXml(blob, 'word/settings.xml');
+    const documentXml = await readDocxXml(blob, 'word/document.xml');
+
+    expect(settingsXml.match(/<w:mirrorMargins(?:\s[^>]*)?\/>/g)).toHaveLength(1);
+    expect(documentXml).toMatch(
+      /<w:pgMar(?=[^>]*w:gutter="283")[^>]*\/>/,
+    );
+  });
+});
+
+describe('inspectDocxPackage', () => {
+  it.each([
+    {
+      name: '缺少 Content Types',
+      mutate: (zip: JSZip) => zip.remove('[Content_Types].xml'),
+      code: 'REQUIRED_PART_MISSING',
+      entry: '[Content_Types].xml',
+    },
+    {
+      name: '缺少主文件',
+      mutate: (zip: JSZip) => zip.remove('word/document.xml'),
+      code: 'REQUIRED_PART_MISSING',
+      entry: 'word/document.xml',
+    },
+  ])('$name 時回傳 error', async ({ mutate, code, entry }) => {
+    const issues = await inspectDocxPackage(await createPackage(mutate));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code,
+      entry,
+    }));
+  });
+
+  it('媒體副檔名為 undefined 時回傳明確錯誤', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file('word/media/cover.undefined', new Uint8Array([1, 2, 3]));
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'MEDIA_EXTENSION_UNDEFINED',
+      entry: 'word/media/cover.undefined',
+    }));
+  });
+
+  it('媒體沒有 Default 或 Override MIME 時回傳錯誤，但副檔名比對不分大小寫', async () => {
+    const missingIssues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file('word/media/cover.webp', new Uint8Array([1, 2, 3]));
+    }));
+    const supportedIssues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file('word/media/COVER.PNG', new Uint8Array([1, 2, 3]));
+    }));
+
+    expect(missingIssues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'MEDIA_CONTENT_TYPE_MISSING',
+      entry: 'word/media/cover.webp',
+    }));
+    expect(supportedIssues).not.toContainEqual(expect.objectContaining({
+      code: 'MEDIA_CONTENT_TYPE_MISSING',
+    }));
+  });
+
+  it('媒體 Override 的 PartName 支援 URI encoding 與不分大小寫比對', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(
+        '[Content_Types].xml',
+        CONTENT_TYPES.replace(
+          '</Types>',
+          '  <Override PartName="/WORD/MEDIA/Cover%20Art.WEBP" ContentType="image/webp"/>\n</Types>',
+        ),
+      );
+      zip.file('word/media/cover art.webp', new Uint8Array([1, 2, 3]));
+    }));
+
+    expect(issues).not.toContainEqual(expect.objectContaining({
+      code: 'MEDIA_CONTENT_TYPE_MISSING',
+    }));
+  });
+
+  it('由 relationship 所屬來源 part 解析相對 URI，允許 external、大小寫、編碼、query 與 fragment', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(
+        'word/_rels/document.xml.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="image" Target="../customXml/圖%20片.xml?version=1#section"/>
+  <Relationship Id="rId2" Type="hyperlink" Target="https://example.com/docs" TargetMode="External"/>
+</Relationships>`,
+      );
+      zip.file('customxml/圖 片.XML', '<root/>');
+    }));
+
+    expect(issues).not.toContainEqual(expect.objectContaining({
+      code: 'RELATIONSHIP_TARGET_MISSING',
+    }));
+  });
+
+  it('internal relationship 指向不存在 part 時回傳錯誤', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(
+        'word/_rels/document.xml.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId9" Type="image" Target="media/missing.png"/>
+</Relationships>`,
+      );
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'RELATIONSHIP_TARGET_MISSING',
+      entry: 'word/_rels/document.xml.rels',
+    }));
+  });
+
+  it('必要 XML 無法解析時回傳穩定錯誤', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file('word/document.xml', '<w:document>');
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'XML_PARSE_ERROR',
+      entry: 'word/document.xml',
+    }));
+  });
+});
+
+describe('generateDocx 的品質閘門', () => {
+  it('依序在 Packer 後執行 schema-aware 後處理，再檢查並回傳處理後 Blob', async () => {
+    const packer = vi.spyOn(Packer, 'toBlob')
+      .mockResolvedValueOnce(await createPackage());
+
+    try {
+      const blob = await generateDocx([], {
+        exportSettings: bindingSettings,
+        showLineNumbers: false,
+      });
+
+      const children = await readSettingsChildren(blob);
+      expect(children.filter((name) => name === 'mirrorMargins')).toHaveLength(1);
+      expect(children.indexOf('mirrorMargins'))
+        .toBe(children.indexOf('displayBackgroundShape') + 1);
+    } finally {
+      packer.mockRestore();
+    }
+  });
+
+  it('品質檢查有 error 時拋出保留 issues 的 DocxQualityError', async () => {
+    const corruptPackage = await createPackage((zip) => {
+      zip.remove('word/document.xml');
+    });
+    const packer = vi.spyOn(Packer, 'toBlob')
+      .mockResolvedValueOnce(corruptPackage);
+
+    try {
+      const generation = generateDocx([], {
+        exportSettings: exactSettings,
+        showLineNumbers: false,
+      });
+
+      await expect(generation).rejects.toBeInstanceOf(DocxQualityError);
+      await expect(generation).rejects.toMatchObject({
+        issues: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'REQUIRED_PART_MISSING',
+            entry: 'word/document.xml',
+          }),
+        ]),
+      });
+    } finally {
+      packer.mockRestore();
+    }
+  });
+});

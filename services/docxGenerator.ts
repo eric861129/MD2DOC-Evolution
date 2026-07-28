@@ -23,6 +23,11 @@ import { registerDefaultHandlers } from './docx/builders/index';
 import { createBookmarkAllocator } from './docx/bookmarks';
 import { resolvePageLayout } from './docx/layout/resolve';
 import { getDocumentProfile } from './docx/profiles';
+import { postProcessDocx } from './docx/postprocess';
+import {
+  DocxQualityError,
+  inspectDocxPackage,
+} from './docx/quality';
 import { docxRegistry } from './docx/registry';
 import { applyPageSettings } from './docx/settings';
 import { createDocumentStyles } from './docx/styles';
@@ -229,5 +234,22 @@ export const generateDocx = async (
   });
 
   applyPageSettings(doc.Settings, layout);
-  return Packer.toBlob(doc);
+  const packedBlob = await Packer.toBlob(doc);
+  const processedBlob = await postProcessDocx(packedBlob, { layout });
+  const qualityIssues = await inspectDocxPackage(processedBlob);
+
+  qualityIssues
+    .filter((issue) => issue.severity === 'warning')
+    .forEach((issue) => config.reportWarning({
+      code: 'DOCX_QUALITY_WARNING',
+      message: issue.message,
+      issueCode: issue.code,
+      entry: issue.entry,
+    }));
+
+  if (qualityIssues.some((issue) => issue.severity === 'error')) {
+    throw new DocxQualityError(qualityIssues);
+  }
+
+  return processedBlob;
 };

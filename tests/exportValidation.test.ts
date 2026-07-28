@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { validateExport } from '../services/exportValidation';
+import { DEFAULT_EXPORT_SETTINGS } from '../services/docx/layout/presets';
 import { BlockType, ParsedBlock } from '../services/types';
 
 vi.mock('mermaid', () => ({
@@ -17,6 +18,7 @@ const validate = (overrides: Partial<Parameters<typeof validateExport>[0]> = {})
     blocks: [],
     meta: { title: '技術書稿', author: 'Eric' },
     imageRegistry: {},
+    exportSettings: DEFAULT_EXPORT_SETTINGS,
     ...overrides,
   });
 
@@ -107,5 +109,165 @@ describe('validateExport', () => {
         title: '疑似表格分隔列格式錯誤',
       }),
     ]);
+  });
+
+  it('實體邊界小於 1 公分時警告，但 gutter 不算實體邊界', async () => {
+    const marginIssues = await validate({
+      exportSettings: {
+        profileId: 'publisher-narrow',
+        pageSizeId: 'tech',
+        marginPresetId: 'custom',
+        customMargins: {
+          mode: 'standard',
+          topCm: 0.75,
+          rightCm: 1.2,
+          bottomCm: 1.2,
+          leftCm: 1.2,
+          gutterCm: 0,
+          gutterPosition: 'left',
+        },
+      },
+    });
+    const bindingIssues = await validate({
+      exportSettings: {
+        profileId: 'publisher-binding',
+        pageSizeId: 'tech',
+        marginPresetId: 'publisher-binding',
+      },
+    });
+
+    expect(marginIssues).toContainEqual(expect.objectContaining({
+      id: 'layout-margin-print-risk',
+      severity: 'warning',
+    }));
+    expect(bindingIssues).not.toContainEqual(expect.objectContaining({
+      id: 'layout-margin-print-risk',
+    }));
+  });
+
+  it.each([
+    {
+      name: '寬度',
+      page: { width: 10, height: 20 },
+      id: 'layout-content-width',
+    },
+    {
+      name: '高度',
+      page: { width: 20, height: 10 },
+      id: 'layout-content-height',
+    },
+  ])('有效內容$name不足時回傳 error', async ({ page, id }) => {
+    const issues = await validate({
+      exportSettings: {
+        profileId: 'publisher-narrow',
+        pageSizeId: 'custom',
+        marginPresetId: 'custom',
+        customPageSizeCm: page,
+        customMargins: {
+          mode: 'standard',
+          topCm: 1.1,
+          rightCm: 1.1,
+          bottomCm: 1.1,
+          leftCm: 1.1,
+          gutterCm: 0,
+          gutterPosition: 'left',
+        },
+      },
+    });
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      id,
+      severity: 'error',
+    }));
+  });
+
+  it('publisher-exact 覆寫紙張或邊界預設時警告', async () => {
+    const issues = await validate({
+      exportSettings: {
+        profileId: 'publisher-exact',
+        pageSizeId: 'a4',
+        marginPresetId: 'publisher-exact',
+      },
+    });
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      id: 'layout-publisher-exact-overridden',
+      severity: 'warning',
+    }));
+  });
+
+  it('章首頁圖片 key 缺少時回傳 error，但接受直接 data URL', async () => {
+    const missing = await validate({
+      blocks: [{
+        type: BlockType.CHAPTER_OPENER,
+        content: '第一章',
+        metadata: {
+          chapter: {
+            number: '1',
+            title: '開始',
+            image: 'chapter-cover',
+            goals: [],
+          },
+        },
+      }],
+    });
+    const directDataUrl = await validate({
+      blocks: [{
+        type: BlockType.CHAPTER_OPENER,
+        content: '第一章',
+        metadata: {
+          chapter: {
+            number: '1',
+            title: '開始',
+            image: 'data:image/png;base64,AAA=',
+            goals: [],
+          },
+        },
+      }],
+    });
+
+    expect(missing).toContainEqual(expect.objectContaining({
+      id: 'chapter-image-missing-0',
+      severity: 'error',
+    }));
+    expect(directDataUrl).not.toContainEqual(expect.objectContaining({
+      id: 'chapter-image-missing-0',
+    }));
+  });
+
+  it.each([
+    'javascript:alert(1)',
+    'ftp://example.com/file',
+    '不是網址',
+  ])('QR URL 非 http/https 或無法解析時回傳 error：%s', async (url) => {
+    const issues = await validate({
+      blocks: [{
+        type: BlockType.QR,
+        content: '來源',
+        metadata: { url },
+      }],
+    });
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      id: 'qr-url-invalid-0',
+      severity: 'error',
+    }));
+  });
+
+  it('resolver 的其他版面錯誤整合為單一 layout-invalid issue', async () => {
+    const issues = await validate({
+      exportSettings: {
+        profileId: 'publisher-exact',
+        pageSizeId: 'custom',
+        marginPresetId: 'publisher-exact',
+      },
+    });
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      id: 'layout-invalid',
+      severity: 'error',
+      message: expect.stringContaining('自訂紙張尺寸不可為空'),
+    }));
+    expect(issues.filter((issue) => issue.id === 'layout-invalid')).toHaveLength(1);
   });
 });

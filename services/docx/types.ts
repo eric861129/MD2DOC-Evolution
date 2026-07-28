@@ -15,9 +15,12 @@ export interface DocxExportWarning {
     | 'QR_GENERATION_FAILED'
     | 'MERMAID_GENERATION_FAILED'
     | 'CHAPTER_IMAGE_MISSING'
-    | 'PUBLISHER_TOC_MANUAL_CONTENT';
+    | 'PUBLISHER_TOC_MANUAL_CONTENT'
+    | 'DOCX_QUALITY_WARNING';
   message: string;
   url?: string;
+  issueCode?: string;
+  entry?: string;
 }
 
 export interface GenerateDocxOptions {

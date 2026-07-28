@@ -4,6 +4,12 @@ import {
   type ParsedBlock,
   type ValidationIssue,
 } from './types';
+import { DEFAULT_EXPORT_SETTINGS } from './docx/layout/presets';
+import { resolvePageLayout } from './docx/layout/resolve';
+import type {
+  ExportSettings,
+  ResolvedPageLayout,
+} from './docx/layout/types';
 
 export type { ValidationIssue, ValidationSeverity } from './types';
 
@@ -12,6 +18,8 @@ export interface ExportValidationInput {
   blocks: ParsedBlock[];
   meta: DocumentMeta;
   imageRegistry: Record<string, string>;
+  exportSettings?: ExportSettings;
+  resolvedPageLayout?: ResolvedPageLayout;
 }
 
 const hasValue = (value: unknown) => typeof value === 'string' && value.trim().length > 0;
@@ -20,6 +28,19 @@ const isRegisteredImage = (src: string, imageRegistry: Record<string, string>) =
   Boolean(imageRegistry[src]) || src.startsWith('data:image/');
 
 const isExternalImage = (src: string) => /^https?:\/\//i.test(src);
+
+const isValidQrUrl = (value: unknown): boolean => {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
 
 const splitTableCells = (line: string) =>
   line
@@ -106,10 +127,112 @@ const collectBlockIssues = (
         });
       }
     }
+
+    if (block.type === BlockType.CHAPTER_OPENER) {
+      const image = block.metadata?.chapter?.image;
+      if (image && !isRegisteredImage(image, imageRegistry)) {
+        issues.push({
+          id: `chapter-image-missing-${index}`,
+          severity: 'error',
+          title: '章首頁圖片不存在',
+          message: `找不到章首頁圖片「${image}」，請重新上傳或使用有效的 data URL。`,
+          sourceLine: block.sourceLine,
+          blockType: block.type,
+        });
+      }
+    }
+
+    if (block.type === BlockType.QR && !isValidQrUrl(block.metadata?.url)) {
+      issues.push({
+        id: `qr-url-invalid-${index}`,
+        severity: 'error',
+        title: 'QR URL 無效',
+        message: 'QR URL 必須是可解析的 http 或 https 網址。',
+        sourceLine: block.sourceLine,
+        blockType: block.type,
+      });
+    }
   });
 
   return issues;
 };
+
+const createLayoutErrorIssue = (error: unknown): ValidationIssue => {
+  const message = error instanceof Error ? error.message : '未知的版面設定錯誤';
+  const id = message.includes('有效內容寬度')
+    ? 'layout-content-width'
+    : message.includes('有效內容高度')
+      ? 'layout-content-height'
+      : 'layout-invalid';
+
+  return {
+    id,
+    severity: 'error',
+    title: id === 'layout-content-width'
+      ? '有效內容寬度不足'
+      : id === 'layout-content-height'
+        ? '有效內容高度不足'
+        : '版面設定無效',
+    message,
+  };
+};
+
+const collectLayoutIssues = (
+  exportSettings: ExportSettings,
+  resolvedPageLayout?: ResolvedPageLayout,
+): ValidationIssue[] => {
+  let layout: ResolvedPageLayout;
+  try {
+    layout = resolvedPageLayout ?? resolvePageLayout(exportSettings);
+  } catch (error) {
+    return [createLayoutErrorIssue(error)];
+  }
+
+  const { margins } = layout;
+  const physicalMargins = margins.mode === 'mirrored'
+    ? [
+        margins.topCm,
+        margins.bottomCm,
+        margins.insideCm!,
+        margins.outsideCm!,
+      ]
+    : [
+        margins.topCm,
+        margins.rightCm,
+        margins.bottomCm,
+        margins.leftCm,
+      ];
+  const issues: ValidationIssue[] = [];
+
+  if (physicalMargins.some((margin) => margin < 1)) {
+    issues.push({
+      id: 'layout-margin-print-risk',
+      severity: 'warning',
+      title: '實體邊界小於 1 公分',
+      message: '頁面實體邊界小於 1 公分，列印時可能有裁切風險。',
+    });
+  }
+
+  if (
+    exportSettings.profileId === 'publisher-exact'
+    && layout.isCustomizedFromProfile
+  ) {
+    issues.push({
+      id: 'layout-publisher-exact-overridden',
+      severity: 'warning',
+      title: '出版社精確版型已覆寫',
+      message: '紙張或邊界已偏離出版社精確版型預設，不保證參考稿頁碼一致。',
+    });
+  }
+
+  return issues;
+};
+
+const deduplicateIssues = (
+  issues: ValidationIssue[],
+): ValidationIssue[] => Array.from(
+  new Map(issues.map((issue) => [issue.id, issue])).values(),
+);
 
 const collectTableIssues = (content: string): ValidationIssue[] => {
   const lines = content.split(/\r?\n/);
@@ -187,9 +310,12 @@ export const validateExport = async ({
   blocks,
   meta,
   imageRegistry,
-}: ExportValidationInput): Promise<ValidationIssue[]> => [
+  exportSettings = DEFAULT_EXPORT_SETTINGS,
+  resolvedPageLayout,
+}: ExportValidationInput): Promise<ValidationIssue[]> => deduplicateIssues([
+  ...collectLayoutIssues(exportSettings, resolvedPageLayout),
   ...collectFrontmatterIssues(meta),
   ...collectBlockIssues(blocks, imageRegistry),
   ...collectTableIssues(content),
   ...await collectMermaidIssues(blocks),
-];
+]);
