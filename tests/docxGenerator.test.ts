@@ -654,4 +654,54 @@ describe('docxGenerator', () => {
         .getAttribute('w:val')).toBe('1');
     }
   });
+
+  it.each([
+    [
+      'sublist 後接 code',
+      [
+        '- Parent',
+        '  - Child',
+        '  ```ts',
+        '  code',
+        '  ```',
+      ].join('\n'),
+      ['Parent', 'Child', 'code'],
+    ],
+    [
+      'code 後接 trailing paragraph',
+      [
+        '- Parent',
+        '  ```ts',
+        '  code',
+        '  ```',
+        '',
+        '  trailing paragraph',
+      ].join('\n'),
+      ['Parent', 'code', 'trailing paragraph'],
+    ],
+  ])('真實 DOCX 保留 list item 的 $0 順序', async (
+    _caseName,
+    markdown,
+    expectedOrder,
+  ) => {
+    const { blocks } = parseMarkdown(markdown);
+    const blob = await generateDocx(blocks, {
+      exportSettings: {
+        profileId: 'publisher-exact',
+        pageSizeId: 'tech',
+        marginPresetId: 'publisher-exact',
+      },
+      showLineNumbers: false,
+    });
+    const document = new DOMParser().parseFromString(
+      await readDocxXml(blob, 'word/document.xml'),
+      'application/xml',
+    );
+    const targetTexts = new Set(expectedOrder);
+    const actualOrder = Array.from(document.getElementsByTagName('w:p'))
+      .map((paragraph) => paragraph.textContent ?? '')
+      .filter((text) => targetTexts.has(text));
+
+    expect(actualOrder).toEqual(expectedOrder);
+  });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { validateExport } from '../services/exportValidation';
 import { parseMarkdown } from '../services/markdownParser';
+import { measureCodeSpanMappingOperations } from '../services/parser/ast';
 import { BlockType } from '../services/types';
 
 describe('出版社 Markdown 語法', () => {
@@ -399,6 +400,78 @@ describe('出版社 Markdown 語法', () => {
       expect.stringContaining('[CHAPTER]'),
       expect.stringContaining('[CHAPTER]'),
     ]);
+  });
+
+  it('nested sublist 與 fenced code 依 item.tokens 原始順序輸出', () => {
+    const { blocks } = parseMarkdown([
+      '- Parent',
+      '  - Child',
+      '  ```ts',
+      '  code',
+      '  ```',
+    ].join('\n'));
+
+    expect(blocks.map(({ type, content }) => ({ type, content }))).toEqual([
+      { type: BlockType.BULLET_LIST, content: 'Parent' },
+      { type: BlockType.BULLET_LIST, content: 'Child' },
+      { type: BlockType.CODE_BLOCK, content: 'code' },
+    ]);
+  });
+
+  it('fenced code 後的 trailing paragraph 保留獨立 block 與原始順序', () => {
+    const { blocks } = parseMarkdown([
+      '- Parent',
+      '  ```ts',
+      '  code',
+      '  ```',
+      '',
+      '  trailing paragraph',
+    ].join('\n'));
+
+    expect(blocks.map(({ type, content }) => ({ type, content }))).toEqual([
+      { type: BlockType.BULLET_LIST, content: 'Parent' },
+      { type: BlockType.CODE_BLOCK, content: 'code' },
+      { type: BlockType.PARAGRAPH, content: 'trailing paragraph' },
+    ]);
+  });
+
+  it('code/sublist/code 交錯順序與 nested ordered instance 均保留', () => {
+    const { blocks } = parseMarkdown([
+      '- Parent',
+      '  ```ts',
+      '  before',
+      '  ```',
+      '  - Child',
+      '    1. ordered child',
+      '  ```ts',
+      '  after',
+      '  ```',
+    ].join('\n'));
+
+    expect(blocks.map((block) => ({
+      type: block.type,
+      content: block.content,
+      instance: block.metadata?.listInstance,
+    }))).toEqual([
+      { type: BlockType.BULLET_LIST, content: 'Parent', instance: undefined },
+      { type: BlockType.CODE_BLOCK, content: 'before', instance: undefined },
+      { type: BlockType.BULLET_LIST, content: 'Child', instance: undefined },
+      { type: BlockType.NUMBERED_LIST, content: 'ordered child', instance: 1 },
+      { type: BlockType.CODE_BLOCK, content: 'after', instance: undefined },
+    ]);
+  });
+
+  it('10k 行 protected-span mapping 操作量維持線性上限', () => {
+    const markdown = Array.from(
+      { length: 5_000 },
+      (_, index) => `paragraph-${index}`,
+    ).join('\n\n');
+    const metrics = measureCodeSpanMappingOperations(markdown);
+
+    expect(metrics.sourceLineCount).toBe(9_999);
+    expect(metrics.lineProbeCount).toBeLessThanOrEqual(
+      metrics.sourceLineCount * 4,
+    );
   });
 
   it('未關閉 CHAPTER 只回復 marker，後續 heading 與 paragraph 全部保留', () => {

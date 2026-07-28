@@ -54,6 +54,12 @@ interface ManualTocEntry {
   page: string;
 }
 
+export interface CodeSpanMappingMetrics {
+  lineProbeCount: number;
+  sourceLineCount: number;
+  tokenCount: number;
+}
+
 const CHAPTER_KEYS = new Set([
   'number',
   'part',
@@ -516,6 +522,7 @@ const findNestedCodeSpan = (
   sourceLines: PhysicalLineSpan[],
   parentSpan: SourceSpan,
   startLineIndex: number,
+  metrics?: CodeSpanMappingMetrics,
 ): { span: SourceSpan; nextLineIndex: number } | undefined => {
   const expectedLines = scanPhysicalLineSpans(codeToken.raw)
     .map(({ content }) => content.trim());
@@ -528,6 +535,9 @@ const findNestedCodeSpan = (
     candidateIndex < sourceLines.length;
     candidateIndex += 1
   ) {
+    if (metrics) {
+      metrics.lineProbeCount += 1;
+    }
     const candidateEndIndex = candidateIndex + expectedLines.length - 1;
     const firstLine = sourceLines[candidateIndex];
     const lastLine = sourceLines[candidateEndIndex];
@@ -558,10 +568,12 @@ const collectCodeSourceSpans = (
   source: string,
   tokens: ReturnType<typeof marked.lexer>,
   boundaryMap: number[],
+  metrics?: CodeSpanMappingMetrics,
 ): SourceSpan[] => {
   const spans: SourceSpan[] = [];
   const sourceLines = scanPhysicalLineSpans(source);
   let normalizedIndex = 0;
+  let sourceLineCursor = 0;
 
   for (const token of tokens) {
     const rawLength = token.raw.length;
@@ -576,12 +588,16 @@ const collectCodeSourceSpans = (
         startIndex: boundaryMap[normalizedIndex] ?? normalizedIndex,
         endIndex: boundaryMap[normalizedEndIndex] ?? normalizedEndIndex,
       };
-      let nextLineIndex = sourceLines.findIndex((line) =>
-        line.startIndex >= parentSpan.startIndex
-      );
-      if (nextLineIndex < 0) {
-        nextLineIndex = sourceLines.length;
+      while (
+        sourceLineCursor < sourceLines.length
+        && sourceLines[sourceLineCursor].startIndex < parentSpan.startIndex
+      ) {
+        if (metrics) {
+          metrics.lineProbeCount += 1;
+        }
+        sourceLineCursor += 1;
       }
+      let nextLineIndex = sourceLineCursor;
 
       for (const codeToken of collectNestedCodeTokens(token)) {
         const located = findNestedCodeSpan(
@@ -589,6 +605,7 @@ const collectCodeSourceSpans = (
           sourceLines,
           parentSpan,
           nextLineIndex,
+          metrics,
         );
         if (located) {
           spans.push(located.span);
@@ -599,6 +616,27 @@ const collectCodeSourceSpans = (
     normalizedIndex = normalizedEndIndex;
   }
   return spans;
+};
+
+/**
+ * 回傳 protected-span mapping 的穩定操作量，供複雜度回歸測試使用。
+ */
+export const measureCodeSpanMappingOperations = (
+  markdown: string,
+): CodeSpanMappingMetrics => {
+  const tokens = marked.lexer(markdown);
+  const metrics: CodeSpanMappingMetrics = {
+    lineProbeCount: 0,
+    sourceLineCount: scanPhysicalLineSpans(markdown).length,
+    tokenCount: tokens.length,
+  };
+  collectCodeSourceSpans(
+    markdown,
+    tokens,
+    createNormalizedBoundaryMap(markdown),
+    metrics,
+  );
+  return metrics;
 };
 
 const createCodeBlock = (token: any): ParsedBlock => {
@@ -970,60 +1008,78 @@ const parseMarkdownFragment = (
             : inheritedOrderedInstance;
 
           items.forEach(item => {
-            let itemContent = '';
-            const subLists: any[] = [];
-            const nestedCodeBlocks: any[] = [];
-
-            if (item.tokens) {
-              item.tokens.forEach((t: any) => {
-                if (t.type === 'list') {
-                  subLists.push(t);
-                } else if (t.type === 'code') {
-                  nestedCodeBlocks.push(t);
-                } else {
-                  if (t.type === 'text' || t.type === 'html') {
-                    itemContent += t.text;
-                  } else if (t.raw) {
-                     // Fallback for other token types, try to use raw or text if available
-                     itemContent += (t.text || t.raw);
-                  }
-                }
-              });
-            } else {
-              itemContent = item.text;
-            }
-
-            // Clean content (checkboxes)
-            const cleanText = itemContent
-              .trim()
-              .replace(/^\[[ x]\]\s*/, '');
             const manualTocEntry = parseManualTocEntry(
               item.raw ?? '',
               ordered,
             );
+            let parentContent = '';
+            let isParentEmitted = false;
+            const emitParent = (): void => {
+              if (isParentEmitted) {
+                return;
+              }
+              const cleanText = parentContent
+                .trim()
+                .replace(/^\[[ x]\]\s*/, '');
+              addBlock({
+                type: ordered
+                  ? BlockType.NUMBERED_LIST
+                  : BlockType.BULLET_LIST,
+                content: cleanTextForPublishing(cleanText),
+                nestingLevel: level,
+                metadata: {
+                  ...(ordered ? { listInstance: orderedInstance } : {}),
+                  ...(manualTocEntry ? { manualTocEntry } : {}),
+                },
+              });
+              isParentEmitted = true;
+            };
+            const emitTrailingParagraph = (childToken: any): void => {
+              const content = (childToken.text ?? childToken.raw ?? '').trim();
+              if (!content) {
+                return;
+              }
+              addBlock({
+                type: BlockType.PARAGRAPH,
+                content: cleanTextForPublishing(content),
+              });
+            };
+            const itemTokens = item.tokens ?? [{
+              type: 'text',
+              text: item.text,
+              raw: item.raw,
+            }];
 
-            addBlock({
-              type: ordered ? BlockType.NUMBERED_LIST : BlockType.BULLET_LIST,
-              content: cleanTextForPublishing(cleanText),
-              nestingLevel: level,
-              metadata: {
-                ...(ordered ? { listInstance: orderedInstance } : {}),
-                ...(manualTocEntry ? { manualTocEntry } : {}),
-              },
-            });
-            nestedCodeBlocks.forEach((codeToken) => {
-              addBlock(createCodeBlock(codeToken));
-            });
+            for (const itemToken of itemTokens) {
+              if (itemToken.type === 'list') {
+                emitParent();
+                processListItems(
+                  itemToken.items,
+                  level + 1,
+                  itemToken.ordered,
+                  orderedInstance,
+                );
+                continue;
+              }
+              if (itemToken.type === 'code') {
+                emitParent();
+                addBlock(createCodeBlock(itemToken));
+                continue;
+              }
+              if (itemToken.type === 'space') {
+                if (parentContent.trim()) {
+                  emitParent();
+                }
+                continue;
+              }
 
-            // Process nested lists
-            subLists.forEach(subList => {
-              processListItems(
-                subList.items,
-                level + 1,
-                subList.ordered,
-                orderedInstance,
-              );
-            });
+              if (!isParentEmitted) {
+                parentContent += itemToken.text ?? itemToken.raw ?? '';
+              } else {
+                emitTrailingParagraph(itemToken);
+              }
+            }
+            emitParent();
           });
         };
 
