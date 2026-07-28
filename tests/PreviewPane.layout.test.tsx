@@ -273,6 +273,15 @@ const AtomicPreviewHarness: React.FC<AtomicPreviewHarnessProps> = ({
       >
         下載 DOCX
       </button>
+      <button
+        type="button"
+        onClick={() => {
+          editorState.setExportSettings(exactSettings);
+          void editorState.handleDownload();
+        }}
+      >
+        套用 exact 並立即下載
+      </button>
       {editorState.exportError && (
         <div role="alert">{editorState.exportError}</div>
       )}
@@ -493,6 +502,26 @@ describe('useMarkdownEditor 的版面 Context', () => {
     expect(page.style.padding).toBe('2.54cm');
     expect(screen.getByRole('alert')).toHaveTextContent(
       '版面設定無效：自訂紙張尺寸不可為空；已改用預設版面',
+    );
+  });
+
+  it('同一事件套用合法 settings 並立即下載時不讀取舊 render closure', async () => {
+    render(<AtomicPreviewHarness />);
+
+    fireEvent.click(screen.getByRole('button', { name: '載入下載內容' }));
+    expect(await screen.findByRole('heading', { name: '下載測試' }))
+      .toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '套用 exact 並立即下載' }),
+    );
+    await waitFor(() => expect(generateDocx).toHaveBeenCalledTimes(1));
+
+    expect(generateDocx).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({
+        exportSettings: exactSettings,
+      }),
     );
   });
 });

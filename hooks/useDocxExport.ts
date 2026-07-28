@@ -60,19 +60,18 @@ export const useDocxExport = ({
 }: UseDocxExportProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isValidatingExport, setIsValidatingExport] = useState(false);
-  const initialAppliedRef = useRef<InitialAppliedExportSettings | null>(null);
-  if (initialAppliedRef.current === null) {
-    initialAppliedRef.current = resolveInitialAppliedExportSettings(initialExportSettings);
-  }
+  const [initialApplied] = useState(
+    () => resolveInitialAppliedExportSettings(initialExportSettings),
+  );
   const [exportError, setExportError] = useState<string | null>(
-    initialAppliedRef.current.error,
+    initialApplied.error,
   );
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
   const [showValidationIssues, setShowValidationIssues] = useState(false);
   const [appliedExportSettings, setAppliedExportSettings] = useState(
-    initialAppliedRef.current.applied,
+    initialApplied.applied,
   );
-  const appliedExportSettingsRef = useRef(appliedExportSettings);
+  const appliedExportSettingsRef = useRef(initialApplied.applied);
   const exportSettings = appliedExportSettings.settings;
   const resolvedPageLayout = appliedExportSettings.layout;
 
@@ -164,7 +163,7 @@ export const useDocxExport = ({
       await runExportValidation(true);
       const { generateDocx } = await import('../services/docxGenerator');
       const blob = await generateDocx(parsedBlocks, {
-        exportSettings,
+        exportSettings: appliedExportSettingsRef.current.settings,
         showLineNumbers: true,
         meta: documentMeta,
         imageRegistry,
