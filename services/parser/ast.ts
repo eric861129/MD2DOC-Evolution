@@ -19,6 +19,66 @@ interface StandaloneQrLink {
   url: string;
 }
 
+interface PhysicalLineSpan {
+  content: string;
+  lineOffset: number;
+  startIndex: number;
+  endIndex: number;
+}
+
+const scanPhysicalLineSpans = (source: string): PhysicalLineSpan[] => {
+  const spans: PhysicalLineSpan[] = [];
+  let lineOffset = 0;
+  let lineStart = 0;
+  let cursor = 0;
+
+  while (cursor < source.length) {
+    const character = source[cursor];
+    if (character !== '\n' && character !== '\r') {
+      cursor += 1;
+      continue;
+    }
+
+    spans.push({
+      content: source.slice(lineStart, cursor),
+      lineOffset,
+      startIndex: lineStart,
+      endIndex: cursor,
+    });
+    cursor += character === '\r' && source[cursor + 1] === '\n' ? 2 : 1;
+    lineStart = cursor;
+    lineOffset += 1;
+  }
+
+  if (lineStart < source.length) {
+    spans.push({
+      content: source.slice(lineStart),
+      lineOffset,
+      startIndex: lineStart,
+      endIndex: source.length,
+    });
+  }
+  return spans;
+};
+
+const createNormalizedBoundaryMap = (source: string): number[] => {
+  const originalIndexByNormalizedBoundary = [0];
+  let originalIndex = 0;
+
+  while (originalIndex < source.length) {
+    if (
+      source[originalIndex] === '\r'
+      && source[originalIndex + 1] === '\n'
+    ) {
+      originalIndex += 2;
+    } else {
+      originalIndex += 1;
+    }
+    originalIndexByNormalizedBoundary.push(originalIndex);
+  }
+  return originalIndexByNormalizedBoundary;
+};
+
 const parseStandaloneQrLink = (
   sourceLine: string,
 ): StandaloneQrLink | undefined => {
@@ -35,27 +95,33 @@ const parseStandaloneQrLink = (
   ) {
     return undefined;
   }
-  return {
-    label: link.text.slice('QR:'.length).trim(),
-    url: link.href,
-  };
+  const label = link.text.slice('QR:'.length).trim();
+  const url = link.href.trim();
+  return label && url ? { label, url } : undefined;
 };
 
 export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, charOffset: number = 0): ParsedBlock[] => {
   const tokens = marked.lexer(markdown);
   const blocks: ParsedBlock[] = [];
+  const originalIndexByNormalizedBoundary =
+    createNormalizedBoundaryMap(markdown);
   
   let currentLine = lineOffset;
-  let currentIndex = charOffset;
+  let currentNormalizedIndex = 0;
 
-  const processToken = (token: any, blockStartLine: number, blockStartIndex: number) => {
+  const processToken = (
+    token: any,
+    blockStartLine: number,
+    blockStartIndex: number,
+    tokenSource: string,
+  ) => {
     // Helper to add block with source info
     const addBlock = (block: ParsedBlock) => {
         blocks.push({
             ...block,
             sourceLine: blockStartLine,
             startIndex: blockStartIndex,
-            endIndex: blockStartIndex + (token.raw?.length || 0)
+            endIndex: blockStartIndex + tokenSource.length,
         });
     };
 
@@ -73,42 +139,51 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
 
       case 'paragraph':
         const text = token.text;
-        const sourceLines = token.raw
-          .replace(/\r?\n$/, '')
-          .split(/\r?\n/);
-        const qrLines = sourceLines.map(parseStandaloneQrLink);
+        const sourceLines = scanPhysicalLineSpans(tokenSource);
+        const qrLines = sourceLines.map(({ content }) =>
+          parseStandaloneQrLink(content)
+        );
 
         if (qrLines.some(Boolean)) {
-          let paragraphLines: string[] = [];
-          const flushParagraph = () => {
-            if (paragraphLines.length === 0) {
+          let fragmentStart = 0;
+          const flushSemanticFragment = (fragmentEnd: number) => {
+            if (fragmentStart >= fragmentEnd) {
               return;
             }
-            addBlock({
-              type: BlockType.PARAGRAPH,
-              content: cleanTextForPublishing(paragraphLines.join('\n')),
-            });
-            paragraphLines = [];
+            const firstLine = sourceLines[fragmentStart];
+            const lastLine = sourceLines[fragmentEnd - 1];
+            const fragment = tokenSource.slice(
+              firstLine.startIndex,
+              lastLine.endIndex,
+            );
+            blocks.push(...parseMarkdownWithAST(
+              fragment,
+              blockStartLine + firstLine.lineOffset,
+              blockStartIndex + firstLine.startIndex,
+            ));
           };
 
           sourceLines.forEach((line, index) => {
             const qrLink = qrLines[index];
             if (!qrLink) {
-              paragraphLines.push(line);
               return;
             }
 
-            flushParagraph();
-            addBlock({
+            flushSemanticFragment(index);
+            blocks.push({
               type: BlockType.QR,
               content: qrLink.label,
               metadata: {
                 url: qrLink.url,
                 label: qrLink.label,
               },
+              sourceLine: blockStartLine + line.lineOffset,
+              startIndex: blockStartIndex + line.startIndex,
+              endIndex: blockStartIndex + line.endIndex,
             });
+            fragmentStart = index + 1;
           });
-          flushParagraph();
+          flushSemanticFragment(sourceLines.length);
           break;
         }
 
@@ -152,7 +227,7 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
                     ...cb,
                     sourceLine: blockStartLine + idx,
                     startIndex: blockStartIndex,
-                    endIndex: blockStartIndex + token.raw.length
+                    endIndex: blockStartIndex + tokenSource.length,
                 });
             });
             break;
@@ -313,14 +388,25 @@ export const parseMarkdownWithAST = (markdown: string, lineOffset: number = 0, c
      const len = raw.length;
      
      const blockStartLine = currentLine;
-     const blockStartIndex = currentIndex;
+     const normalizedEndIndex = currentNormalizedIndex + len;
+     const relativeStartIndex =
+       originalIndexByNormalizedBoundary[currentNormalizedIndex]
+       ?? currentNormalizedIndex;
+     const relativeEndIndex =
+       originalIndexByNormalizedBoundary[normalizedEndIndex]
+       ?? normalizedEndIndex;
+     const blockStartIndex = charOffset + relativeStartIndex;
+     const tokenSource = markdown.slice(
+       relativeStartIndex,
+       relativeEndIndex,
+     );
      
      currentLine += newlines;
-     currentIndex += len;
+     currentNormalizedIndex = normalizedEndIndex;
      
      if (token.type === 'space') return;
      
-     processToken(token, blockStartLine, blockStartIndex);
+     processToken(token, blockStartLine, blockStartIndex, tokenSource);
   });
 
   // Post-processing: Merge adjacent TOC and List blocks if they are intended to be a manual TOC

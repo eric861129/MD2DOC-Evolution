@@ -36,6 +36,30 @@ registerDefaultHandlers();
 // 重新匯出生成器合約，供既有呼叫端使用
 export type { DocxConfig, DocxExportWarning, GenerateDocxOptions };
 
+/**
+ * 建立隔離呼叫端例外的警告回報器，避免觀察端失敗中斷文件產生流程。
+ */
+const createWarningReporter = (
+  observer: GenerateDocxOptions['onWarning'],
+): DocxConfig['reportWarning'] => {
+  let isReporting = false;
+
+  return (warning) => {
+    if (!observer || isReporting) {
+      return;
+    }
+
+    isReporting = true;
+    try {
+      observer(warning);
+    } catch {
+      // 警告觀察端不屬於文件產生流程，例外不得回流影響降級結果。
+    } finally {
+      isReporting = false;
+    }
+  };
+};
+
 const createHeaders = (
   meta: DocumentMeta,
   config: DocxConfig,
@@ -118,7 +142,7 @@ export const generateDocx = async (
     showLineNumbers: options.showLineNumbers,
     meta: options.meta ?? {},
     imageRegistry: options.imageRegistry ?? {},
-    reportWarning: options.onWarning ?? (() => undefined),
+    reportWarning: createWarningReporter(options.onWarning),
     counters: {
       figure: 0,
       qr: 0,

@@ -1,5 +1,6 @@
 import mermaid from 'mermaid';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { resolveImageMediaBytes } from '../../services/docx/builders/image';
 import { generateDocx } from '../../services/docxGenerator';
 import { BlockType, type ParsedBlock } from '../../services/types';
 import { listDocxEntries, readDocxXml } from '../helpers/readDocx';
@@ -16,6 +17,46 @@ const JPEG_WITH_DIMENSIONS_DATA_URL = [
   'data:image/jpeg;base64,',
   '/9j/wAARCAABAAEDASIAAhEBAxEB/9k=',
 ].join('');
+
+const bytesToDataUrl = (
+  mimeType: string,
+  bytes: Uint8Array,
+): string => {
+  let binary = '';
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return `data:${mimeType};base64,${btoa(binary)}`;
+};
+
+const dataUrlToBytes = (source: string): Uint8Array => {
+  const binary = atob(source.split(',')[1]);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+};
+
+const createMinimalPng = (width: number, height: number): Uint8Array => {
+  const bytes = new Uint8Array(45);
+  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const view = new DataView(bytes.buffer);
+  view.setUint32(8, 13);
+  bytes.set([0x49, 0x48, 0x44, 0x52], 12);
+  view.setUint32(16, width);
+  view.setUint32(20, height);
+  bytes.set([8, 6, 0, 0, 0], 24);
+  view.setUint32(33, 0);
+  bytes.set([0x49, 0x45, 0x4e, 0x44], 37);
+  return bytes;
+};
+
+const createMinimalGif = (width: number, height: number): Uint8Array => {
+  const bytes = new Uint8Array(14);
+  bytes.set([0x47, 0x49, 0x46, 0x38, 0x39, 0x61]);
+  const view = new DataView(bytes.buffer);
+  view.setUint16(6, width, true);
+  view.setUint16(8, height, true);
+  bytes[13] = 0x3b;
+  return bytes;
+};
 
 const publisherExportSettings = {
   profileId: 'publisher-exact' as const,
@@ -573,6 +614,33 @@ describe('DOCX 出版元件', () => {
     expect(elementsByName(labelParagraph, 'hyperlink')).toHaveLength(1);
   });
 
+  it('QR warning observer 拋錯時仍完成 label-only fallback 且只通知一次', async () => {
+    let warningCount = 0;
+    const url = `https://example.com/${'a'.repeat(5000)}`;
+    const blob = await generateDocx([{
+      type: BlockType.QR,
+      content: '過長網址',
+      metadata: { url, label: '過長網址' },
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+      onWarning: () => {
+        warningCount += 1;
+        throw new Error('observer failure');
+      },
+    });
+
+    expect(warningCount).toBe(1);
+    const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
+    expect(elementsByName(
+      findParagraph(document, '過長網址'),
+      'hyperlink',
+    )).toHaveLength(1);
+    expect((await listDocxEntries(blob)).filter((entry) =>
+      /^word\/media\/[^/]+$/.test(entry)
+    )).toHaveLength(0);
+  });
+
   it('Mermaid 成功時沿用圖片寬度、格式與 alt/title 封裝規則', async () => {
     const renderSpy = vi.spyOn(mermaid, 'render').mockResolvedValue({
       svg: '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300"></svg>',
@@ -685,6 +753,28 @@ describe('DOCX 出版元件', () => {
       .toContain('[Mermaid Chart Error]');
   });
 
+  it('Mermaid warning observer 拋錯時仍完成文字 fallback 且只通知一次', async () => {
+    let warningCount = 0;
+    const blob = await generateDocx([{
+      type: BlockType.MERMAID,
+      content: 'not a mermaid diagram',
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+      onWarning: () => {
+        warningCount += 1;
+        throw new Error('observer failure');
+      },
+    });
+
+    expect(warningCount).toBe(1);
+    expect(await readDocxXml(blob, 'word/document.xml'))
+      .toContain('[Mermaid Chart Error]');
+    expect((await listDocxEntries(blob)).filter((entry) =>
+      /^word\/media\/[^/]+$/.test(entry)
+    )).toHaveLength(0);
+  });
+
   it('MIME 與 magic bytes 衝突時拒絕匯出', async () => {
     const gifPayload = ONE_PIXEL_GIF_DATA_URL.split(',')[1];
     await expect(generateDocx([{
@@ -711,6 +801,122 @@ describe('DOCX 出版元件', () => {
         'unsupported-mime': `data:image/webp;base64,${pngPayload}`,
       },
     })).rejects.toThrow(/不支援的圖片 MIME/);
+  });
+
+  it.each([
+    'text/plain',
+    'application/octet-stream',
+  ])('data URL 宣告 %s 時即使內容是 PNG 也拒絕匯出', async (mimeType) => {
+    const pngPayload = LARGE_PNG_DATA_URL.split(',')[1];
+    await expect(generateDocx([{
+      type: BlockType.IMAGE,
+      content: 'wrong-mime',
+      metadata: { alt: '錯誤 MIME', title: '錯誤 MIME' },
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+      imageRegistry: {
+        'wrong-mime': `data:${mimeType};base64,${pngPayload}`,
+      },
+    })).rejects.toThrow(/不支援的圖片 MIME/);
+  });
+
+  it('data URL 未宣告 MIME 時可依 PNG magic bytes 安全判定', async () => {
+    const pngPayload = LARGE_PNG_DATA_URL.split(',')[1];
+    const blob = await generateDocx([{
+      type: BlockType.IMAGE,
+      content: 'magic-only',
+      metadata: { alt: 'Magic PNG', title: 'Magic PNG' },
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+      imageRegistry: {
+        'magic-only': `data:;base64,${pngPayload}`,
+      },
+    });
+
+    expect((await listDocxEntries(blob)).filter((entry) =>
+      /^word\/media\/[^/]+\.png$/.test(entry)
+    )).toHaveLength(1);
+  });
+
+  it.each([
+    [
+      '缺少 IEND 的 PNG',
+      bytesToDataUrl('image/png', createMinimalPng(100, 100).slice(0, 24)),
+    ],
+    [
+      '缺少完整 LSD 與 trailer 的 GIF',
+      bytesToDataUrl('image/gif', createMinimalGif(100, 100).slice(0, 10)),
+    ],
+    [
+      '缺少 EOI 的 JPEG',
+      bytesToDataUrl(
+        'image/jpeg',
+        dataUrlToBytes(JPEG_WITH_DIMENSIONS_DATA_URL).slice(0, -2),
+      ),
+    ],
+  ])('%s 在 Packer 前拒絕', async (_caseName, source) => {
+    await expect(generateDocx([{
+      type: BlockType.IMAGE,
+      content: 'truncated',
+      metadata: { alt: '截斷圖片', title: '截斷圖片' },
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+      imageRegistry: { truncated: source },
+    })).rejects.toThrow(/圖片結構不完整/);
+  });
+
+  it('拒絕超過 64 MiB 的 decoded 圖片資料', () => {
+    const oversized = new Uint8Array(64 * 1024 * 1024 + 1);
+    oversized.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+    expect(() => resolveImageMediaBytes(oversized, 'image/png'))
+      .toThrow(/64 MiB/);
+  });
+
+  it.each([
+    ['極端像素尺寸', createMinimalPng(0xffffffff, 1), /圖片尺寸超出安全上限/],
+    ['極端長寬比', createMinimalPng(1, 1000), /圖片長寬比超出安全上限/],
+  ])('%s 在建立壞 extent 前拒絕', async (_caseName, bytes, error) => {
+    await expect(generateDocx([{
+      type: BlockType.IMAGE,
+      content: 'unsafe-geometry',
+      metadata: { alt: '不安全尺寸', title: '不安全尺寸' },
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+      imageRegistry: {
+        'unsafe-geometry': bytesToDataUrl('image/png', bytes),
+      },
+    })).rejects.toThrow(error);
+  });
+
+  it('正常長圖保留比例且輸出有限、合法的 EMU extent', async () => {
+    const blob = await generateDocx([{
+      type: BlockType.IMAGE,
+      content: 'long-image',
+      metadata: { alt: '長圖', title: '長圖' },
+    }], {
+      exportSettings: publisherExportSettings,
+      showLineNumbers: false,
+      imageRegistry: {
+        'long-image': bytesToDataUrl(
+          'image/png',
+          createMinimalPng(400, 40_000),
+        ),
+      },
+    });
+
+    const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
+    const extent = document.getElementsByTagName('wp:extent')[0];
+    const widthEmu = Number(extent.getAttribute('cx'));
+    const heightEmu = Number(extent.getAttribute('cy'));
+    expect(widthEmu).toBe(3_810_000);
+    expect(heightEmu).toBe(381_000_000);
+    expect(widthEmu).toBeLessThanOrEqual(2_147_483_647);
+    expect(heightEmu).toBeLessThanOrEqual(2_147_483_647);
   });
 
   it('未知媒體格式在 Packer 前明確拒絕且不會產生 undefined 副檔名', async () => {

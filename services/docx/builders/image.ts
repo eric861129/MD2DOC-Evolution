@@ -17,6 +17,11 @@ import type { DocxConfig } from '../types';
 const { SPACING } = WORD_THEME;
 const EMUS_PER_CENTIMETRE = 360_000;
 const EMUS_PER_PIXEL = 9_525;
+const MAX_DECODED_IMAGE_BYTES = 64 * 1024 * 1024;
+const MAX_IMAGE_DIMENSION_PX = 65_535;
+const MAX_IMAGE_PIXELS = 100_000_000;
+const MAX_IMAGE_ASPECT_RATIO = 200;
+const MAX_WORD_IMAGE_EMU = 2_147_483_647;
 
 export type SupportedImageType = 'png' | 'jpg' | 'gif';
 
@@ -79,27 +84,56 @@ const normalizeMimeType = (
 };
 
 const decodeBase64 = (value: string): Uint8Array => {
+  const normalizedValue = value.replace(/\s/g, '');
+  const paddingLength = normalizedValue.endsWith('==')
+    ? 2
+    : normalizedValue.endsWith('=')
+      ? 1
+      : 0;
+  const decodedLength = Math.floor(normalizedValue.length * 3 / 4)
+    - paddingLength;
+  if (decodedLength > MAX_DECODED_IMAGE_BYTES) {
+    throw new Error('圖片解碼後不得超過 64 MiB。');
+  }
+
+  let binary: string;
   try {
-    const binary = atob(value);
-    const buffer = new Uint8Array(binary.length);
-    for (let index = 0; index < binary.length; index += 1) {
-      buffer[index] = binary.charCodeAt(index);
-    }
-    return buffer;
+    binary = atob(normalizedValue);
   } catch {
     throw new Error('圖片 data URL 的 Base64 內容無效。');
   }
+
+  if (binary.length > MAX_DECODED_IMAGE_BYTES) {
+    throw new Error('圖片解碼後不得超過 64 MiB。');
+  }
+
+  const buffer = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    buffer[index] = binary.charCodeAt(index);
+  }
+  return buffer;
 };
 
 const readPngDimensions = (
   data: Uint8Array,
 ): { width: number; height: number } | undefined => {
-  if (data.length < 24 || !startsWithBytes(data, [
+  if (data.length < 45 || !startsWithBytes(data, [
     0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
   ])) {
     return undefined;
   }
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const hasIhdr = view.getUint32(8) === 13
+    && startsWithBytes(data.subarray(12), [0x49, 0x48, 0x44, 0x52]);
+  const iendOffset = data.length - 12;
+  const hasIend = view.getUint32(iendOffset) === 0
+    && startsWithBytes(
+      data.subarray(iendOffset + 4),
+      [0x49, 0x45, 0x4e, 0x44],
+    );
+  if (!hasIhdr || !hasIend) {
+    return undefined;
+  }
   return {
     width: view.getUint32(16),
     height: view.getUint32(20),
@@ -109,7 +143,7 @@ const readPngDimensions = (
 const readGifDimensions = (
   data: Uint8Array,
 ): { width: number; height: number } | undefined => {
-  if (data.length < 10) {
+  if (data.length < 14 || data[data.length - 1] !== 0x3b) {
     return undefined;
   }
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
@@ -129,6 +163,14 @@ const JPEG_START_OF_FRAME_MARKERS = new Set([
 const readJpegDimensions = (
   data: Uint8Array,
 ): { width: number; height: number } | undefined => {
+  if (
+    data.length < 11
+    || data[data.length - 2] !== 0xff
+    || data[data.length - 1] !== 0xd9
+  ) {
+    return undefined;
+  }
+
   let offset = 2;
   while (offset + 8 < data.length) {
     if (data[offset] !== 0xff) {
@@ -170,8 +212,23 @@ const readImageDimensions = (
       ? readGifDimensions(data)
       : readJpegDimensions(data);
 
-  if (!dimensions || dimensions.width <= 0 || dimensions.height <= 0) {
-    throw new Error(`無法讀取 ${type} 圖片的原始尺寸。`);
+  if (!dimensions) {
+    throw new Error(`圖片結構不完整：${type}。`);
+  }
+  const { width, height } = dimensions;
+  if (
+    !Number.isInteger(width)
+    || !Number.isInteger(height)
+    || width <= 0
+    || height <= 0
+    || width > MAX_IMAGE_DIMENSION_PX
+    || height > MAX_IMAGE_DIMENSION_PX
+    || width * height > MAX_IMAGE_PIXELS
+  ) {
+    throw new Error('圖片尺寸超出安全上限。');
+  }
+  if (Math.max(width, height) / Math.min(width, height) > MAX_IMAGE_ASPECT_RATIO) {
+    throw new Error('圖片長寬比超出安全上限。');
   }
   return dimensions;
 };
@@ -183,14 +240,14 @@ export const resolveImageMediaBytes = (
   data: Uint8Array,
   mimeType?: string,
 ): ResolvedImageMedia => {
+  if (data.byteLength > MAX_DECODED_IMAGE_BYTES) {
+    throw new Error('圖片解碼後不得超過 64 MiB。');
+  }
   const magicType = detectMagicType(data);
   const mimeImageType = normalizeMimeType(mimeType);
-  const declaredMimeType = mimeType?.toLowerCase();
+  const declaredMimeType = mimeType?.trim().toLowerCase();
 
-  if (
-    declaredMimeType?.startsWith('image/')
-    && !mimeImageType
-  ) {
+  if (declaredMimeType && !mimeImageType) {
     throw new Error(`不支援的圖片 MIME：${mimeType}。`);
   }
   if (mimeImageType && magicType && mimeImageType !== magicType) {
@@ -214,12 +271,15 @@ export const resolveImageMediaBytes = (
  */
 export const resolveImageMedia = (source: string): ResolvedImageMedia => {
   const match = source.match(
-    /^data:([^;,]+)(?:;[^,]*)*;base64,([\s\S]+)$/i,
+    /^data:([^;,]*)(?:;[^,]*)*;base64,([\s\S]+)$/i,
   );
   if (!match) {
     throw new Error('圖片來源必須是 Base64 data URL。');
   }
-  return resolveImageMediaBytes(decodeBase64(match[2]), match[1]);
+  return resolveImageMediaBytes(
+    decodeBase64(match[2]),
+    match[1] || undefined,
+  );
 };
 
 const centimetresToPixels = (centimetres: number): number =>
@@ -249,6 +309,18 @@ const createImageRun = ({
     ? maximumWidthPx
     : Math.min(media.width, maximumWidthPx);
   const targetHeight = targetWidth * media.height / media.width;
+  const targetWidthEmu = targetWidth * EMUS_PER_PIXEL;
+  const targetHeightEmu = targetHeight * EMUS_PER_PIXEL;
+  if (
+    !Number.isFinite(targetWidthEmu)
+    || !Number.isFinite(targetHeightEmu)
+    || targetWidthEmu <= 0
+    || targetHeightEmu <= 0
+    || targetWidthEmu > MAX_WORD_IMAGE_EMU
+    || targetHeightEmu > MAX_WORD_IMAGE_EMU
+  ) {
+    throw new Error('圖片輸出尺寸超出 Word 安全上限。');
+  }
   const accessibleName = title || alt || '圖片';
 
   const options: IImageOptions = {
