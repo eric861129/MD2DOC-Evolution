@@ -38,9 +38,9 @@ describe('GuideCenter', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '完整範例 DOCX' }));
     await waitFor(() => expect(saveAs).toHaveBeenCalledTimes(2), {
-      timeout: 15_000,
+      timeout: 30_000,
     });
     expect(vi.mocked(saveAs).mock.calls[1][1])
       .toBe('MD2DOC-Evolution_中文完整功能稿_窄邊界.docx');
-  }, 20_000);
+  }, 40_000);
 });

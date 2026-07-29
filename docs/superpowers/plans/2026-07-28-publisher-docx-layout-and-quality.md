@@ -569,8 +569,8 @@ export interface DocumentStyleProfile {
 
 數值來源：
 
-- `D:\MySelf\LR\LeftBlueprintRightMagic-Book\scripts\publishing\build_docx.py:312-368`
-- `D:\MySelf\LR\LeftBlueprintRightMagic-Book\scripts\publishing\build_docx.py:910-1098`
+- 維護者唯讀參考書稿與其私有產生器。
+- 公開版本只保留已驗證的樣式 Token，不記錄私人工作區絕對路徑。
 
 不得以目前網站輸出反推數值。`publisher-exact`、`publisher-narrow`、`publisher-binding` 必須只在預設幾何上不同，樣式 Token 完全相同。
 
@@ -1475,7 +1475,7 @@ Fixture 必須包含：
 - 明確 QR
 - Mermaid
 
-內容使用「星圖工坊」虛構專案，不使用《左手藍圖，右手魔法》的正文或插圖。
+內容使用「星圖工坊」虛構專案，不使用任何真實私人書稿的正文或插圖。
 
 - [ ] **Step 3: 建立 Fixture 產生器**
 

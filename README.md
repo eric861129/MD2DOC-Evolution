@@ -143,10 +143,11 @@ http://localhost:3000/MD2DOC-Evolution/
 
 ```bash
 npm run verify
-npm run qa:fixture
+npm run qa:acceptance
+npm run qa:word
 ```
 
-`npm run verify` 依序執行 TypeScript、Vitest 與 production build。`qa:fixture` 由完整公開範例產生 DOCX；LibreOffice 視覺回歸需要另外修復並確認本機安裝環境，不能取代 Word 365 最終人工檢查。
+`npm run verify` 依序執行 TypeScript、Vitest 與 production build。`qa:acceptance` 由完整公開範例產生三種出版社版型並檢查 OOXML；`qa:word` 以隔離 Word 365 worker 更新欄位、檢查清單與黑點標記並匯出 PDF。LibreOffice 視覺回歸需要另外確認本機安裝環境，不能取代 Word 365 最終檢查。
 
 ## Tech Stack
 

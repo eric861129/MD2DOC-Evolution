@@ -143,10 +143,11 @@ http://localhost:3000/MD2DOC-Evolution/
 
 ```bash
 npm run verify
-npm run qa:fixture
+npm run qa:acceptance
+npm run qa:word
 ```
 
-`npm run verify` runs TypeScript, Vitest, and the production build. `qa:fixture` generates a DOCX from the complete public sample. LibreOffice visual regression requires a verified local installation and does not replace final Word 365 review.
+`npm run verify` runs TypeScript, Vitest, and the production build. `qa:acceptance` generates all three publisher profiles from the complete public sample and inspects their OOXML contracts. `qa:word` uses isolated Word 365 workers to update fields, inspect list/pagination markers, and export PDFs. LibreOffice visual regression still requires a verified local installation and does not replace Word 365 review.
 
 ## Tech Stack
 

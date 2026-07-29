@@ -19,6 +19,8 @@
     "typecheck": "tsc --noEmit",
     "verify": "npm run typecheck && npm run test:run && npm run build",
     "qa:fixture": "tsx scripts/qa/generate-publisher-fixture.ts",
+    "qa:acceptance": "tsx scripts/qa/run-publishing-acceptance.ts",
+    "qa:word": "powershell -ExecutionPolicy Bypass -File scripts/qa/export-word-pdf.ps1",
     "qa:render": "powershell -ExecutionPolicy Bypass -File scripts/qa/render-docx.ps1",
     "qa:baseline": "node scripts/qa/compare-render.mjs --update-baseline",
     "qa:compare": "node scripts/qa/compare-render.mjs"

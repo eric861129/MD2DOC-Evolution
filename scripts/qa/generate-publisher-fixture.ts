@@ -5,6 +5,11 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import JSZip from 'jszip';
+import {
+  PUBLISHER_ACCEPTANCE_PROFILES,
+  type PublisherAcceptanceProfile,
+} from '../../services/docx/acceptance';
+import type { ExportSettings } from '../../services/docx/layout/types';
 import { BlockType, type ParsedBlock } from '../../services/types';
 
 const require = createRequire(import.meta.url);
@@ -44,28 +49,26 @@ const argumentValue = (name: string): string | undefined => {
   }
   const value = process.argv[argumentIndex + 1]?.trim();
   if (!value || value.startsWith('--')) {
-    throw new Error(`${name} 必須指定一個路徑。`);
+    throw new Error(`${name} 必須指定值。`);
   }
   return value;
 };
-const FIXTURE_PATH = path.resolve(argumentValue('--fixture') ?? path.join(
+const DEFAULT_FIXTURE_PATH = path.resolve(path.join(
   REPOSITORY_ROOT,
   'content',
   'examples',
   'complete.zh.md',
 ));
-const ARTIFACT_ROOT = path.resolve(
-  argumentValue('--artifact-root')
-  ?? path.join(REPOSITORY_ROOT, 'artifacts', 'docx-qa'),
+const DEFAULT_ARTIFACT_ROOT = path.resolve(
+  path.join(REPOSITORY_ROOT, 'artifacts', 'docx-qa'),
 );
-const OUTPUT_PATH = path.join(ARTIFACT_ROOT, 'publisher-fixture.docx');
 const GENERATED_IMAGE_KEY = 'fixture-generated-image';
 const MERMAID_IMAGE_KEY = 'fixture-mermaid-image';
 const PNG_SIGNATURE = Buffer.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
 ]);
 
-const installNodeDocumentRuntime = (): void => {
+export const installNodeDocumentRuntime = (): void => {
   const xmlDom = new JSDOM('<!doctype html><html><body></body></html>');
   globalThis.DOMParser = xmlDom.window.DOMParser;
   globalThis.XMLSerializer = xmlDom.window.XMLSerializer;
@@ -378,17 +381,35 @@ const assertDocxFixture = async (docxBytes: Buffer): Promise<void> => {
   }
 };
 
-export const generatePublisherFixture = async (): Promise<string> => {
+export interface GeneratePublisherFixtureOptions {
+  fixturePath?: string;
+  artifactRoot?: string;
+  outputPath?: string;
+  exportSettings?: ExportSettings;
+}
+
+export const generatePublisherFixture = async (
+  options: GeneratePublisherFixtureOptions = {},
+): Promise<string> => {
   installNodeDocumentRuntime();
+  const fixturePath = path.resolve(
+    options.fixturePath ?? DEFAULT_FIXTURE_PATH,
+  );
+  const artifactRoot = path.resolve(
+    options.artifactRoot ?? DEFAULT_ARTIFACT_ROOT,
+  );
+  const outputPath = path.resolve(
+    options.outputPath ?? path.join(artifactRoot, 'publisher-fixture.docx'),
+  );
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const runtimeDirectory = path.join(
-    ARTIFACT_ROOT,
+    artifactRoot,
     'fixture-runtime',
     timestamp,
   );
   await mkdir(runtimeDirectory, { recursive: true });
 
-  const markdown = await readFile(FIXTURE_PATH, 'utf8');
+  const markdown = await readFile(fixturePath, 'utf8');
   const [{ parseMarkdown }, { generateDocx }] = await Promise.all([
     import('../../services/markdownParser'),
     import('../../services/docxGenerator'),
@@ -406,6 +427,7 @@ export const generatePublisherFixture = async (): Promise<string> => {
       profileId: 'publisher-exact',
       pageSizeId: 'tech',
       marginPresetId: 'publisher-exact',
+      ...options.exportSettings,
     },
     showLineNumbers: true,
     meta: parsed.meta,
@@ -419,20 +441,50 @@ export const generatePublisherFixture = async (): Promise<string> => {
   });
   const docxBytes = Buffer.from(await blob.arrayBuffer());
   await assertDocxFixture(docxBytes);
-  await mkdir(ARTIFACT_ROOT, { recursive: true });
-  await writeFile(OUTPUT_PATH, docxBytes);
+  await mkdir(path.dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, docxBytes);
 
-  console.log(`Fixture Markdown：${FIXTURE_PATH}`);
+  console.log(`Fixture Markdown：${fixturePath}`);
   console.log(`Mermaid PNG：${path.join(runtimeDirectory, 'mermaid.png')}`);
-  console.log(`Fixture DOCX：${OUTPUT_PATH}`);
+  console.log(`Fixture DOCX：${outputPath}`);
   console.log(`DOCX bytes：${docxBytes.byteLength}`);
   if (warnings.length > 0) {
     console.warn(`DOCX warnings：\n${warnings.join('\n')}`);
   }
-  return OUTPUT_PATH;
+  return outputPath;
 };
 
-generatePublisherFixture().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+const resolveCliProfile = (): PublisherAcceptanceProfile => {
+  const profileId = argumentValue('--profile') ?? 'publisher-exact';
+  const profile = PUBLISHER_ACCEPTANCE_PROFILES.find(
+    (candidate) => candidate.profileId === profileId,
+  );
+  if (!profile) {
+    throw new Error(
+      `--profile 僅支援 ${PUBLISHER_ACCEPTANCE_PROFILES.map(
+        ({ profileId: id }) => id,
+      ).join('、')}。`,
+    );
+  }
+  return profile;
+};
+
+const isDirectExecution = process.argv[1]
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isDirectExecution) {
+  const profile = resolveCliProfile();
+  const artifactRoot = path.resolve(
+    argumentValue('--artifact-root') ?? DEFAULT_ARTIFACT_ROOT,
+  );
+  generatePublisherFixture({
+    fixturePath: argumentValue('--fixture'),
+    artifactRoot,
+    outputPath: argumentValue('--output')
+      ?? path.join(artifactRoot, 'publisher-fixture.docx'),
+    exportSettings: profile.exportSettings,
+  }).catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}

@@ -32,6 +32,8 @@ npm install
 | `npm run test` | 執行單元測試 (Vitest)。 |
 | `npm run verify` | 依序執行 typecheck、完整測試與 production build。 |
 | `npm run qa:fixture` | 由公開「星圖工坊」Markdown 產生 publisher-exact DOCX。 |
+| `npm run qa:acceptance` | 由完整範例產生 exact／narrow／binding，驗證 package、TOC、書籤、媒體、清單與黑點標記。 |
+| `npm run qa:word` | 以隔離 Word 365 worker 更新欄位、逐段檢查並匯出 PDF；每份文件都有逾時與程序清理。 |
 | `npm run qa:render` | 以 LibreOffice 與 Poppler 產生 timestamp PDF／PNG。 |
 | `npm run qa:baseline` | 經人工審查後逐檔更新視覺 baseline。 |
 | `npm run qa:compare` | 比較最新 render 與 baseline，門檻為 1.5%。 |
@@ -120,14 +122,14 @@ baseline。若環境不同，請保留比較失敗並由維護者重新審查，
 
 ### DOCX package 與版面驗收
 
-`npm run qa:fixture` 會在 `artifacts/docx-qa/` 產生公開
-`publisher-exact` fixture；該目錄已忽略，不可把 runtime HTML、瀏覽器
-profile、PDF 或 PNG 加入 Git。產物必須通過內建 package inspection，且 ZIP
-內不得出現 `.undefined` 媒體、未知媒體格式、遺失 relationship 或缺少
-content type。
+`npm run qa:acceptance` 會在 `artifacts/docx-qa/acceptance/` 由同一份完整
+Markdown 產生 exact／narrow／binding 三份公開 fixture；該目錄已忽略，不可
+把 runtime HTML、瀏覽器 profile、PDF 或 PNG 加入 Git。產物必須通過內建
+package inspection，且 ZIP 內不得出現 `.undefined` 媒體、未知媒體格式、
+遺失 relationship 或缺少 content type。報告也會確認 TOC、bookmark 配對、
+媒體、顯式換頁，以及只有真正無序清單含有 `numPr`。
 
-對 `publisher-narrow` 與 `publisher-binding` 的驗收應使用同一份公開
-fixture，並直接檢查 OOXML：
+三種版型的 OOXML 固定契約如下：
 
 - narrow 的 17.6 × 23.6 cm 紙張搭配四邊 1.27 cm，內容寬度必須是 15.06 cm。
 - binding 的 `w:pgMar` 必須包含上 2.00、下 2.20、內 2.20、外 1.80 cm
@@ -147,6 +149,17 @@ relationships 與 render。若無法取得完全同源內容，必須把限制�
 只有第三類可以修改產品程式碼，而且必須先加入會失敗的 regression test。
 若本機有 Word 365 COM，自動化必須使用不可見視窗、唯讀開啟並在
 `finally` 關閉文件與 Word process；不得在檢查流程中覆寫私有參考檔。
+`npm run qa:word` 會為每份 DOCX 建立獨立 worker，避免單一 COM 程序互相
+污染。要同時量測唯讀參考稿，可執行：
+
+```powershell
+npm run qa:word -- -ReferenceDocx 'D:\path\reference.docx'
+```
+
+Word 驗收 PDF 會放在
+`artifacts/docx-qa/acceptance/word/<timestamp>/`。可再以
+`scripts/qa/render-word-pdfs.py` 全頁轉成 PNG 與 contact sheet；此步需要
+Python 的 PyMuPDF 與 Pillow。
 
 ### Release candidate gate
 
@@ -154,16 +167,17 @@ relationships 與 render。若無法取得完全同源內容，必須把限制�
 
 ```powershell
 npm run verify
-npm run qa:fixture
-npm run qa:render
-npm run qa:compare
+npm run qa:acceptance
+npm run qa:word
 git diff --check
 git status --short
 ```
 
-另外檢查嚴格 UTF-8、私人內容、秘密字串、staged diff 與 `npm audit`
-剩餘數量。只有 `npm run qa:baseline` 可以寫 baseline，且必須先完成固定環境
-的人工逐頁審查。
+LibreOffice 固定環境可另外執行 `qa:render` 與 `qa:compare`，但安裝或
+`bootstrap.ini` 損壞時不得拿失敗結果取代 Word 365 驗收。另需檢查嚴格
+UTF-8、私人內容、秘密字串、staged diff 與 `npm audit` 剩餘數量。只有
+`npm run qa:baseline` 可以寫 baseline，且必須先完成固定環境的人工逐頁
+審查。
 
 ---
 
