@@ -30,6 +30,9 @@ interface InlineRunState {
   hyperlink?: boolean;
 }
 
+const usesLegacyInlineFormatting = (config?: DocxConfig): boolean =>
+  !config || config.profile.id === 'technical-legacy';
+
 // --- 字型配置 ---
 export const FONT_CONFIG_NORMAL = {
   ascii: FONTS.LATIN,
@@ -41,10 +44,14 @@ export const FONT_CONFIG_NORMAL = {
 const createRunOptions = (
   text: string,
   state: InlineRunState,
+  config?: DocxConfig,
 ): IRunOptions => ({
   text,
   bold: state.bold,
   italics: state.italics,
+  ...(usesLegacyInlineFormatting(config)
+    ? { font: FONT_CONFIG_NORMAL }
+    : {}),
   ...(state.underline || state.hyperlink
     ? {
         color: COLORS.LINK_BLUE,
@@ -53,23 +60,30 @@ const createRunOptions = (
           color: COLORS.LINK_BLUE,
         },
       }
+    : usesLegacyInlineFormatting(config) && state.italics
+      ? { color: COLORS.PRIMARY_BLUE }
     : {}),
 });
 
 const createTextRun = (
   text: string,
   state: InlineRunState,
-): TextRun => new TextRun(createRunOptions(text, state));
+  config?: DocxConfig,
+): TextRun => new TextRun(createRunOptions(text, state, config));
 
 const createCodeRun = (
   text: string,
   state: InlineRunState,
   config?: DocxConfig,
 ): TextRun => new TextRun({
-  ...createRunOptions(text, state),
-  font: config?.profile.fonts.code ?? FONT_CONFIG_NORMAL,
-  size: 19,
-  color: config?.profile.colors.inlineCode ?? COLORS.BLACK,
+  ...createRunOptions(text, state, config),
+  ...(usesLegacyInlineFormatting(config)
+    ? {}
+    : {
+        font: config!.profile.fonts.code,
+        size: 19,
+        color: config!.profile.colors.inlineCode,
+      }),
   shading: {
     fill: config?.profile.paragraph.code.shadingFill ?? COLORS.BG_CODE,
     type: ShadingType.CLEAR,
@@ -189,7 +203,11 @@ const createExternalHyperlink = async (
   const hyperlink = new ExternalHyperlink({
     children: textRuns.length > 0
       ? textRuns
-      : [createTextRun(fallbackText, { ...state, hyperlink: true })],
+      : [createTextRun(
+          fallbackText,
+          { ...state, hyperlink: true },
+          config,
+        )],
     link: url,
   });
 
@@ -202,6 +220,7 @@ const createExternalHyperlink = async (
 const renderCustomSegment = (
   segment: InlineStyleSegment,
   state: InlineRunState,
+  config?: DocxConfig,
 ): ParagraphChild[] => {
   switch (segment.type) {
     case InlineStyleType.BOLD:
@@ -209,13 +228,17 @@ const renderCustomSegment = (
     case InlineStyleType.CODE:
     case InlineStyleType.LINK:
     case InlineStyleType.IMAGE:
-      return [createTextRun(segment.original, state)];
+      return [createTextRun(segment.original, state, config)];
     case InlineStyleType.UNDERLINE:
-      return [createTextRun(segment.content, { ...state, underline: true })];
+      return [createTextRun(
+        segment.content,
+        { ...state, underline: true },
+        config,
+      )];
     case InlineStyleType.UI_BUTTON:
       return [
         new TextRun({
-          ...createRunOptions(segment.content, state),
+          ...createRunOptions(segment.content, state, config),
           bold: true,
           shading: {
             fill: COLORS.BG_BUTTON,
@@ -227,14 +250,14 @@ const renderCustomSegment = (
     case InlineStyleType.UI_EMPHASIS:
       return [
         new TextRun({
-          ...createRunOptions(segment.content, state),
+          ...createRunOptions(segment.content, state, config),
           bold: true,
         }),
       ];
     case InlineStyleType.SHORTCUT:
       return [
         new TextRun({
-          ...createRunOptions(segment.content, state),
+          ...createRunOptions(segment.content, state, config),
           size: FONT_SIZES.SHORTCUT,
           shading: {
             fill: COLORS.BG_SHORTCUT,
@@ -246,18 +269,19 @@ const renderCustomSegment = (
     case InlineStyleType.BOOK:
       return [
         new TextRun({
-          ...createRunOptions(segment.content, state),
+          ...createRunOptions(segment.content, state, config),
           bold: true,
         }),
       ];
     default:
-      return [createTextRun(segment.content, state)];
+      return [createTextRun(segment.content, state, config)];
   }
 };
 
 const renderTextLeaf = (
   text: string,
   state: InlineRunState,
+  config?: DocxConfig,
 ): ParagraphChild[] => {
   const hasCustomSyntax = text.includes('【')
     || text.includes('「')
@@ -265,12 +289,12 @@ const renderTextLeaf = (
     || text.includes('『')
     || text.includes('<u>');
   if (!hasCustomSyntax) {
-    return [createTextRun(text, state)];
+    return [createTextRun(text, state, config)];
   }
 
   const children: ParagraphChild[] = [];
   for (const segment of parseInlineElements(text)) {
-    children.push(...renderCustomSegment(segment, state));
+    children.push(...renderCustomSegment(segment, state, config));
   }
   return children;
 };
@@ -321,21 +345,21 @@ const renderInlineToken = async (
       const text = token as Tokens.Text;
       return text.tokens?.length
         ? renderInlineTokens(text.tokens, state, config)
-        : renderTextLeaf(text.text, state);
+        : renderTextLeaf(text.text, state, config);
     }
     case 'escape':
-      return renderTextLeaf((token as Tokens.Escape).text, state);
+      return renderTextLeaf((token as Tokens.Escape).text, state, config);
     case 'br':
       return [
         new TextRun({
-          ...createRunOptions('', state),
+          ...createRunOptions('', state, config),
           break: 1,
         }),
       ];
     case 'del':
       return renderInlineTokens((token as Tokens.Del).tokens, state, config);
     case 'html':
-      return renderTextLeaf((token as Tokens.HTML).raw, state);
+      return renderTextLeaf((token as Tokens.HTML).raw, state, config);
     default: {
       const generic = token as Tokens.Generic;
       if (generic.tokens?.length) {
@@ -344,7 +368,7 @@ const renderInlineToken = async (
       const text = typeof generic.text === 'string'
         ? generic.text
         : generic.raw;
-      return renderTextLeaf(text, state);
+      return renderTextLeaf(text, state, config);
     }
   }
 };

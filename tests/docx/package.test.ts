@@ -30,6 +30,17 @@ const SETTINGS_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
   <w:compat/>
 </w:settings>`;
 
+const ROOT_RELATIONSHIPS_XML =
+  `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`;
+
+const VALID_GIF_BYTES = Uint8Array.from(
+  atob('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='),
+  (character) => character.charCodeAt(0),
+);
+
 const bindingSettings = {
   profileId: 'publisher-binding',
   pageSizeId: 'tech',
@@ -63,6 +74,7 @@ const createPackage = async (
 ): Promise<Blob> => {
   const zip = new JSZip();
   zip.file('[Content_Types].xml', CONTENT_TYPES);
+  zip.file('_rels/.rels', ROOT_RELATIONSHIPS_XML);
   zip.file('word/document.xml', DOCUMENT_XML);
   zip.file('word/settings.xml', SETTINGS_XML);
   mutate?.(zip);
@@ -307,6 +319,190 @@ describe('inspectDocxPackage', () => {
       severity: 'error',
       code,
       entry,
+    }));
+  });
+
+  it('主文件缺少時不重複誤報 officeDocument relationship 本身無效', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.remove('word/document.xml');
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      code: 'REQUIRED_PART_MISSING',
+      entry: 'word/document.xml',
+    }));
+    expect(issues).toContainEqual(expect.objectContaining({
+      code: 'RELATIONSHIP_TARGET_MISSING',
+      entry: '_rels/.rels',
+    }));
+    expect(issues).not.toContainEqual(expect.objectContaining({
+      code: 'OFFICE_DOCUMENT_RELATIONSHIP_INVALID',
+      entry: '_rels/.rels',
+    }));
+  });
+
+  it('缺少 package root relationships 時 fail-closed', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.remove('_rels/.rels');
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'REQUIRED_PART_MISSING',
+      entry: '_rels/.rels',
+    }));
+  });
+
+  it('Relationships root namespace 錯誤時回傳 schema error', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(
+        '_rels/.rels',
+        ROOT_RELATIONSHIPS_XML.replace(
+          'http://schemas.openxmlformats.org/package/2006/relationships',
+          'urn:wrong-relationships',
+        ),
+      );
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'RELATIONSHIPS_INVALID',
+      entry: '_rels/.rels',
+    }));
+  });
+
+  it('Relationship 子節點使用錯誤 namespace 時不得被靜默忽略', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(
+        'word/_rels/document.xml.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships" xmlns:bad="urn:wrong-relationships">
+  <bad:Relationship Id="rId2" Type="custom" Target="../customXml/item.xml"/>
+</Relationships>`,
+      );
+      zip.file('customXml/item.xml', '<item/>');
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'RELATIONSHIPS_INVALID',
+      entry: 'word/_rels/document.xml.rels',
+    }));
+  });
+
+  it.each([
+    {
+      name: 'Id',
+      relationship:
+        '<Relationship Type="custom" Target="../customXml/item.xml"/>',
+    },
+    {
+      name: 'Type',
+      relationship:
+        '<Relationship Id="rId2" Target="../customXml/item.xml"/>',
+    },
+  ])('Relationship 缺少 $name 時回傳必要屬性錯誤', async ({
+    relationship,
+  }) => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file('customXml/item.xml', '<item/>');
+      zip.file(
+        'word/_rels/document.xml.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  ${relationship}
+</Relationships>`,
+      );
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'RELATIONSHIP_INVALID',
+      entry: 'word/_rels/document.xml.rels',
+    }));
+  });
+
+  it('External Relationship 仍必須先驗證 Target', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(
+        'word/_rels/document.xml.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId2" Type="hyperlink" TargetMode="External"/>
+</Relationships>`,
+      );
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'RELATIONSHIP_TARGET_INVALID',
+      entry: 'word/_rels/document.xml.rels',
+    }));
+  });
+
+  it('External Relationship 的 Target 只有空白時仍 fail-closed', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(
+        'word/_rels/document.xml.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId2" Type="hyperlink" Target="   " TargetMode="External"/>
+</Relationships>`,
+      );
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'RELATIONSHIP_TARGET_INVALID',
+      entry: 'word/_rels/document.xml.rels',
+    }));
+  });
+
+  it.each([
+    {
+      name: 'Type 不是 officeDocument',
+      relationship:
+        '<Relationship Id="rId1" Type="custom" Target="word/document.xml"/>',
+    },
+    {
+      name: 'officeDocument 未指向主文件',
+      relationship:
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/settings.xml"/>',
+    },
+  ])('package root 必須有有效 officeDocument relationship：$name', async ({
+    relationship,
+  }) => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(
+        '_rels/.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  ${relationship}
+</Relationships>`,
+      );
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'OFFICE_DOCUMENT_RELATIONSHIP_INVALID',
+      entry: '_rels/.rels',
+    }));
+  });
+
+  it('Strict officeDocument relationship Type 仍是合法 package root', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(
+        '_rels/.rels',
+        ROOT_RELATIONSHIPS_XML.replace(
+          'http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument',
+          'http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument',
+        ),
+      );
+    }));
+
+    expect(issues).not.toContainEqual(expect.objectContaining({
+      code: 'OFFICE_DOCUMENT_RELATIONSHIP_INVALID',
+      entry: '_rels/.rels',
     }));
   });
 
@@ -772,6 +968,69 @@ describe('inspectDocxPackage', () => {
       severity: 'error',
       code: 'MEDIA_CONTENT_TYPE_INVALID',
       entry: 'word/media/cover.png',
+    }));
+  });
+
+  it('支援的圖片副檔名、MIME 與 magic bytes 不一致時回傳媒體內容錯誤', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file('word/media/fake.png', VALID_GIF_BYTES);
+      zip.file(
+        'word/_rels/document.xml.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId9" Type="image" Target="media/fake.png"/>
+</Relationships>`,
+      );
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'MEDIA_CONTENT_INVALID',
+      entry: 'word/media/fake.png',
+    }));
+  });
+
+  it('支援圖片使用合法副檔名、MIME 與完整 magic bytes 時通過媒體檢查', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file(
+        '[Content_Types].xml',
+        CONTENT_TYPES.replace(
+          '</Types>',
+          '  <Default Extension="gif" ContentType="image/gif"/>\n</Types>',
+        ),
+      );
+      zip.file('word/media/valid.gif', VALID_GIF_BYTES);
+      zip.file(
+        'word/_rels/document.xml.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId9" Type="image" Target="media/valid.gif"/>
+</Relationships>`,
+      );
+    }));
+
+    expect(issues).not.toContainEqual(expect.objectContaining({
+      code: 'MEDIA_CONTENT_INVALID',
+      entry: 'word/media/valid.gif',
+    }));
+  });
+
+  it('截斷或無簽章 PNG 即使有正確副檔名與 MIME 仍 fail-closed', async () => {
+    const issues = await inspectDocxPackage(await createPackage((zip) => {
+      zip.file('word/media/fake.png', new Uint8Array([1, 2, 3]));
+      zip.file(
+        'word/_rels/document.xml.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId9" Type="image" Target="media/fake.png"/>
+</Relationships>`,
+      );
+    }));
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      severity: 'error',
+      code: 'MEDIA_CONTENT_INVALID',
+      entry: 'word/media/fake.png',
     }));
   });
 

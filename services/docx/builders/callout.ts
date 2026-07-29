@@ -1,9 +1,15 @@
-import { Paragraph, TextRun, type ParagraphChild } from 'docx';
+import {
+  BorderStyle,
+  Paragraph,
+  TextRun,
+  type ParagraphChild,
+} from 'docx';
+import { WORD_THEME } from '../../../constants/theme';
 import { BlockType } from '../../types';
 import type { CalloutKind, CalloutStyleToken } from '../profiles';
 import { DOCUMENT_STYLE_IDS } from '../styles';
 import type { DocxConfig } from '../types';
-import { parseInlineStyles } from './common';
+import { FONT_CONFIG_NORMAL, parseInlineStyles } from './common';
 
 const CALLOUT_KIND_BY_BLOCK_TYPE: Partial<Record<BlockType, CalloutKind>> = {
   [BlockType.CALLOUT_TIP]: 'tip',
@@ -39,6 +45,88 @@ export const createCallout = async (
   type: BlockType,
   config: DocxConfig,
 ): Promise<Paragraph[]> => {
+  if (config.profile.id === 'technical-legacy') {
+    const legacy = {
+      [BlockType.CALLOUT_TIP]: {
+        label: 'TIP',
+        color: WORD_THEME.COLORS.CALLOUT.TIP.BORDER,
+        style: BorderStyle.SINGLE,
+        size: WORD_THEME.LAYOUT.BORDER.CALLOUT_TIP,
+        fill: WORD_THEME.COLORS.CALLOUT.TIP.BG,
+      },
+      [BlockType.CALLOUT_WARNING]: {
+        label: 'WARNING',
+        color: WORD_THEME.COLORS.CALLOUT.WARNING.BORDER,
+        style: BorderStyle.SINGLE,
+        size: WORD_THEME.LAYOUT.BORDER.CALLOUT_WARNING,
+        fill: WORD_THEME.COLORS.CALLOUT.WARNING.BG,
+      },
+      [BlockType.CALLOUT_NOTE]: {
+        label: 'NOTE',
+        color: WORD_THEME.COLORS.CALLOUT.NOTE.BORDER,
+        style: BorderStyle.DASHED,
+        size: WORD_THEME.LAYOUT.BORDER.CALLOUT_NOTE,
+        fill: WORD_THEME.COLORS.CALLOUT.NOTE.BG,
+      },
+    }[type] ?? {
+      label: 'NOTE',
+      color: WORD_THEME.COLORS.CALLOUT.NOTE.BORDER,
+      style: BorderStyle.DASHED,
+      size: WORD_THEME.LAYOUT.BORDER.CALLOUT_NOTE,
+      fill: WORD_THEME.COLORS.CALLOUT.NOTE.BG,
+    };
+    const children: ParagraphChild[] = [
+      new TextRun({
+        text: `[ ${legacy.label} ]`,
+        bold: true,
+        size: WORD_THEME.FONT_SIZES.LABEL,
+        font: FONT_CONFIG_NORMAL,
+      }),
+    ];
+    for (const line of content.split('\n')) {
+      children.push(new TextRun({ text: '', break: 1 }));
+      children.push(...await parseInlineStyles(line, config));
+    }
+
+    return [
+      new Paragraph({
+        children,
+        shading: { fill: legacy.fill },
+        border: {
+          top: {
+            style: legacy.style,
+            space: 5,
+            size: legacy.size,
+            color: legacy.color,
+          },
+          bottom: {
+            style: legacy.style,
+            space: 5,
+            size: legacy.size,
+            color: legacy.color,
+          },
+          left: {
+            style: legacy.style,
+            space: 15,
+            size: legacy.size,
+            color: legacy.color,
+          },
+          right: {
+            style: legacy.style,
+            space: 15,
+            size: legacy.size,
+            color: legacy.color,
+          },
+        },
+        spacing: WORD_THEME.SPACING.CALLOUT,
+        indent: {
+          left: WORD_THEME.LAYOUT.INDENT.CALLOUT,
+          right: WORD_THEME.LAYOUT.INDENT.CALLOUT,
+        },
+      }),
+    ];
+  }
+
   const kind = CALLOUT_KIND_BY_BLOCK_TYPE[type] ?? 'note';
   const token = config.profile.callouts[kind];
   const paragraphs = [

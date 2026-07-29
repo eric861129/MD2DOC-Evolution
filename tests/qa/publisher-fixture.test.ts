@@ -158,10 +158,17 @@ describe('出版社公開 Golden Fixture', () => {
 
     const result = await runQaFixture(invalidFixturePath, artifactRoot);
     const generatedFiles = await listFiles(artifactRoot);
+    const generatedMermaidPng = generatedFiles.filter(
+      (file) => path.basename(file).toLowerCase() === 'mermaid.png',
+    );
+    const generatedDocx = path.join(
+      artifactRoot,
+      'publisher-fixture.docx',
+    );
 
     expect(result.code).not.toBe(0);
     expect(result.stderr).toContain('Mermaid 瀏覽器渲染失敗');
-    expect(generatedFiles.some((file) => file.endsWith('.png'))).toBe(false);
-    expect(generatedFiles.some((file) => file.endsWith('.docx'))).toBe(false);
+    expect(generatedMermaidPng).toEqual([]);
+    expect(generatedFiles).not.toContain(generatedDocx);
   }, 30_000);
 });

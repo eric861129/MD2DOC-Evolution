@@ -263,7 +263,15 @@ const AtomicPreviewHarness: React.FC<AtomicPreviewHarnessProps> = ({
       </button>
       <button
         type="button"
-        onClick={() => editorState.setContent('# 下載測試')}
+        onClick={() => editorState.setContent([
+          '# 下載測試',
+          '',
+          '[套用後連結](https://example.com/applied)',
+          '',
+          '```typescript:ln',
+          'const applied = true;',
+          '```',
+        ].join('\n'))}
       >
         載入下載內容
       </button>
@@ -482,6 +490,22 @@ describe('useMarkdownEditor 的版面 Context', () => {
       }),
     );
     expect(screen.queryByText(/DOCX 匯出失敗/)).not.toBeInTheDocument();
+  });
+
+  it('applied publisher settings 讓 Preview 套用與 DOCX 相同的 link/code 語意', async () => {
+    const { container } = render(<AtomicPreviewHarness />);
+
+    fireEvent.click(screen.getByRole('button', { name: '載入下載內容' }));
+    expect(await screen.findByRole('link', { name: '套用後連結' }))
+      .toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '套用 exact' }));
+
+    const link = screen.getByRole('link', { name: '套用後連結' });
+    expect(link.parentElement?.querySelector('svg')).toBeNull();
+    expect(screen.queryByText('typescript')).not.toBeInTheDocument();
+    expect(screen.queryByText('1')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-profile="publisher-exact"]'))
+      .toBeInTheDocument();
   });
 
   it('initial hydration 無效時原子回退 default triple 並顯示錯誤', () => {

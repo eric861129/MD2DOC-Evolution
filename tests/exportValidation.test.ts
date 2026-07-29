@@ -114,6 +114,76 @@ describe('validateExport', () => {
     ]);
   });
 
+  it.each([
+    {
+      name: '直接 data URL',
+      content: 'data:image/png;base64,bm90LWEtcG5n',
+      imageRegistry: {},
+    },
+    {
+      name: 'registry reference',
+      content: 'broken-image',
+      imageRegistry: {
+        'broken-image': 'data:image/png;base64,bm90LWEtcG5n',
+      },
+    },
+    {
+      name: 'registry 非 data URL',
+      content: 'remote-image',
+      imageRegistry: {
+        'remote-image': 'https://example.com/cover.png',
+      },
+    },
+    {
+      name: 'MIME 與 magic bytes 不一致',
+      content:
+        'data:image/png;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==',
+      imageRegistry: {},
+    },
+  ])('普通 IMAGE 的無效媒體在 builder 前回傳 error：$name', async ({
+    content,
+    imageRegistry,
+  }) => {
+    const issues = await validate({
+      blocks: [{
+        type: BlockType.IMAGE,
+        content,
+        metadata: { alt: '無效圖片' },
+      }],
+      imageRegistry,
+    });
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      id: 'image-invalid-0',
+      severity: 'error',
+      title: '圖片格式無效',
+      message: expect.any(String),
+    }));
+  });
+
+  it('外部 URL 若有 registry 對應，必須驗證 registry 內容而不是只回傳外部圖片警告', async () => {
+    const source = 'https://example.com/cover.png';
+    const issues = await validate({
+      blocks: [{
+        type: BlockType.IMAGE,
+        content: source,
+        metadata: { alt: '已登錄的外部圖片' },
+      }],
+      imageRegistry: {
+        [source]: 'data:image/png;base64,bm90LWEtcG5n',
+      },
+    });
+
+    expect(issues).toContainEqual(expect.objectContaining({
+      id: 'image-invalid-0',
+      severity: 'error',
+      title: '圖片格式無效',
+    }));
+    expect(issues).not.toContainEqual(expect.objectContaining({
+      id: 'image-external-0',
+    }));
+  });
+
   it('實體邊界小於 1 公分時警告，但 gutter 不算實體邊界', async () => {
     const marginIssues = await validate({
       exportSettings: {

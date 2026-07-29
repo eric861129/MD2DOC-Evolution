@@ -1,6 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { PreviewBlock } from '../components/editor/PreviewRenderers';
+import {
+  PreviewBlock,
+  RenderRichText,
+} from '../components/editor/PreviewRenderers';
 import { getDocumentProfile } from '../services/docx/profiles';
 import type { DocumentStyleProfile } from '../services/docx/profiles';
 import { BlockType } from '../services/types';
@@ -80,6 +83,68 @@ describe('PreviewBlock Callout', () => {
 });
 
 describe('PreviewBlock Profile 樣式', () => {
+  it('publisher 一般連結不顯示 legacy QR icon', () => {
+    editorContextState.documentProfile = getDocumentProfile('publisher-exact');
+
+    const { container } = render(
+      <RenderRichText text="[Publisher link](https://example.com/publisher)" />,
+    );
+
+    expect(screen.getByRole('link', { name: 'Publisher link' }))
+      .toHaveAttribute('href', 'https://example.com/publisher');
+    expect(container.querySelector('svg')).toBeNull();
+  });
+
+  it('technical-legacy 一般連結保留 QR icon', () => {
+    const { container } = render(
+      <RenderRichText text="[Legacy link](https://example.com/legacy)" />,
+    );
+
+    expect(screen.getByRole('link', { name: 'Legacy link' }))
+      .toHaveAttribute('href', 'https://example.com/legacy');
+    expect(container.querySelector('svg')).not.toBeNull();
+  });
+
+  it('publisher code 不顯示 DOCX 省略的語言 badge 與行號', () => {
+    editorContextState.documentProfile = getDocumentProfile('publisher-exact');
+
+    render(
+      <PreviewBlock
+        block={{
+          type: BlockType.CODE_BLOCK,
+          content: 'const first = 1;\nconst second = 2;',
+          metadata: {
+            language: 'typescript',
+            showLineNumbers: true,
+          },
+        }}
+      />,
+    );
+
+    expect(screen.queryByText('typescript')).not.toBeInTheDocument();
+    expect(screen.queryByText('1')).not.toBeInTheDocument();
+    expect(screen.queryByText('2')).not.toBeInTheDocument();
+  });
+
+  it('technical-legacy code 保留語言 badge 與行號', () => {
+    render(
+      <PreviewBlock
+        block={{
+          type: BlockType.CODE_BLOCK,
+          content: 'const first = 1;\nconst second = 2;',
+          metadata: {
+            language: 'typescript',
+            showLineNumbers: true,
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText('typescript')).toBeInTheDocument();
+    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+  });
+
   it('publisher code content 直接使用 profile font/color 且不受 legacy class 覆蓋', () => {
     editorContextState.documentProfile = getDocumentProfile('publisher-exact');
 

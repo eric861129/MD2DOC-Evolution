@@ -122,6 +122,190 @@ beforeAll(() => {
 });
 
 describe('DOCX 出版社排版', () => {
+  it('technical-legacy 完整保留舊版 heading、callout、dialogue 與行內格式 OOXML', async () => {
+    const blocks: ParsedBlock[] = [
+      { type: BlockType.HEADING_1, content: 'Legacy heading' },
+      {
+        type: BlockType.PARAGRAPH,
+        content: '*Legacy italic* 與 `legacyCode`',
+      },
+      {
+        type: BlockType.CALLOUT_WARNING,
+        content: 'Legacy callout',
+      },
+      {
+        type: BlockType.CHAT_CUSTOM,
+        role: 'User',
+        content: 'Legacy chat',
+        alignment: 'left',
+      },
+    ];
+    const blob = await generateDocx(blocks, {
+      exportSettings: legacyExportSettings,
+      showLineNumbers: false,
+    });
+    const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
+    const styles = parseXml(await readDocxXml(blob, 'word/styles.xml'));
+
+    for (const [styleId, expected] of [
+      ['Heading1', { color: '2E74B5', size: '32' }],
+      ['Heading2', { color: '2E74B5', size: '26' }],
+      ['Heading3', { color: '1F4D78', size: '24' }],
+    ] as const) {
+      const style = getStyle(styles, styleId);
+      const runProperties = directChild(style, 'rPr')!;
+      const paragraphProperties = directChild(style, 'pPr');
+      expect({
+        color: wordAttribute(directChild(runProperties, 'color')!, 'val'),
+        size: wordAttribute(directChild(runProperties, 'sz')!, 'val'),
+        bold: directChild(runProperties, 'b'),
+        keepNext: paragraphProperties
+          ? directChild(paragraphProperties, 'keepNext')
+          : undefined,
+        keepLines: paragraphProperties
+          ? directChild(paragraphProperties, 'keepLines')
+          : undefined,
+      }).toEqual({
+        ...expected,
+        bold: undefined,
+        keepNext: undefined,
+        keepLines: undefined,
+      });
+    }
+    expect(() => getStyle(styles, 'TableBody')).toThrow(
+      '找不到命名樣式：TableBody',
+    );
+
+    const heading = findParagraph(document, 'Legacy heading');
+    const headingProperties = directChild(heading, 'pPr')!;
+    const headingSpacing = directChild(headingProperties, 'spacing')!;
+    const headingBorders = directChild(headingProperties, 'pBdr');
+    expect(headingBorders).toBeDefined();
+    if (!headingBorders) {
+      return;
+    }
+    const headingBottomBorder = directChild(
+      headingBorders,
+      'bottom',
+    )!;
+    expect(paragraphStyleId(heading)).toBe('Heading1');
+    expect({
+      before: wordAttribute(headingSpacing, 'before'),
+      after: wordAttribute(headingSpacing, 'after'),
+      border: wordAttribute(headingBottomBorder, 'val'),
+      color: wordAttribute(headingBottomBorder, 'color'),
+      size: wordAttribute(headingBottomBorder, 'sz'),
+      space: wordAttribute(headingBottomBorder, 'space'),
+    }).toEqual({
+      before: '480',
+      after: '240',
+      border: 'single',
+      color: '000000',
+      size: '18',
+      space: '8',
+    });
+
+    const callout = findParagraphContaining(document, 'Legacy callout');
+    expect(paragraphText(callout)).toBe('[ WARNING ]Legacy callout');
+    const calloutProperties = directChild(callout, 'pPr')!;
+    const calloutBorders = directChild(calloutProperties, 'pBdr')!;
+    expect(elementsByName(callout, 'br')).toHaveLength(1);
+    expect(wordAttribute(directChild(calloutProperties, 'shd')!, 'fill'))
+      .toBe('F1F5F9');
+    expect({
+      top: ['val', 'space', 'sz', 'color'].map((attribute) =>
+        wordAttribute(directChild(calloutBorders, 'top')!, attribute)),
+      left: ['val', 'space', 'sz', 'color'].map((attribute) =>
+        wordAttribute(directChild(calloutBorders, 'left')!, attribute)),
+    }).toEqual({
+      top: ['single', '5', '48', '000000'],
+      left: ['single', '15', '48', '000000'],
+    });
+    const calloutSpacing = directChild(calloutProperties, 'spacing')!;
+    const calloutIndent = directChild(calloutProperties, 'ind')!;
+    expect({
+      before: wordAttribute(calloutSpacing, 'before'),
+      after: wordAttribute(calloutSpacing, 'after'),
+      line: wordAttribute(calloutSpacing, 'line'),
+      left: wordAttribute(calloutIndent, 'left'),
+      right: wordAttribute(calloutIndent, 'right'),
+    }).toEqual({
+      before: '600',
+      after: '600',
+      line: '360',
+      left: '400',
+      right: '400',
+    });
+
+    const chat = findParagraph(document, 'User:Legacy chat');
+    const chatProperties = directChild(chat, 'pPr')!;
+    const chatBorders = directChild(chatProperties, 'pBdr')!;
+    const chatTopBorder = directChild(chatBorders, 'top')!;
+    const chatSpacing = directChild(chatProperties, 'spacing')!;
+    expect(elementsByName(chat, 'br')).toHaveLength(1);
+    expect({
+      border: wordAttribute(chatTopBorder, 'val'),
+      color: wordAttribute(chatTopBorder, 'color'),
+      space: wordAttribute(chatTopBorder, 'space'),
+      size: wordAttribute(chatTopBorder, 'sz'),
+      before: wordAttribute(chatSpacing, 'before'),
+      after: wordAttribute(chatSpacing, 'after'),
+      line: wordAttribute(chatSpacing, 'line'),
+      rightIndent: wordAttribute(directChild(chatProperties, 'ind')!, 'right'),
+      shading: wordAttribute(directChild(chatProperties, 'shd')!, 'fill'),
+    }).toEqual({
+      border: 'dotted',
+      color: '404040',
+      space: '10',
+      size: null,
+      before: '400',
+      after: '400',
+      line: '276',
+      rightIndent: '1440',
+      shading: 'F2F2F2',
+    });
+    expect(directChild(chatProperties, 'keepLines')).toBeUndefined();
+    expect(directChild(chatProperties, 'keepNext')).toBeUndefined();
+
+    const body = findParagraph(document, 'Legacy italic 與 legacyCode');
+    const italicProperties = directChild(findRun(body, 'Legacy italic'), 'rPr')!;
+    const italicFonts = directChild(italicProperties, 'rFonts')!;
+    expect(directChild(italicProperties, 'i')).toBeDefined();
+    expect(wordAttribute(directChild(italicProperties, 'color')!, 'val'))
+      .toBe('1E3A8A');
+    expect({
+      ascii: wordAttribute(italicFonts, 'ascii'),
+      hAnsi: wordAttribute(italicFonts, 'hAnsi'),
+      eastAsia: wordAttribute(italicFonts, 'eastAsia'),
+      cs: wordAttribute(italicFonts, 'cs'),
+    }).toEqual({
+      ascii: 'Consolas',
+      hAnsi: 'Consolas',
+      eastAsia: 'Microsoft JhengHei',
+      cs: 'Consolas',
+    });
+
+    const codeProperties = directChild(findRun(body, 'legacyCode'), 'rPr')!;
+    const codeFonts = directChild(codeProperties, 'rFonts')!;
+    expect({
+      ascii: wordAttribute(codeFonts, 'ascii'),
+      hAnsi: wordAttribute(codeFonts, 'hAnsi'),
+      eastAsia: wordAttribute(codeFonts, 'eastAsia'),
+      cs: wordAttribute(codeFonts, 'cs'),
+      size: directChild(codeProperties, 'sz'),
+      color: directChild(codeProperties, 'color'),
+      shading: wordAttribute(directChild(codeProperties, 'shd')!, 'fill'),
+    }).toEqual({
+      ascii: 'Consolas',
+      hAnsi: 'Consolas',
+      eastAsia: 'Microsoft JhengHei',
+      cs: 'Consolas',
+      size: undefined,
+      color: undefined,
+      shading: 'F1F5F9',
+    });
+  });
+
   it('一般文字繼承命名樣式，僅行內程式碼直接指定出版社程式碼格式', async () => {
     const { blocks } = parseMarkdown(typographyFixture);
     const blob = await generateDocx(blocks, {

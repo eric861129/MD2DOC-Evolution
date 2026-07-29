@@ -131,9 +131,24 @@ describe('DOCX 文件樣式 Profile', () => {
     ];
 
     for (const spacing of generatedSpacing) {
+      if (!spacing) {
+        continue;
+      }
       expect(spacing).not.toHaveProperty('line');
       expect(spacing).not.toHaveProperty('lineRule');
     }
+  });
+
+  it('technical-legacy 沿用 Word 內建 heading styles，且不註冊 publisher TableBody', () => {
+    const styles = createDocumentStyles(
+      getDocumentProfile('technical-legacy'),
+    );
+
+    expect(styles.default).not.toHaveProperty('heading1');
+    expect(styles.default).not.toHaveProperty('heading2');
+    expect(styles.default).not.toHaveProperty('heading3');
+    expect(styles.paragraphStyles?.map(({ id }) => id))
+      .not.toContain(DOCUMENT_STYLE_IDS.tableBody);
   });
 });
 
@@ -150,12 +165,14 @@ describe('createDocumentStyles', () => {
       codeBlock: 'CodeBlock',
       callout: 'Callout',
       bookCaption: 'BookCaption',
+      tableBody: 'TableBody',
     });
     expect(customStyleIds).toEqual([
       'Normal',
       'CodeBlock',
       'Callout',
       'BookCaption',
+      'TableBody',
     ]);
   });
 

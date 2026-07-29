@@ -36,6 +36,7 @@ interface ChapterSourceSpan {
   startIndex: number;
   endIndex: number;
   lineOffset: number;
+  endLineOffset: number;
   yamlContent: string;
   isClosed: boolean;
 }
@@ -47,6 +48,7 @@ interface SourceSpan {
 
 interface ParseContext {
   nextListInstance: number;
+  metrics?: MarkdownParseOperationMetrics;
 }
 
 interface ManualTocEntry {
@@ -60,6 +62,14 @@ export interface ChapterSpanScanMetrics {
   lineTransitionCount: number;
   sourceLineCount: number;
   tokenTransitionCount: number;
+}
+
+export interface MarkdownParseOperationMetrics {
+  fragmentCharacterTransitionCount: number;
+  fragmentTransitionCount: number;
+  lineCursorCharacterTransitionCount: number;
+  tokenTransitionCount: number;
+  chapterSpanTransitionCount: number;
 }
 
 interface ChapterTokenEligibility {
@@ -177,6 +187,7 @@ const scanChapterSourceSpans = (
       startIndex: chapterStart.startIndex,
       endIndex: chapterStart.endIndex,
       lineOffset: chapterStart.lineOffset,
+      endLineOffset: chapterStart.lineOffset,
       yamlContent: '',
       isClosed: false,
     });
@@ -209,6 +220,7 @@ const scanChapterSourceSpans = (
           startIndex: chapterStart.startIndex,
           endIndex: line.endIndex,
           lineOffset: chapterStart.lineOffset,
+          endLineOffset: line.lineOffset,
           yamlContent: source.slice(chapterYamlStart, line.startIndex),
           isClosed: true,
         });
@@ -820,7 +832,14 @@ const parseMarkdownFragment = (
   charOffset: number,
   context: ParseContext,
 ): ParsedBlock[] => {
+  if (context.metrics) {
+    context.metrics.fragmentTransitionCount += 1;
+    context.metrics.fragmentCharacterTransitionCount += markdown.length;
+  }
   const tokens = marked.lexer(markdown);
+  if (context.metrics) {
+    context.metrics.tokenTransitionCount += tokens.length;
+  }
   const originalIndexByNormalizedBoundary =
     createNormalizedBoundaryMap(markdown);
   const chapterSpans = scanChapterSourceSpans(
@@ -833,15 +852,17 @@ const parseMarkdownFragment = (
   if (chapterSpans.length > 0) {
     const chapterBlocks: ParsedBlock[] = [];
     let cursor = 0;
+    let cursorLineOffset = 0;
+    if (context.metrics) {
+      context.metrics.chapterSpanTransitionCount += chapterSpans.length;
+    }
 
     for (const span of chapterSpans) {
       if (cursor < span.startIndex) {
         const prefix = markdown.slice(cursor, span.startIndex);
-        const prefixLineOffset = lineOffset
-          + (markdown.slice(0, cursor).match(/\n/g) || []).length;
         chapterBlocks.push(...parseMarkdownFragment(
           prefix,
-          prefixLineOffset,
+          lineOffset + cursorLineOffset,
           charOffset + cursor,
           context,
         ));
@@ -863,14 +884,13 @@ const parseMarkdownFragment = (
         endIndex: charOffset + span.endIndex,
       });
       cursor = span.endIndex;
+      cursorLineOffset = span.endLineOffset;
     }
 
     if (cursor < markdown.length) {
-      const suffixLineOffset = lineOffset
-        + (markdown.slice(0, cursor).match(/\n/g) || []).length;
       chapterBlocks.push(...parseMarkdownFragment(
         markdown.slice(cursor),
-        suffixLineOffset,
+        lineOffset + cursorLineOffset,
         charOffset + cursor,
         context,
       ));
@@ -1218,6 +1238,9 @@ const parseMarkdownFragment = (
 
   tokens.forEach(token => {
      const raw = token.raw;
+     if (context.metrics) {
+       context.metrics.lineCursorCharacterTransitionCount += raw.length;
+     }
      const newlines = (raw.match(/\n/g) || []).length;
      const len = raw.length;
      
@@ -1246,17 +1269,51 @@ const parseMarkdownFragment = (
   return blocks;
 };
 
-export const parseMarkdownWithAST = (
+const parseMarkdownWithContext = (
   markdown: string,
-  lineOffset: number = 0,
-  charOffset: number = 0,
+  lineOffset: number,
+  charOffset: number,
+  context: ParseContext,
 ): ParsedBlock[] => finalizeBlocks(
   parseMarkdownFragment(
     markdown,
     lineOffset,
     charOffset,
-    { nextListInstance: 1 },
+    context,
   ),
   markdown,
   charOffset,
 );
+
+export const parseMarkdownWithAST = (
+  markdown: string,
+  lineOffset: number = 0,
+  charOffset: number = 0,
+): ParsedBlock[] => parseMarkdownWithContext(
+  markdown,
+  lineOffset,
+  charOffset,
+  { nextListInstance: 1 },
+);
+
+/**
+ * 執行完整 parser 並回傳由實際前向迴圈累加的穩定操作量。
+ */
+export const measureMarkdownParseOperations = (
+  markdown: string,
+): MarkdownParseOperationMetrics => {
+  const metrics: MarkdownParseOperationMetrics = {
+    fragmentCharacterTransitionCount: 0,
+    fragmentTransitionCount: 0,
+    lineCursorCharacterTransitionCount: 0,
+    tokenTransitionCount: 0,
+    chapterSpanTransitionCount: 0,
+  };
+  parseMarkdownWithContext(
+    markdown,
+    0,
+    0,
+    { nextListInstance: 1, metrics },
+  );
+  return metrics;
+};

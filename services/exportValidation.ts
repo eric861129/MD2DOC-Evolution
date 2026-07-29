@@ -25,8 +25,11 @@ export interface ExportValidationInput {
 
 const hasValue = (value: unknown) => typeof value === 'string' && value.trim().length > 0;
 
-const isRegisteredImage = (src: string, imageRegistry: Record<string, string>) =>
-  Boolean(imageRegistry[src]) || src.startsWith('data:image/');
+const resolveRegisteredImageSource = (
+  src: string,
+  imageRegistry: Record<string, string>,
+): string | undefined => imageRegistry[src]
+  ?? (src.startsWith('data:') ? src : undefined);
 
 const isExternalImage = (src: string) => /^https?:\/\//i.test(src);
 
@@ -92,6 +95,22 @@ const collectBlockIssues = (
   imageRegistry: Record<string, string>,
 ): ValidationIssue[] => {
   const issues: ValidationIssue[] = [];
+  const mediaValidationErrors = new Map<string, string | undefined>();
+  const getMediaValidationError = (source: string): string | undefined => {
+    if (mediaValidationErrors.has(source)) {
+      return mediaValidationErrors.get(source);
+    }
+    let message: string | undefined;
+    try {
+      resolveImageMedia(source);
+    } catch (error) {
+      message = error instanceof Error
+        ? error.message
+        : '圖片資料無法驗證。';
+    }
+    mediaValidationErrors.set(source, message);
+    return message;
+  };
 
   blocks.forEach((block, index) => {
     issues.push(...(block.validationIssues ?? []));
@@ -108,7 +127,11 @@ const collectBlockIssues = (
     }
 
     if (block.type === BlockType.IMAGE) {
-      if (isExternalImage(block.content)) {
+      const source = resolveRegisteredImageSource(
+        block.content,
+        imageRegistry,
+      );
+      if (source === undefined && isExternalImage(block.content)) {
         issues.push({
           id: `image-external-${index}`,
           severity: 'warning',
@@ -117,21 +140,38 @@ const collectBlockIssues = (
           sourceLine: block.sourceLine,
           blockType: block.type,
         });
-      } else if (!isRegisteredImage(block.content, imageRegistry)) {
-        issues.push({
-          id: `image-missing-${index}`,
-          severity: 'warning',
-          title: '圖片尚未登錄',
-          message: '找不到此圖片對應的本機資料，匯出時可能只會保留圖片提示文字。',
-          sourceLine: block.sourceLine,
-          blockType: block.type,
-        });
+      } else {
+        if (source === undefined) {
+          issues.push({
+            id: `image-missing-${index}`,
+            severity: 'warning',
+            title: '圖片尚未登錄',
+            message: '找不到此圖片對應的本機資料，匯出時可能只會保留圖片提示文字。',
+            sourceLine: block.sourceLine,
+            blockType: block.type,
+          });
+        } else {
+          const validationError = getMediaValidationError(source);
+          if (validationError) {
+            issues.push({
+              id: `image-invalid-${index}`,
+              severity: 'error',
+              title: '圖片格式無效',
+              message: validationError,
+              sourceLine: block.sourceLine,
+              blockType: block.type,
+            });
+          }
+        }
       }
     }
 
     if (block.type === BlockType.CHAPTER_OPENER) {
       const image = block.metadata?.chapter?.image;
-      if (image && !isRegisteredImage(image, imageRegistry)) {
+      const source = image
+        ? resolveRegisteredImageSource(image, imageRegistry)
+        : undefined;
+      if (image && !source) {
         issues.push({
           id: `chapter-image-missing-${index}`,
           severity: 'error',
@@ -140,18 +180,14 @@ const collectBlockIssues = (
           sourceLine: block.sourceLine,
           blockType: block.type,
         });
-      } else if (image) {
-        const source = imageRegistry[image] ?? image;
-        try {
-          resolveImageMedia(source);
-        } catch (error) {
+      } else if (source) {
+        const validationError = getMediaValidationError(source);
+        if (validationError) {
           issues.push({
             id: `chapter-image-invalid-${index}`,
             severity: 'error',
             title: '章首頁圖片格式無效',
-            message: error instanceof Error
-              ? error.message
-              : '章首頁圖片資料無法驗證。',
+            message: validationError,
             sourceLine: block.sourceLine,
             blockType: block.type,
           });

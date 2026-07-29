@@ -13,6 +13,7 @@ import {
 import { WORD_THEME } from "../../../constants/theme";
 import { parseInlineStyles } from "./common";
 import { DocxConfig } from "../types";
+import { DOCUMENT_STYLE_IDS } from "../styles";
 import { columnWidthsFor } from "./tableGeometry";
 
 const { COLORS } = WORD_THEME;
@@ -158,6 +159,7 @@ export const createTable = async (
         new TableCell({
           children: [
             new Paragraph({
+              style: DOCUMENT_STYLE_IDS.tableBody,
               children: await parseInlineStyles(cellText, config),
               spacing: {
                 after: config.profile.table.paragraphAfterTwips,

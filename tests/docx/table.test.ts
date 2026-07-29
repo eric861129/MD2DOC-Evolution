@@ -149,6 +149,73 @@ describe('columnWidthsFor', () => {
 });
 
 describe('出版社固定表格 OOXML', () => {
+  it('publisher table body 由命名樣式提供 20 half-points，legacy 不注入表格字級', async () => {
+    const createTableBlob = (exportSettings: ExportSettings) =>
+      generateDocx([{
+        type: BlockType.TABLE,
+        content: '',
+        tableRows: [
+          ['欄位', '說明'],
+          ['一般內容', '**粗體** 與 `inlineCode`'],
+        ],
+      }], {
+        exportSettings,
+        showLineNumbers: false,
+      });
+    const publisherBlob = await createTableBlob(publisherExactSettings);
+    const publisherDocument = parseXml(
+      await readDocxXml(publisherBlob, 'word/document.xml'),
+    );
+    const publisherStyles = parseXml(
+      await readDocxXml(publisherBlob, 'word/styles.xml'),
+    );
+    const tableBodyStyle = elementsByName(publisherStyles, 'style')
+      .find((style) => wordAttribute(style, 'styleId') === 'TableBody');
+    expect(tableBodyStyle).toBeDefined();
+    expect(wordAttribute(
+      directChild(directChild(tableBodyStyle!, 'rPr')!, 'sz')!,
+      'val',
+    )).toBe('20');
+
+    const publisherParagraphs = elementsByName(
+      elementsByName(publisherDocument, 'tbl')[0],
+      'p',
+    );
+    expect(publisherParagraphs).not.toHaveLength(0);
+    expect(publisherParagraphs.every((paragraph) => {
+      const paragraphProperties = directChild(paragraph, 'pPr');
+      const style = paragraphProperties
+        ? directChild(paragraphProperties, 'pStyle')
+        : undefined;
+      return style && wordAttribute(style, 'val') === 'TableBody';
+    })).toBe(true);
+    const inlineCodeRun = elementsByName(publisherDocument, 'r')
+      .find((run) => elementsByName(run, 't')
+        .some((text) => text.textContent === 'inlineCode'))!;
+    expect(wordAttribute(
+      directChild(directChild(inlineCodeRun, 'rPr')!, 'sz')!,
+      'val',
+    )).toBe('19');
+
+    const legacyBlob = await createTableBlob(legacySettings);
+    const legacyDocument = parseXml(
+      await readDocxXml(legacyBlob, 'word/document.xml'),
+    );
+    const legacyParagraphs = elementsByName(
+      elementsByName(legacyDocument, 'tbl')[0],
+      'p',
+    );
+    expect(legacyParagraphs.every((paragraph) => {
+      const paragraphProperties = directChild(paragraph, 'pPr');
+      return !paragraphProperties
+        || directChild(paragraphProperties, 'pStyle') === undefined;
+    })).toBe(true);
+    expect(elementsByName(
+      elementsByName(legacyDocument, 'tbl')[0],
+      'sz',
+    )).toHaveLength(0);
+  });
+
   it('相鄰表格以空段落隔開，避免 LibreOffice 合併成單一表格', async () => {
     const blob = await generateDocx([
       {

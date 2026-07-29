@@ -19,6 +19,7 @@ export const DOCUMENT_STYLE_IDS = {
   codeBlock: 'CodeBlock',
   callout: 'Callout',
   bookCaption: 'BookCaption',
+  tableBody: 'TableBody',
 } as const;
 
 const createRunStyle = (
@@ -96,17 +97,9 @@ const createNamedParagraphStyle = (
  */
 export const createDocumentStyles = (
   profile: DocumentStyleProfile,
-): IStylesOptions => ({
-  default: {
-    document: {
-      run: createRunStyle(profile.fonts.body, profile.paragraph.normal),
-      paragraph: createParagraphStyle(profile.paragraph.normal),
-    },
-    heading1: createHeadingStyle(profile, 'h1'),
-    heading2: createHeadingStyle(profile, 'h2'),
-    heading3: createHeadingStyle(profile, 'h3'),
-  },
-  paragraphStyles: [
+): IStylesOptions => {
+  const isLegacy = profile.id === 'technical-legacy';
+  const paragraphStyles = [
     createNamedParagraphStyle(
       DOCUMENT_STYLE_IDS.normal,
       'Normal',
@@ -131,5 +124,36 @@ export const createDocumentStyles = (
       profile.fonts.body,
       profile.paragraph.caption,
     ),
-  ],
-});
+  ];
+  if (!isLegacy) {
+    paragraphStyles.push(createNamedParagraphStyle(
+      DOCUMENT_STYLE_IDS.tableBody,
+      'Table Body',
+      profile.fonts.body,
+      {
+        sizeHalfPoints: profile.table.bodySizeHalfPoints,
+        beforeTwips: 0,
+        afterTwips: profile.table.paragraphAfterTwips,
+        lineTwips: profile.table.lineTwips,
+        color: profile.colors.body,
+      },
+    ));
+  }
+
+  return {
+    default: {
+      document: {
+        run: createRunStyle(profile.fonts.body, profile.paragraph.normal),
+        paragraph: createParagraphStyle(profile.paragraph.normal),
+      },
+      ...(isLegacy
+        ? {}
+        : {
+            heading1: createHeadingStyle(profile, 'h1'),
+            heading2: createHeadingStyle(profile, 'h2'),
+            heading3: createHeadingStyle(profile, 'h3'),
+          }),
+    },
+    paragraphStyles,
+  };
+};

@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { resolveImageMediaBytes } from './builders/image';
 
 export interface DocxQualityIssue {
   severity: 'warning' | 'error';
@@ -9,14 +10,21 @@ export interface DocxQualityIssue {
 
 const REQUIRED_PARTS = [
   '[Content_Types].xml',
+  '_rels/.rels',
   'word/document.xml',
 ] as const;
 
 const CONTENT_TYPES_PATH = '[Content_Types].xml';
+const ROOT_RELATIONSHIPS_PATH = '_rels/.rels';
+const MAIN_DOCUMENT_PATH = 'word/document.xml';
 const CONTENT_TYPES_NAMESPACE =
   'http://schemas.openxmlformats.org/package/2006/content-types';
 const RELATIONSHIPS_NAMESPACE =
   'http://schemas.openxmlformats.org/package/2006/relationships';
+const OFFICE_DOCUMENT_RELATIONSHIP_TYPES = new Set([
+  'http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument',
+  'http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument',
+]);
 const MEDIA_PATH_PATTERN = /(?:^|\/)media\/[^/]+$/i;
 const URI_SCHEME_PATTERN = /^[A-Za-z][A-Za-z0-9+.-]*:/;
 const INVALID_PERCENT_ENCODING_PATTERN = /%(?![0-9A-Fa-f]{2})/;
@@ -371,6 +379,8 @@ export const inspectDocxPackage = async (
     }
   }
 
+  let hasValidOfficeDocumentRelationship = false;
+  let hasValidRootRelationshipsSchema = false;
   for (const relationshipsEntry of index.entries.filter(
     (entry) => /\.rels$/i.test(entry.name),
   )) {
@@ -379,26 +389,65 @@ export const inspectDocxPackage = async (
       continue;
     }
 
-    for (const relationship of getElements(
-      relationships,
-      RELATIONSHIPS_NAMESPACE,
-      'Relationship',
-    )) {
+    const root = relationships.documentElement;
+    if (
+      root.localName !== 'Relationships'
+      || root.namespaceURI !== RELATIONSHIPS_NAMESPACE
+    ) {
+      issues.push({
+        severity: 'error',
+        code: 'RELATIONSHIPS_INVALID',
+        message: `Relationships 必須使用正確 namespace 與根節點：${relationshipsEntry.name}`,
+        entry: relationshipsEntry.name,
+      });
+      continue;
+    }
+    const isRootRelationships =
+      normalizePackagePath(relationshipsEntry.name)
+      === ROOT_RELATIONSHIPS_PATH;
+    if (isRootRelationships) {
+      hasValidRootRelationshipsSchema = true;
+    }
+
+    const relationshipElements = Array.from(root.children);
+    for (const relationship of relationshipElements) {
       if (
-        asciiLowerCase(relationship.getAttribute('TargetMode') ?? '')
-        === 'external'
+        relationship.localName !== 'Relationship'
+        || relationship.namespaceURI !== RELATIONSHIPS_NAMESPACE
       ) {
+        issues.push({
+          severity: 'error',
+          code: 'RELATIONSHIPS_INVALID',
+          message: `Relationships 含有不合法的子節點：${relationshipsEntry.name}`,
+          entry: relationshipsEntry.name,
+        });
         continue;
       }
-
+      const id = relationship.getAttribute('Id')?.trim();
+      const type = relationship.getAttribute('Type')?.trim();
       const target = relationship.getAttribute('Target');
-      if (!target) {
+      if (!id || !type) {
+        issues.push({
+          severity: 'error',
+          code: 'RELATIONSHIP_INVALID',
+          message: `Relationship 缺少 Id 或 Type：${relationshipsEntry.name}`,
+          entry: relationshipsEntry.name,
+        });
+        continue;
+      }
+      if (!target?.trim()) {
         issues.push({
           severity: 'error',
           code: 'RELATIONSHIP_TARGET_INVALID',
           message: `Relationship 缺少 Target：${relationshipsEntry.name}`,
           entry: relationshipsEntry.name,
         });
+        continue;
+      }
+      const targetMode = asciiLowerCase(
+        relationship.getAttribute('TargetMode')?.trim() ?? '',
+      );
+      if (targetMode === 'external') {
         continue;
       }
 
@@ -415,6 +464,13 @@ export const inspectDocxPackage = async (
             entry: relationshipsEntry.name,
           });
         }
+        if (
+          isRootRelationships
+          && OFFICE_DOCUMENT_RELATIONSHIP_TYPES.has(type)
+          && resolvedTarget === MAIN_DOCUMENT_PATH
+        ) {
+          hasValidOfficeDocumentRelationship = true;
+        }
       } catch (error) {
         issues.push({
           severity: 'error',
@@ -426,6 +482,18 @@ export const inspectDocxPackage = async (
         });
       }
     }
+  }
+  if (
+    findPart(index, ROOT_RELATIONSHIPS_PATH)
+    && hasValidRootRelationshipsSchema
+    && !hasValidOfficeDocumentRelationship
+  ) {
+    issues.push({
+      severity: 'error',
+      code: 'OFFICE_DOCUMENT_RELATIONSHIP_INVALID',
+      message: 'Package root 必須以合法 officeDocument relationship 指向 word/document.xml。',
+      entry: ROOT_RELATIONSHIPS_PATH,
+    });
   }
 
   const contentTypesEntry = findPart(index, CONTENT_TYPES_PATH);
@@ -519,6 +587,7 @@ export const inspectDocxPackage = async (
         message: `媒體項目不可為空：${mediaEntry.name}`,
         entry: mediaEntry.name,
       });
+      continue;
     }
 
     const extension = mediaEntry.name.includes('.')
@@ -571,6 +640,21 @@ export const inspectDocxPackage = async (
         message: `媒體副檔名 .${extension} 與 Content Type ${contentType} 不一致。`,
         entry: mediaEntry.name,
       });
+      continue;
+    }
+    if (expectedContentTypes) {
+      try {
+        resolveImageMediaBytes(mediaBytes, contentType);
+      } catch (error) {
+        issues.push({
+          severity: 'error',
+          code: 'MEDIA_CONTENT_INVALID',
+          message: error instanceof Error
+            ? `媒體內容驗證失敗：${error.message}`
+            : `媒體內容驗證失敗：${mediaEntry.name}`,
+          entry: mediaEntry.name,
+        });
+      }
     }
   }
 

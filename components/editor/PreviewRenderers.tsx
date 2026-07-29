@@ -66,9 +66,11 @@ export const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
                 >
                   {segment.content}
                 </a>
-                <span className="inline-flex translate-y-[1px] items-center justify-center rounded border border-slate-200 bg-slate-50 p-[2px]">
-                  <QrCode className="h-3 w-3 text-slate-500" />
-                </span>
+                {!isPublisher && (
+                  <span className="inline-flex translate-y-[1px] items-center justify-center rounded border border-slate-200 bg-slate-50 p-[2px]">
+                    <QrCode className="h-3 w-3 text-slate-500" />
+                  </span>
+                )}
               </span>
             );
           case InlineStyleType.CODE:
@@ -207,7 +209,8 @@ const renderHeading3: PreviewRenderer = (block, _showLineNumbers, isPublisher) =
 
 const renderCodeBlock: PreviewRenderer = (block, globalShowLineNumbers, isPublisher) => {
   const codeLines = block.content.split('\n');
-  const showLineNumbers = block.metadata?.showLineNumbers ?? globalShowLineNumbers;
+  const showLineNumbers = !isPublisher
+    && (block.metadata?.showLineNumbers ?? globalShowLineNumbers);
 
   return (
     <div
@@ -219,7 +222,7 @@ const renderCodeBlock: PreviewRenderer = (block, globalShowLineNumbers, isPublis
         fontFamily: 'var(--publisher-code-font, monospace)',
       } : undefined}
     >
-      {block.metadata?.language && (
+      {!isPublisher && block.metadata?.language && (
         <div className="absolute right-0 top-0 z-10 rounded-bl border-b border-l border-slate-300 bg-slate-200 px-3 py-1 text-[10px] font-bold uppercase text-slate-500">
           {block.metadata.language}
         </div>
@@ -234,7 +237,7 @@ const renderCodeBlock: PreviewRenderer = (block, globalShowLineNumbers, isPublis
         )}
         <pre
           className={isPublisher
-            ? 'm-0 flex-1 overflow-x-auto whitespace-pre p-4 pt-8 leading-relaxed'
+            ? 'm-0 flex-1 overflow-x-auto whitespace-pre p-4 leading-relaxed'
             : 'm-0 flex-1 overflow-x-auto whitespace-pre p-4 pt-8 leading-relaxed text-slate-950'}
           style={isPublisher ? {
             color: 'var(--publisher-body, currentColor)',

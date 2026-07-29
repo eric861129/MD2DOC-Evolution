@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { validateExport } from '../services/exportValidation';
 import { parseMarkdown } from '../services/markdownParser';
-import { measureChapterSpanScanOperations } from '../services/parser/ast';
+import * as parserAst from '../services/parser/ast';
+import {
+  measureChapterSpanScanOperations,
+  parseMarkdownWithAST,
+} from '../services/parser/ast';
 import { BlockType } from '../services/types';
 
 describe('出版社 Markdown 語法', () => {
@@ -1295,6 +1299,95 @@ describe('出版社 Markdown 語法', () => {
       topLevelBlockCount * 2 + nestedItemCount + 1,
     );
     expect(metrics.lineTransitionCount).toBe(metrics.sourceLineCount);
+  });
+
+  it('完整 parseMarkdownWithAST 不會為每個 chapter gap 重掃文件前綴', () => {
+    const chapterCount = 400;
+    const markdown = Array.from({ length: chapterCount }, (_, index) => [
+      '[CHAPTER]',
+      `number: "${index + 1}"`,
+      `title: "章節 ${index + 1}"`,
+      '[/CHAPTER]',
+      '',
+      `段落 ${index + 1}`,
+      '',
+    ].join('\n')).join('\n');
+    const originalMatch = String.prototype.match;
+    let newlineScanCharacterCount = 0;
+    const trackedMatch = function (
+      this: string,
+      regexp: unknown,
+    ) {
+      if (
+        regexp instanceof RegExp
+        && regexp.global
+        && regexp.source === '\\n'
+      ) {
+        newlineScanCharacterCount += String(this).length;
+      }
+      return originalMatch.call(this, regexp as RegExp);
+    };
+    String.prototype.match =
+      trackedMatch as typeof String.prototype.match;
+
+    try {
+      const blocks = parseMarkdownWithAST(markdown);
+
+      expect(blocks.filter((block) =>
+        block.type === BlockType.CHAPTER_OPENER)).toHaveLength(chapterCount);
+      expect(blocks.filter((block) =>
+        block.type === BlockType.PARAGRAPH)).toHaveLength(chapterCount);
+      expect(newlineScanCharacterCount).toBeLessThanOrEqual(
+        markdown.length * 8,
+      );
+    } finally {
+      String.prototype.match = originalMatch;
+    }
+  });
+
+  it('完整 parser 公開可重現的線性 operation/scaling contract', () => {
+    const measureMarkdownParseOperations = (
+      parserAst as typeof parserAst & {
+        measureMarkdownParseOperations?: (markdown: string) => {
+          fragmentCharacterTransitionCount: number;
+          fragmentTransitionCount: number;
+          lineCursorCharacterTransitionCount: number;
+          tokenTransitionCount: number;
+          chapterSpanTransitionCount: number;
+        };
+      }
+    ).measureMarkdownParseOperations;
+    expect(measureMarkdownParseOperations).toBeTypeOf('function');
+    if (!measureMarkdownParseOperations) {
+      return;
+    }
+    const createWorkload = (chapterCount: number) =>
+      Array.from({ length: chapterCount }, (_, index) => [
+        '[CHAPTER]',
+        `number: "${index + 1}"`,
+        `title: "章節 ${index + 1}"`,
+        '[/CHAPTER]',
+        '',
+        `段落 ${index + 1}`,
+        '',
+      ].join('\n')).join('\n');
+    const smallMarkdown = createWorkload(200);
+    const largeMarkdown = createWorkload(400);
+    const small = measureMarkdownParseOperations(smallMarkdown);
+    const large = measureMarkdownParseOperations(largeMarkdown);
+    const totalOperations = (metrics: typeof small) =>
+      metrics.fragmentCharacterTransitionCount
+      + metrics.fragmentTransitionCount
+      + metrics.lineCursorCharacterTransitionCount
+      + metrics.tokenTransitionCount
+      + metrics.chapterSpanTransitionCount;
+
+    expect(small.fragmentCharacterTransitionCount)
+      .toBeLessThanOrEqual(smallMarkdown.length * 2);
+    expect(large.fragmentCharacterTransitionCount)
+      .toBeLessThanOrEqual(largeMarkdown.length * 2);
+    expect(totalOperations(large))
+      .toBeLessThanOrEqual(totalOperations(small) * 2.2);
   });
 
   it('未關閉 CHAPTER 只回復 marker，後續 heading 與 paragraph 全部保留', () => {
