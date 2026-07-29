@@ -8,9 +8,16 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  size?: 'md' | 'xl';
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+export const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+  size = 'md',
+}) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,7 +42,9 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/55 p-4 backdrop-blur-sm">
       <div
         ref={modalRef}
-        className="workspace-glass flex max-h-[90vh] w-full max-w-2xl flex-col rounded-md"
+        className={`workspace-glass flex max-h-[90vh] w-full flex-col rounded-md ${
+          size === 'xl' ? 'max-w-6xl' : 'max-w-2xl'
+        }`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"

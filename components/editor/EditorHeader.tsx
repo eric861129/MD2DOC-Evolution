@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import {
   AlertTriangle,
+  BookOpen,
   Bot,
   Download,
   FileText,
@@ -20,6 +21,7 @@ import { useEditor } from '../../contexts/EditorContext';
 import { Button } from '../ui/Button';
 import { IconButton } from '../ui/IconButton';
 import { AIPromptModal } from '../AIPromptModal';
+import { GuideCenter } from '../GuideCenter';
 import { ExampleSelector } from './ExampleSelector';
 import { ExportSettingsModal } from './ExportSettingsModal';
 
@@ -63,6 +65,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   } = useEditor();
 
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isExportSettingsOpen, setIsExportSettingsOpen] = useState(false);
   const hasContent = parsedBlocks.length > 0;
   const hasFrontmatter = Boolean(documentMeta.title || documentMeta.author);
@@ -155,6 +158,10 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
           <IconButton onClick={() => setIsAIModalOpen(true)} title={t('aiPrompt')}>
             <Bot className="h-4 w-4" />
           </IconButton>
+          <Button variant="secondary" onClick={() => setIsGuideOpen(true)}>
+            <BookOpen className="h-4 w-4" />
+            {t('userGuide')}
+          </Button>
           <IconButton onClick={resetToDefault} title={t('reset')}>
             <RotateCcw className="h-4 w-4" />
           </IconButton>
@@ -249,6 +256,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
       )}
 
       <AIPromptModal isOpen={isAIModalOpen} onClose={() => setIsAIModalOpen(false)} />
+      <GuideCenter isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
       <ExportSettingsModal
         isOpen={isExportSettingsOpen}
         value={exportSettings}
