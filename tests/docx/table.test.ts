@@ -325,14 +325,14 @@ describe('出版社固定表格 OOXML', () => {
     const tableLayout = directChild(tableProperties, 'tblLayout')!;
 
     expect(wordAttribute(tableWidth, 'type')).toBe('dxa');
-    expect(wordAttribute(tableWidth, 'w')).toBe('6978');
+    expect(wordAttribute(tableWidth, 'w')).toBe('7250');
     expect(wordAttribute(tableIndent, 'type')).toBe('dxa');
     expect(wordAttribute(tableIndent, 'w')).toBe('120');
     expect(wordAttribute(tableLayout, 'type')).toBe('fixed');
 
     const gridWidths = elementsByName(directChild(table, 'tblGrid')!, 'gridCol')
       .map((column) => wordAttribute(column, 'w'));
-    expect(gridWidths).toEqual(['1787', '5191']);
+    expect(gridWidths).toEqual(['1856', '5394']);
 
     const rows = elementsByName(table, 'tr');
     expect(directChild(directChild(rows[0], 'trPr')!, 'tblHeader'))
@@ -342,8 +342,8 @@ describe('出版社固定表格 OOXML', () => {
         type: wordAttribute(cellWidth, 'type'),
         width: wordAttribute(cellWidth, 'w'),
       }))).toEqual([
-        { type: 'dxa', width: '1787' },
-        { type: 'dxa', width: '5191' },
+        { type: 'dxa', width: '1856' },
+        { type: 'dxa', width: '5394' },
       ]);
     }
 
@@ -418,7 +418,7 @@ describe('出版社固定表格 OOXML', () => {
     const gridWidths = elementsByName(directChild(table, 'tblGrid')!, 'gridCol')
       .map((column) => wordAttribute(column, 'w'));
 
-    expect(gridWidths).toEqual(['1610', '2683', '2685']);
+    expect(gridWidths).toEqual(['1673', '2788', '2789']);
     for (const row of elementsByName(table, 'tr')) {
       expect(elementsByName(row, 'tc')).toHaveLength(3);
       expect(elementsByName(row, 'tcW')

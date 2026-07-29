@@ -296,6 +296,54 @@ describe('postProcessDocx', () => {
       /<w:pgMar(?=[^>]*w:gutter="283")[^>]*\/>/,
     );
   });
+
+  it('出版社分頁標記正規化可重複執行且不移除 foreign namespace 節點', async () => {
+    const source = await createPackage((zip) => {
+      zip.file(
+        'word/document.xml',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:x="urn:foreign">
+  <w:body>
+    <w:p>
+      <w:pPr>
+        <w:keepNext/>
+        <w:keepLines/>
+        <w:pageBreakBefore/>
+        <w:suppressLineNumbers/>
+        <x:keepNext/>
+      </w:pPr>
+      <w:r><w:t>新頁內容</w:t></w:r>
+    </w:p>
+  </w:body>
+</w:document>`,
+      );
+      zip.file(
+        'word/styles.xml',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:style w:type="paragraph" w:styleId="Heading1">
+    <w:pPr><w:keepNext/><w:keepLines/></w:pPr>
+  </w:style>
+</w:styles>`,
+      );
+    });
+    const config = {
+      layout: resolvePageLayout(exactSettings),
+      removeNonprintingPaginationMarkers: true,
+    };
+
+    const once = await postProcessDocx(source, config);
+    const twice = await postProcessDocx(once, config);
+    const documentXml = await readDocxXml(twice, 'word/document.xml');
+    const stylesXml = await readDocxXml(twice, 'word/styles.xml');
+
+    expect(documentXml.match(/<w:br w:type="page"\/>/g)).toHaveLength(1);
+    expect(documentXml).not.toMatch(
+      /<w:(?:keepNext|keepLines|pageBreakBefore|suppressLineNumbers)\b/,
+    );
+    expect(stylesXml).not.toMatch(/<w:(?:keepNext|keepLines)\b/);
+    expect(documentXml).toContain('<x:keepNext');
+  });
 });
 
 describe('inspectDocxPackage', () => {

@@ -137,6 +137,14 @@ export const registerDefaultHandlers = () => {
       style: DOCUMENT_STYLE_IDS.normal,
       children: await parseInlineStyles(block.content, config),
       numbering: { reference: "default-bullet", level: block.nestingLevel || 0 },
+      ...(config.profile.id === 'technical-legacy'
+        ? {}
+        : {
+            spacing: {
+              after: 80,
+              line: config.profile.paragraph.normal.lineTwips,
+            },
+          }),
     })
   );
   docxRegistry.register(BlockType.NUMBERED_LIST, async (block, config) => 
@@ -148,6 +156,14 @@ export const registerDefaultHandlers = () => {
         level: block.nestingLevel || 0,
         instance: block.metadata?.listInstance ?? 0,
       },
+      ...(config.profile.id === 'technical-legacy'
+        ? {}
+        : {
+            spacing: {
+              after: 80,
+              line: config.profile.paragraph.normal.lineTwips,
+            },
+          }),
     })
   );
 

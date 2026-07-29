@@ -8,7 +8,7 @@ type DocumentProfilePreset = {
 
 /** 文件版型與其預設紙張、邊界組合，供介面選擇時一致套用。 */
 export const DOCUMENT_PROFILE_PRESETS = [
-  { id: 'technical-legacy', pageSizeId: 'tech', marginPresetId: 'publisher-exact' },
+  { id: 'technical-legacy', pageSizeId: 'tech', marginPresetId: 'standard' },
   { id: 'publisher-exact', pageSizeId: 'tech', marginPresetId: 'publisher-exact' },
   { id: 'publisher-narrow', pageSizeId: 'tech', marginPresetId: 'narrow' },
   { id: 'publisher-binding', pageSizeId: 'tech', marginPresetId: 'publisher-binding' },
@@ -36,7 +36,18 @@ export const MARGIN_PRESETS: readonly MarginPreset[] = [
   { id: 'compact', margins: createStandardMargins(1.5) },
   { id: 'balanced', margins: createStandardMargins(2) },
   { id: 'standard', margins: createStandardMargins(2.54) },
-  { id: 'publisher-exact', margins: createStandardMargins(2.54) },
+  {
+    id: 'publisher-exact',
+    margins: {
+      mode: 'standard',
+      topCm: 2.1,
+      bottomCm: 2.1,
+      leftCm: 2.3,
+      rightCm: 2.3,
+      gutterCm: 0,
+      gutterPosition: 'left',
+    },
+  },
   {
     id: 'publisher-binding',
     margins: {
@@ -55,5 +66,5 @@ export const MARGIN_PRESETS: readonly MarginPreset[] = [
 export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
   profileId: 'technical-legacy',
   pageSizeId: 'tech',
-  marginPresetId: 'publisher-exact',
+  marginPresetId: 'standard',
 };

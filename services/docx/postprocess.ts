@@ -8,8 +8,16 @@ import {
 const WORDPROCESSING_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const SETTINGS_PATH = 'word/settings.xml';
+const DOCUMENT_PATH = 'word/document.xml';
+const STYLES_PATH = 'word/styles.xml';
 const DOCX_MIME_TYPE =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const NONPRINTING_PAGINATION_MARKERS = new Set([
+  'keepNext',
+  'keepLines',
+  'pageBreakBefore',
+  'suppressLineNumbers',
+]);
 
 // ISO/IEC 29500 CT_Settings child sequence.
 const SETTINGS_CHILD_ORDER = [
@@ -118,6 +126,7 @@ const SETTINGS_ORDER = new Map<string, number>(
 
 export interface PostProcessDocxConfig {
   layout: ResolvedPageLayout;
+  removeNonprintingPaginationMarkers?: boolean;
 }
 
 const hasXmlParseError = (document: XMLDocument): boolean =>
@@ -132,6 +141,18 @@ const createSettingsIssueError = (
     code,
     message,
     entry: SETTINGS_PATH,
+  });
+
+const createXmlIssueError = (
+  entry: string,
+  code: string,
+  message: string,
+): DocxPackageIssueError =>
+  new DocxPackageIssueError({
+    severity: 'error',
+    code,
+    message,
+    entry,
   });
 
 const isWordprocessingElement = (
@@ -205,6 +226,106 @@ const insertPageSetting = (
   }
 };
 
+const parseXmlPart = (
+  entryName: string,
+  bytes: Uint8Array,
+  invalidCode = 'WORDPROCESSING_XML_INVALID',
+  invalidMessage = `${entryName} 無法解析。`,
+): XMLDocument => {
+  const xml = new TextDecoder().decode(bytes);
+  const document = new DOMParser().parseFromString(xml, 'application/xml');
+  if (hasXmlParseError(document)) {
+    throw createXmlIssueError(
+      entryName,
+      invalidCode,
+      invalidMessage,
+    );
+  }
+  return document;
+};
+
+const directWordprocessingChild = (
+  parent: Element,
+  localName: string,
+): Element | undefined =>
+  Array.from(parent.children).find((child) =>
+    isWordprocessingElement(child, localName)
+  );
+
+/**
+ * 把真正的另起頁語意轉成顯式分頁符，再移除 Word 會以黑方塊顯示的段落分頁標記。
+ */
+const convertParagraphPageBreaks = (document: XMLDocument): void => {
+  const paragraphs = Array.from(document.getElementsByTagNameNS(
+    WORDPROCESSING_NAMESPACE,
+    'p',
+  ));
+
+  for (const paragraph of paragraphs) {
+    const paragraphProperties = directWordprocessingChild(paragraph, 'pPr');
+    if (
+      !paragraphProperties
+      || !directWordprocessingChild(paragraphProperties, 'pageBreakBefore')
+    ) {
+      continue;
+    }
+
+    const run = document.createElementNS(
+      WORDPROCESSING_NAMESPACE,
+      'w:r',
+    );
+    const pageBreak = document.createElementNS(
+      WORDPROCESSING_NAMESPACE,
+      'w:br',
+    );
+    pageBreak.setAttributeNS(
+      WORDPROCESSING_NAMESPACE,
+      'w:type',
+      'page',
+    );
+    run.appendChild(pageBreak);
+    paragraph.insertBefore(run, paragraphProperties.nextSibling);
+  }
+};
+
+const removePaginationMarkers = (document: XMLDocument): void => {
+  for (const localName of NONPRINTING_PAGINATION_MARKERS) {
+    Array.from(document.getElementsByTagNameNS(
+      WORDPROCESSING_NAMESPACE,
+      localName,
+    )).forEach((element) => element.remove());
+  }
+};
+
+const normalizePaginationMarkers = (
+  zip: JSZip,
+  entryBytes: Map<JSZip.JSZipObject, Uint8Array>,
+): void => {
+  for (const path of [DOCUMENT_PATH, STYLES_PATH]) {
+    const entry = Object.values(zip.files).find(
+      (candidate) =>
+        !candidate.dir && candidate.name.toLowerCase() === path,
+    );
+    if (!entry) {
+      continue;
+    }
+
+    const bytes = entryBytes.get(entry);
+    if (!bytes) {
+      throw createDocxPackageUnreadableError(entry.name);
+    }
+    const document = parseXmlPart(entry.name, bytes);
+    if (path === DOCUMENT_PATH) {
+      convertParagraphPageBreaks(document);
+    }
+    removePaginationMarkers(document);
+    zip.file(
+      entry.name,
+      new XMLSerializer().serializeToString(document),
+    );
+  }
+};
+
 /**
  * 在 DOCX 封裝層補上 docx 套件未提供的版面設定，並維持 CT_Settings schema 順序。
  */
@@ -234,51 +355,47 @@ export const postProcessDocx = async (
   const settingsEntry = Object.values(zip.files).find(
     (entry) => !entry.dir && entry.name.toLowerCase() === SETTINGS_PATH,
   );
-  if (!settingsEntry) {
-    return blob;
-  }
-
-  const settingsBytes = entryBytes.get(settingsEntry);
-  if (!settingsBytes) {
-    throw createDocxPackageUnreadableError(settingsEntry.name);
-  }
-  const settingsXml = new TextDecoder().decode(settingsBytes);
-  const document = new DOMParser().parseFromString(
-    settingsXml,
-    'application/xml',
-  );
-  if (hasXmlParseError(document)) {
-    throw createSettingsIssueError(
+  if (settingsEntry) {
+    const settingsBytes = entryBytes.get(settingsEntry);
+    if (!settingsBytes) {
+      throw createDocxPackageUnreadableError(settingsEntry.name);
+    }
+    const document = parseXmlPart(
+      settingsEntry.name,
+      settingsBytes,
       'SETTINGS_XML_INVALID',
       'word/settings.xml 無法解析。',
     );
-  }
+    const settings = document.documentElement;
+    if (!isWordprocessingElement(settings, 'settings')) {
+      throw createSettingsIssueError(
+        'SETTINGS_STRUCTURE_INVALID',
+        'word/settings.xml 根節點不是 WordprocessingML settings。',
+      );
+    }
 
-  const settings = document.documentElement;
-  if (!isWordprocessingElement(settings, 'settings')) {
-    throw createSettingsIssueError(
-      'SETTINGS_STRUCTURE_INVALID',
-      'word/settings.xml 根節點不是 WordprocessingML settings。',
+    removeWordprocessingPageSettings(settings);
+    validateSettingsOrder(settings);
+
+    if (config.layout.margins.mode === 'mirrored') {
+      insertPageSetting(document, settings, 'mirrorMargins');
+    } else if (
+      config.layout.margins.gutterPosition === 'top'
+      && config.layout.margins.gutterCm > 0
+    ) {
+      insertPageSetting(document, settings, 'gutterAtTop');
+    }
+    validateSettingsOrder(settings);
+
+    zip.file(
+      settingsEntry.name,
+      new XMLSerializer().serializeToString(document),
     );
   }
 
-  removeWordprocessingPageSettings(settings);
-  validateSettingsOrder(settings);
-
-  if (config.layout.margins.mode === 'mirrored') {
-    insertPageSetting(document, settings, 'mirrorMargins');
-  } else if (
-    config.layout.margins.gutterPosition === 'top'
-    && config.layout.margins.gutterCm > 0
-  ) {
-    insertPageSetting(document, settings, 'gutterAtTop');
+  if (config.removeNonprintingPaginationMarkers) {
+    normalizePaginationMarkers(zip, entryBytes);
   }
-  validateSettingsOrder(settings);
-
-  zip.file(
-    settingsEntry.name,
-    new XMLSerializer().serializeToString(document),
-  );
 
   try {
     const bytes = await zip.generateAsync({ type: 'uint8array' });

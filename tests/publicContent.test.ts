@@ -72,6 +72,19 @@ describe('public repository content', () => {
     }
   });
 
+  it('publishes the round-seven publisher margins and pagination-marker policy', () => {
+    const profile = readUtf8('docs/PUBLISHER_PROFILE.md');
+
+    expect(profile).toContain('上下 2.10 cm、左右 2.30 cm');
+    expect(profile).toContain('內容寬度是 13.00 cm');
+    expect(profile).toContain('角色名稱獨立一行');
+    expect(profile).toContain('黑方塊');
+    expect(INITIAL_CONTENT_ZH)
+      .toContain('上下 2.10、左右 2.30 cm');
+    expect(INITIAL_CONTENT_EN)
+      .toContain('2.10 cm vertical, 2.30 cm horizontal');
+  });
+
   it('keeps key public strings valid UTF-8 without replacement or private-use characters', () => {
     const files = [
       'README.md',

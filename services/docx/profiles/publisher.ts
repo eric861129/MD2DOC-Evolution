@@ -134,8 +134,8 @@ const publisherStyleTokens: Omit<DocumentStyleProfile, 'id'> = {
   },
   headerFooter: {
     distanceCm: PUBLISHER_WORD_THEME.HEADER_FOOTER.DISTANCE_CM,
-    showTitle: true,
-    showBookAndPage: true,
+    showTitle: false,
+    showBookAndPage: false,
   },
 };
 

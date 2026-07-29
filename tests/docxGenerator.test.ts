@@ -63,10 +63,10 @@ describe('docxGenerator', () => {
       'docProps/core.xml',
       'word/document.xml',
       'word/footer1.xml',
-      'word/header1.xml',
       'word/settings.xml',
       'word/styles.xml',
     ]));
+    expect(entries).not.toContain('word/header1.xml');
 
     const documentXml = await readDocxXml(blob, 'word/document.xml');
     expect(documentXml).toContain('Hello world');
@@ -74,7 +74,7 @@ describe('docxGenerator', () => {
       /<w:pgSz(?=[^>]*w:w="9978")(?=[^>]*w:h="13380")[^>]*\/>/,
     );
     expect(documentXml).toMatch(
-      /<w:pgMar(?=[^>]*w:top="1440")(?=[^>]*w:right="1440")(?=[^>]*w:bottom="1440")(?=[^>]*w:left="1440")(?=[^>]*w:header="708")(?=[^>]*w:footer="708")(?=[^>]*w:gutter="0")[^>]*\/>/,
+      /<w:pgMar(?=[^>]*w:top="1191")(?=[^>]*w:right="1304")(?=[^>]*w:bottom="1191")(?=[^>]*w:left="1304")(?=[^>]*w:header="708")(?=[^>]*w:footer="708")(?=[^>]*w:gutter="0")[^>]*\/>/,
     );
 
     const stylesXml = await readDocxXml(blob, 'word/styles.xml');
@@ -89,12 +89,44 @@ describe('docxGenerator', () => {
     expect(coreXml).toContain('<dc:title>技術書稿</dc:title>');
     expect(coreXml).toContain('<dc:creator>黃祈豫</dc:creator>');
 
-    const headerXml = await readDocxXml(blob, 'word/header1.xml');
-    expect(headerXml).toContain('技術書稿');
-
     const footerXml = await readDocxXml(blob, 'word/footer1.xml');
-    expect(footerXml).toContain('技術書稿 | ');
+    expect(footerXml).not.toContain('技術書稿');
     expect(footerXml).toMatch(/<w:instrText[^>]*>PAGE<\/w:instrText>/);
+  });
+
+  it('出版社輸出移除非列印分頁標記，但只保留真正清單的編號屬性', async () => {
+    const blob = await generateDocx([
+      {
+        type: BlockType.HEADING_1,
+        content: '下一頁標題',
+        metadata: { pageBreakBefore: true },
+      },
+      { type: BlockType.PARAGRAPH, content: '一般段落' },
+      {
+        type: BlockType.CHAT_CUSTOM,
+        role: '設計師',
+        alignment: 'left',
+        content: '對話內容',
+      },
+      { type: BlockType.BULLET_LIST, content: '真正的無序清單' },
+    ], {
+      exportSettings: {
+        profileId: 'publisher-exact',
+        pageSizeId: 'tech',
+        marginPresetId: 'publisher-exact',
+      },
+      showLineNumbers: false,
+    });
+
+    const documentXml = await readDocxXml(blob, 'word/document.xml');
+    const stylesXml = await readDocxXml(blob, 'word/styles.xml');
+    const markerPattern =
+      /<w:(?:keepNext|keepLines|pageBreakBefore|suppressLineNumbers)(?:\s[^>]*)?\/>/;
+
+    expect(documentXml).not.toMatch(markerPattern);
+    expect(stylesXml).not.toMatch(markerPattern);
+    expect(documentXml.match(/<w:numPr>/g)).toHaveLength(1);
+    expect(documentXml.match(/<w:br w:type="page"\/>/g)).toHaveLength(1);
   });
 
   it('鏡像邊界在 section 寫入裝訂預留並於 settings 啟用鏡像頁邊界', async () => {
@@ -182,7 +214,7 @@ describe('docxGenerator', () => {
       /<w:pStyle w:val="CodeBlock"\/>[\s\S]*?<w:shd w:fill="F4F6F9"\/>[\s\S]*?<w:ind(?=[^>]*w:left="230")(?=[^>]*w:right="230")[^>]*\/>/,
     );
     expect(documentXml).toContain('<w:sdt>');
-    expect(documentXml).toContain('TOC \\h \\o &quot;1-3&quot;');
+    expect(documentXml).toMatch(/TOC \\h \\o (?:&quot;|")1-3(?:&quot;|")/);
     expect(documentXml).not.toContain('<w:tabs>');
   });
 
@@ -221,16 +253,20 @@ describe('docxGenerator', () => {
       /<w:pStyle w:val="CodeBlock"\/>[\s\S]*?<w:shd w:fill="F4F6F9"\/>[\s\S]*?<w:ind(?=[^>]*w:left="230")(?=[^>]*w:right="230")[^>]*\/>/,
     );
     expect(documentXml).toContain('<w:sdt>');
-    expect(documentXml).toContain('TOC \\h \\o &quot;1-3&quot;');
+    expect(documentXml).toMatch(/TOC \\h \\o (?:&quot;|")1-3(?:&quot;|")/);
     expect(documentXml).not.toContain('<w:tabs>');
   });
 
   it('technical-legacy 保持頁首書名與頁尾僅頁碼的既有行為', async () => {
-    const blob = await generateDocx([], {
+    const blob = await generateDocx([{
+      type: BlockType.HEADING_1,
+      content: '舊版分頁標題',
+      metadata: { pageBreakBefore: true },
+    }], {
       exportSettings: {
         profileId: 'technical-legacy',
         pageSizeId: 'tech',
-        marginPresetId: 'publisher-exact',
+        marginPresetId: 'standard',
       },
       showLineNumbers: false,
       meta: {
@@ -246,6 +282,10 @@ describe('docxGenerator', () => {
     const footerXml = await readDocxXml(blob, 'word/footer1.xml');
     expect(footerXml).not.toContain('舊版技術書稿');
     expect(footerXml).toMatch(/<w:instrText[^>]*>PAGE<\/w:instrText>/);
+
+    const documentXml = await readDocxXml(blob, 'word/document.xml');
+    expect(documentXml).toMatch(/<w:pageBreakBefore\/>/);
+    expect(documentXml).not.toMatch(/<w:br w:type="page"\/>/);
   });
 
   it('publisher [TOC] 產生 heading 1–3 hyperlink 欄位並觀察緊鄰手填內容 warning', async () => {

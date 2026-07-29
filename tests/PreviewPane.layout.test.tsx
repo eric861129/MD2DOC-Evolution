@@ -55,23 +55,23 @@ const exactLayout: ResolvedPageLayout = {
   },
   margins: {
     mode: 'standard',
-    topCm: 2.54,
-    rightCm: 2.54,
-    bottomCm: 2.54,
-    leftCm: 2.54,
+    topCm: 2.1,
+    rightCm: 2.3,
+    bottomCm: 2.1,
+    leftCm: 2.3,
     gutterCm: 0,
     gutterPosition: 'left',
-    topTwips: 1440,
-    rightTwips: 1440,
-    bottomTwips: 1440,
-    leftTwips: 1440,
+    topTwips: 1191,
+    rightTwips: 1304,
+    bottomTwips: 1191,
+    leftTwips: 1304,
     gutterTwips: 0,
   },
   content: {
-    widthCm: 12.52,
-    heightCm: 18.52,
-    widthTwips: 7098,
-    heightTwips: 10500,
+    widthCm: 13,
+    heightCm: 19.4,
+    widthTwips: 7370,
+    heightTwips: 10998,
   },
   isCustomizedFromProfile: false,
   warnings: [],
@@ -336,7 +336,7 @@ describe('PreviewPane 版面同步', () => {
 
     const exactPage = screen.getByRole('article', { name: '文件頁面預覽' });
     expect(screen.getByText('相同的預覽內容')).toBeInTheDocument();
-    expect(exactPage.style.padding).toBe('2.54cm');
+    expect(exactPage.style.padding).toBe('2.1cm 2.3cm');
 
     view.rerender(createPreviewTree({
       settings: narrowSettings,
@@ -460,7 +460,7 @@ describe('useMarkdownEditor 的版面 Context', () => {
     fireEvent.click(screen.getByRole('button', { name: '套用 exact' }));
     expect(getPage()).toHaveAttribute('data-profile', 'publisher-exact');
     expect(getPage()).toHaveAttribute('data-margin-preset', 'publisher-exact');
-    expect(getPage().style.padding).toBe('2.54cm');
+    expect(getPage().style.padding).toBe('2.1cm 2.3cm');
 
     fireEvent.click(screen.getByRole('button', { name: '函式切換 narrow' }));
     expect(getPage()).toHaveAttribute('data-profile', 'publisher-narrow');
@@ -521,7 +521,7 @@ describe('useMarkdownEditor 的版面 Context', () => {
 
     const page = screen.getByRole('article', { name: '文件頁面預覽' });
     expect(page).toHaveAttribute('data-profile', 'technical-legacy');
-    expect(page).toHaveAttribute('data-margin-preset', 'publisher-exact');
+    expect(page).toHaveAttribute('data-margin-preset', 'standard');
     expect(page).toHaveAttribute('data-page-size', '17.6x23.6');
     expect(page.style.padding).toBe('2.54cm');
     expect(screen.getByRole('alert')).toHaveTextContent(

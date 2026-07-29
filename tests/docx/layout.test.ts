@@ -3,7 +3,7 @@ import { DEFAULT_EXPORT_SETTINGS } from '../../services/docx/layout/presets';
 import { resolvePageLayout } from '../../services/docx/layout/resolve';
 
 describe('resolvePageLayout', () => {
-  it('解析出版社一致版為 17.6x23.6 公分與 2.54 公分邊界', () => {
+  it('解析出版社一致版為 17.6x23.6 公分、上下 2.1 與左右 2.3 公分邊界', () => {
     const layout = resolvePageLayout({
       ...DEFAULT_EXPORT_SETTINGS,
       profileId: 'publisher-exact',
@@ -14,9 +14,33 @@ describe('resolvePageLayout', () => {
     expect(layout.page.heightCm).toBe(23.6);
     expect(layout.page.widthTwips).toBe(9978);
     expect(layout.page.heightTwips).toBe(13380);
-    expect(layout.margins.leftCm).toBe(2.54);
-    expect(layout.margins.leftTwips).toBe(1440);
-    expect(layout.content.widthCm).toBeCloseTo(12.52, 2);
+    expect(layout.margins).toMatchObject({
+      topCm: 2.1,
+      rightCm: 2.3,
+      bottomCm: 2.1,
+      leftCm: 2.3,
+      topTwips: 1191,
+      rightTwips: 1304,
+      bottomTwips: 1191,
+      leftTwips: 1304,
+    });
+    expect(layout.content.widthCm).toBeCloseTo(13, 2);
+    expect(layout.content.widthTwips).toBe(7370);
+  });
+
+  it('technical-legacy 預設仍維持四邊 2.54 公分', () => {
+    const layout = resolvePageLayout(DEFAULT_EXPORT_SETTINGS);
+
+    expect(layout.margins).toMatchObject({
+      topCm: 2.54,
+      rightCm: 2.54,
+      bottomCm: 2.54,
+      leftCm: 2.54,
+      topTwips: 1440,
+      rightTwips: 1440,
+      bottomTwips: 1440,
+      leftTwips: 1440,
+    });
   });
 
   it('解析窄邊界內容寬度為 15.06 公分', () => {

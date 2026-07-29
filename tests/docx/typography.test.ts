@@ -560,7 +560,9 @@ describe('DOCX 出版社排版', () => {
       const numberingId = directChild(numberingProperties, 'numId')!;
 
       expect(paragraphStyleId(paragraph)).toBe('Normal');
-      expect(directChild(paragraphProperties, 'spacing')).toBeUndefined();
+      const listSpacing = directChild(paragraphProperties, 'spacing')!;
+      expect(wordAttribute(listSpacing, 'after')).toBe('80');
+      expect(wordAttribute(listSpacing, 'line')).toBe('300');
       expect(wordAttribute(level, 'val')).toBe(String(block.nestingLevel));
       const abstractNumberingId = numberingInstances.get(
         wordAttribute(numberingId, 'val'),

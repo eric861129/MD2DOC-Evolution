@@ -83,6 +83,50 @@ describe('PreviewBlock Callout', () => {
 });
 
 describe('PreviewBlock Profile 樣式', () => {
+  it('publisher 對話預覽將角色與內容分成上下兩行', () => {
+    editorContextState.documentProfile = getDocumentProfile('publisher-exact');
+
+    render(
+      <PreviewBlock
+        block={{
+          type: BlockType.CHAT_CUSTOM,
+          role: '設計師',
+          alignment: 'left',
+          content: '這是對話內容。',
+        }}
+      />,
+    );
+
+    const role = screen.getByText('設計師：');
+    const content = screen.getByText('這是對話內容。');
+    expect(role.tagName).toBe('STRONG');
+    expect(role).toHaveAttribute('data-dialogue-role', 'publisher');
+    const contentContainer = content.closest('[data-dialogue-content]');
+    expect(contentContainer).toHaveAttribute(
+      'data-dialogue-content',
+      'publisher',
+    );
+    expect(role.parentElement).toBe(contentContainer?.parentElement);
+  });
+
+  it('technical-legacy 對話預覽保留浮動角色標籤', () => {
+    render(
+      <PreviewBlock
+        block={{
+          type: BlockType.CHAT_CUSTOM,
+          role: '舊版角色',
+          alignment: 'right',
+          content: '舊版對話內容。',
+        }}
+      />,
+    );
+
+    expect(screen.getByText('舊版角色')).not
+      .toHaveAttribute('data-dialogue-role');
+    expect(screen.getByText('舊版對話內容。')).not
+      .toHaveAttribute('data-dialogue-content');
+  });
+
   it('publisher 一般連結不顯示 legacy QR icon', () => {
     editorContextState.documentProfile = getDocumentProfile('publisher-exact');
 

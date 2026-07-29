@@ -251,9 +251,38 @@ const renderCodeBlock: PreviewRenderer = (block, globalShowLineNumbers, isPublis
   );
 };
 
-const renderChat: PreviewRenderer = (block) => {
+const renderChat: PreviewRenderer = (block, _showLineNumbers, isPublisher) => {
   const isRight = block.alignment === 'right';
   const isCenter = block.alignment === 'center';
+
+  if (isPublisher) {
+    return (
+      <div className={`my-12 flex ${isRight ? 'justify-end pl-16' : isCenter ? 'justify-center px-8' : 'justify-start pr-16'}`}>
+        <div
+          className={`max-w-[90%] border-2 p-6 ${
+            isRight
+              ? 'border-dashed border-slate-950 bg-white text-right'
+              : isCenter
+                ? 'border-double border-product bg-product-glow text-center'
+                : 'border-dotted border-slate-950 bg-slate-100 text-left'
+          }`}
+        >
+          <strong
+            className="mb-2 block"
+            data-dialogue-role="publisher"
+          >
+            {block.role}：
+          </strong>
+          <div
+            className="whitespace-pre-wrap leading-[1.65] text-slate-950"
+            data-dialogue-content="publisher"
+          >
+            <RenderRichText text={block.content} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`my-12 flex ${isRight ? 'justify-end pl-16' : isCenter ? 'justify-center px-8' : 'justify-start pr-16'}`}>

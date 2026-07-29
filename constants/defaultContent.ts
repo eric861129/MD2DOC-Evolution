@@ -59,7 +59,7 @@ MD2DOC-Evolution 預設維持 ${BT}technical-legacy${BT}，以相容既有技術
 | Profile | 紙張 | 邊界策略 | 頁碼相容性 |
 | :--- | :--- | :--- | :--- |
 | technical-legacy | 17.6 × 23.6 cm | 相容既有樣式 | 紙張採新版 preset |
-| publisher-exact | 17.6 × 23.6 cm | 四邊 2.54 cm | 參考契約 |
+| publisher-exact | 17.6 × 23.6 cm | 上下 2.10、左右 2.30 cm | 第七輪出版社參考契約 |
 | publisher-narrow | 17.6 × 23.6 cm | 四邊 1.27 cm | 允許重排 |
 | publisher-binding | 17.6 × 23.6 cm | 鏡像＋gutter | 允許重排 |
 
@@ -124,7 +124,7 @@ Console :": The public acceptance workflow is ready.
 | Profile | Paper | Margin strategy | Pagination |
 | :--- | :--- | :--- | :--- |
 | technical-legacy | 17.6 × 23.6 cm | Legacy-compatible styles | Uses the revised paper preset |
-| publisher-exact | 17.6 × 23.6 cm | 2.54 cm on every side | Reference contract |
+| publisher-exact | 17.6 × 23.6 cm | 2.10 cm vertical, 2.30 cm horizontal | Round-seven publisher contract |
 | publisher-narrow | 17.6 × 23.6 cm | 1.27 cm on every side | Reflow expected |
 | publisher-binding | 17.6 × 23.6 cm | Mirrored plus gutter | Reflow expected |
 

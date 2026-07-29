@@ -253,7 +253,11 @@ export const generateDocx = async (
   const packedBlob = await Packer.toBlob(doc);
   let processedBlob: Blob;
   try {
-    processedBlob = await postProcessDocx(packedBlob, { layout });
+    processedBlob = await postProcessDocx(packedBlob, {
+      layout,
+      removeNonprintingPaginationMarkers:
+        profile.id !== 'technical-legacy',
+    });
   } catch (error) {
     if (error instanceof DocxPackageIssueError) {
       throw new DocxQualityError([error.issue]);

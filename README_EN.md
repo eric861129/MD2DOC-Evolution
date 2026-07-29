@@ -15,7 +15,8 @@ Live demo: [https://huangchiyu.com/MD2DOC-Evolution/](https://huangchiyu.com/MD2
 ## v1.5.0 Highlights
 
 - Paper and margins: 17.6 × 23.6 cm, A4, A5, B5, custom paper, and reusable or custom margin presets.
-- Publisher profiles: `publisher-exact`, `publisher-narrow`, and `publisher-binding`, while `technical-legacy` remains the default.
+- Publisher profiles: `publisher-exact` matches the 17.6 × 23.6 cm round-seven contract with 2.10 cm vertical and 2.30 cm horizontal margins; `publisher-narrow` and `publisher-binding` remain available, while `technical-legacy` stays the default.
+- Manuscript-grade layout: publisher profiles separate dialogue roles from content, isolate list bullets to real Markdown lists, and remove Word's non-printing pagination marker squares.
 - Binding layout: mirrored inside/outside margins and gutter support.
 - Publishing syntax: `[CHAPTER]`, explicit `[QR:label](URL)`, plus `IMPORTANT` and `CAUTION` callouts.
 - Word structure: named publisher styles, fixed table geometry, updateable TOC fields, and chapter bookmarks.

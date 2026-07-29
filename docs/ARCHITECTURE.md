@@ -72,7 +72,7 @@ Markdown → ParsedBlock → Layout/Profile → DOCX Builders → Packer
 3. `services/docx/profiles/` 提供樣式 token。`technical-legacy` 保留既有行為，三種 publisher Profile 共用出版社樣式。
 4. `services/docx/registry.ts` 依 Block 類型把內容交給 `services/docx/builders/`，建立段落、章首頁、TOC、表格、Callout、對話、圖片與明確 QR 等 DOCX 節點。
 5. `docx` 的 `Packer` 先產生 OPC package。
-6. `services/docx/postprocess.ts` 以 deterministic OOXML 後處理補上鏡像邊界、gutter、欄位更新與必要的 package 設定。
+6. `services/docx/postprocess.ts` 以 deterministic OOXML 後處理補上鏡像邊界、gutter 與必要的 package 設定；出版社 Profile 另把段落另起頁轉成顯式分頁符，並移除會顯示黑方塊的非列印分頁屬性。
 7. `services/docx/quality.ts` 檢查 relationship、content type、媒體、副檔名與必要部件。任何 error 都會阻止下載；warning 會回報給匯出流程。
 8. 只有通過 inspection 的 Blob 才交由瀏覽器下載。
 

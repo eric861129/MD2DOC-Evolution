@@ -373,21 +373,18 @@ describe('DOCX 出版元件', () => {
         fill: 'F2F2F2',
         indent: { left: null, right: '1440' },
         border: 'dotted',
-        keepNext: false,
       },
       {
         paragraph: findParagraph(document, 'Right：右側內容'),
         fill: 'FFFFFF',
         indent: { left: '1440', right: null },
         border: 'dashed',
-        keepNext: true,
       },
       {
         paragraph: findParagraph(document, 'Center：置中內容'),
         fill: 'F8FAFC',
         indent: { left: '720', right: '720' },
         border: 'double',
-        keepNext: false,
       },
     ];
 
@@ -400,14 +397,17 @@ describe('DOCX 出版元件', () => {
       const spacing = getParagraphProperty(testCase.paragraph, 'spacing');
       expect(wordAttribute(spacing, 'before')).toBe('400');
       expect(wordAttribute(spacing, 'after')).toBe('400');
-      expect(wordAttribute(spacing, 'line')).toBe('300');
+      expect(wordAttribute(spacing, 'line')).toBe('276');
       expect(directChild(paragraphProperties(testCase.paragraph), 'keepLines'))
-        .toBeDefined();
-      expect(Boolean(directChild(
-        paragraphProperties(testCase.paragraph),
-        'keepNext',
-      ))).toBe(testCase.keepNext);
-      expect(elementsByName(testCase.paragraph, 'br')).toHaveLength(0);
+        .toBeUndefined();
+      expect(directChild(paragraphProperties(testCase.paragraph), 'keepNext'))
+        .toBeUndefined();
+      expect(elementsByName(testCase.paragraph, 'br')).toHaveLength(1);
+      const roleRun = elementsByName(testCase.paragraph, 'r')[0];
+      const roleRunProperties = directChild(roleRun, 'rPr');
+      expect(roleRunProperties
+        ? directChild(roleRunProperties, 'sz')
+        : undefined).toBeUndefined();
       expectBorder(testCase.paragraph, testCase.border);
     }
   });
@@ -1063,16 +1063,16 @@ describe('DOCX 出版元件', () => {
 
     const document = parseXml(await readDocxXml(blob, 'word/document.xml'));
     const breakParagraphs = bodyParagraphs(document)
-      .filter((paragraph) =>
-        Boolean(directChild(paragraphProperties(paragraph), 'pageBreakBefore'))
-      );
+      .filter((paragraph) => elementsByName(paragraph, 'br')
+        .some((element) => wordAttribute(element, 'type') === 'page'));
     expect(breakParagraphs.map(paragraphText)).toEqual(expectedBreakTitles);
     expect(elementsByName(document, 'br')
       .filter((element) => wordAttribute(element, 'type') === 'page'))
-      .toHaveLength(0);
+      .toHaveLength(expectedBreakTitles.length);
+    expect(elementsByName(document, 'pageBreakBefore')).toHaveLength(0);
   });
 
-  it('heading metadata 可要求在自身套用 pageBreakBefore', async () => {
+  it('heading metadata 轉成顯式分頁並移除非列印 pageBreakBefore 標記', async () => {
     const blob = await generateDocx([
       { type: BlockType.PARAGRAPH, content: '章首頁內容' },
       {
@@ -1090,7 +1090,10 @@ describe('DOCX 出版元件', () => {
       .find((paragraph) => paragraphText(paragraph) === '下一頁正文')!;
 
     expect(directChild(paragraphProperties(heading), 'pageBreakBefore'))
-      .toBeDefined();
+      .toBeUndefined();
+    expect(elementsByName(heading, 'br')
+      .filter((element) => wordAttribute(element, 'type') === 'page'))
+      .toHaveLength(1);
   });
 
   it('章首頁圖片 key 缺失時回報 warning 並以可讀文字降級', async () => {

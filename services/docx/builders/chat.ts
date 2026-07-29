@@ -95,13 +95,13 @@ export const createChatBubble = async (block: ParsedBlock, config?: DocxConfig):
       : BorderStyle.DOTTED;
 
   const children = [
-      new TextRun({ 
-        text: `${role}：`,
-        bold: true, 
-        size: 18,
-        font: FONT_CONFIG_NORMAL 
-      }),
-      ...await parseInlineStyles(content, config)
+    new TextRun({
+      text: `${role}：`,
+      bold: true,
+      font: config.profile.fonts.body,
+    }),
+    new TextRun({ text: '', break: 1 }),
+    ...await parseInlineStyles(content, config),
   ];
 
   return new Paragraph({
@@ -118,9 +118,11 @@ export const createChatBubble = async (block: ParsedBlock, config?: DocxConfig):
         ? { left: 720, right: 720 }
         : { right: 1440 },
     alignment: docxAlignment,
-    spacing: { before: 400, after: 400, line: 300 },
-    keepLines: true,
-    ...(isRight ? { keepNext: true } : {}),
+    spacing: {
+      before: 400,
+      after: 400,
+      line: LINE_HEIGHT.ONE_POINT_TWO,
+    },
     shading: { fill: bgFill }
   });
 };
