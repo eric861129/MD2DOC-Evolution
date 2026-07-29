@@ -228,9 +228,7 @@ pre,
 }
 
 .print-paper {
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.58), transparent 34%),
-    #fffdf8;
+  background: #fff;
   box-shadow:
     0 0 0 1px rgba(70, 62, 51, 0.09),
     0 30px 90px rgba(46, 39, 30, 0.18);

@@ -313,7 +313,7 @@ describe('PreviewPane 版面同步', () => {
     expect(page).toHaveAttribute('data-page-size', '17.6x23.6');
     expect(page).toHaveAttribute('data-margin-preset', 'narrow');
     expect(page).toHaveAttribute('data-profile', 'publisher-narrow');
-    expect(page.style.aspectRatio).toBe('17.6 / 23.6');
+    expect(page.style.aspectRatio).toBe('');
     expect(page.style.padding).toBe('1.27cm');
     expect(page.style.getPropertyValue('--page-aspect-ratio')).toBe('17.6 / 23.6');
     expect(page.style.getPropertyValue('--page-width')).toBe('17.6cm');
@@ -379,13 +379,29 @@ describe('PreviewPane 版面同步', () => {
     expect(page).toHaveAttribute('data-page-size', '29.7x21');
     expect(page).toHaveAttribute('data-margin-preset', 'custom');
     expect(page).toHaveAttribute('data-gutter-position', 'top');
-    expect(page.style.aspectRatio).toBe('29.7 / 21');
+    expect(page.style.aspectRatio).toBe('');
     expect(page.style.paddingTop).toBe('1.6cm');
     expect(page.style.paddingRight).toBe('1.1cm');
     expect(page.style.paddingBottom).toBe('1.5cm');
     expect(page.style.paddingLeft).toBe('1.2cm');
     expect(page.style.width).toBe('100%');
     expect(page.style.maxWidth).toBe('100%');
+  });
+
+  it('renders all preview content on one continuous white surface', () => {
+    const { container } = render(createPreviewTree({
+      settings: narrowSettings,
+      layout: narrowLayout,
+      blocks: publisherBlocks,
+    }));
+
+    const surface = container.querySelector<HTMLElement>('[data-preview-flow="continuous"]');
+    const page = container.querySelector<HTMLElement>('article[aria-label="文件頁面預覽"]');
+
+    expect(surface).not.toBeNull();
+    expect(surface).toHaveClass('bg-white');
+    expect(page?.style.aspectRatio).toBe('');
+    expect(page?.style.getPropertyValue('--page-aspect-ratio')).toBe('17.6 / 23.6');
   });
 
   it('publisher renderer 使用 profile variables，且移除 legacy 的 H1 黑底線與厚 callout', () => {

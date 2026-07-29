@@ -101,7 +101,6 @@ const createPreviewPageStyle = (
     '--publisher-callout-before': formatPoints(profile.paragraph.callout.beforeTwips),
     '--publisher-callout-after': formatPoints(profile.paragraph.callout.afterTwips),
     '--publisher-caption-after': formatPoints(profile.paragraph.caption.afterTwips),
-    aspectRatio,
     boxSizing: 'border-box',
     color: isLegacy ? undefined : 'var(--publisher-body)',
     fontFamily: isLegacy ? UI_THEME.FONTS.PREVIEW : 'var(--publisher-body-font)',
@@ -186,7 +185,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
       <div className="flex items-center justify-between border-b border-slate-200/70 bg-white/60 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/30">
         <div>
           <p className="text-sm font-bold text-slate-950 dark:text-white">{t('workspace.preview')}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Word page simulation</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Continuous document preview</p>
         </div>
         <div className="flex items-center gap-1">
           <IconButton
@@ -219,7 +218,8 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
 
       <div
         ref={previewRef}
-        className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_50%_0%,rgba(52,90,112,0.10),transparent_34rem)] p-5 scroll-smooth md:p-8"
+        className="min-h-0 flex-1 overflow-y-auto bg-white p-5 scroll-smooth md:p-8"
+        data-preview-flow="continuous"
       >
         <div
           className="mx-auto w-full origin-top transition-transform duration-300"
@@ -240,7 +240,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
           <article
             aria-describedby={isMirrored ? 'mirrored-preview-note' : undefined}
             aria-label="文件頁面預覽"
-            className={`print-paper min-h-0 w-full max-w-full rounded-md [overflow-wrap:anywhere] ${
+            className={`print-paper w-full max-w-full rounded-md [overflow-wrap:anywhere] ${
               isPublisher ? '' : 'text-slate-950'
             }`}
             data-gutter-position={resolvedPageLayout.margins.gutterPosition}

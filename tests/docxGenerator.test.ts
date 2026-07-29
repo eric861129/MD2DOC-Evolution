@@ -284,8 +284,50 @@ describe('docxGenerator', () => {
     expect(footerXml).toMatch(/<w:instrText[^>]*>PAGE<\/w:instrText>/);
 
     const documentXml = await readDocxXml(blob, 'word/document.xml');
-    expect(documentXml).toMatch(/<w:pageBreakBefore\/>/);
-    expect(documentXml).not.toMatch(/<w:br w:type="page"\/>/);
+    const stylesXml = await readDocxXml(blob, 'word/styles.xml');
+    const markerPattern =
+      /<w:(?:keepNext|keepLines|pageBreakBefore|suppressLineNumbers)(?:\s[^>]*)?\/>/;
+
+    expect(documentXml).not.toMatch(markerPattern);
+    expect(stylesXml).not.toMatch(markerPattern);
+    expect(documentXml).toMatch(/<w:br w:type="page"\/>/);
+  });
+
+  it('technical-legacy 章首頁移除黑方塊格式標記，只有 goals 保留真正的清單符號', async () => {
+    const blob = await generateDocx([
+      { type: BlockType.PARAGRAPH, content: '目錄之後的前置內容' },
+      {
+        type: BlockType.CHAPTER_OPENER,
+        content: '章首頁',
+        metadata: {
+          chapter: {
+            number: '01',
+            part: '第一部：建立觀測站',
+            title: '點亮第一張星圖',
+            englishTitle: 'Lighting the First Star Map',
+            summary: '章首頁摘要。',
+            goals: ['理解文件 Profile。', '完成公開範例。'],
+          },
+        },
+      },
+    ], {
+      exportSettings: {
+        profileId: 'technical-legacy',
+        pageSizeId: 'tech',
+        marginPresetId: 'standard',
+      },
+      showLineNumbers: false,
+    });
+
+    const documentXml = await readDocxXml(blob, 'word/document.xml');
+    const stylesXml = await readDocxXml(blob, 'word/styles.xml');
+    const markerPattern =
+      /<w:(?:keepNext|keepLines|pageBreakBefore|suppressLineNumbers)(?:\s[^>]*)?\/>/;
+
+    expect(documentXml).not.toMatch(markerPattern);
+    expect(stylesXml).not.toMatch(markerPattern);
+    expect(documentXml.match(/<w:numPr>/g)).toHaveLength(2);
+    expect(documentXml.match(/<w:br w:type="page"\/>/g)).toHaveLength(1);
   });
 
   it('publisher [TOC] 產生 heading 1–3 hyperlink 欄位並觀察緊鄰手填內容 warning', async () => {

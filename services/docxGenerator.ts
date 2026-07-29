@@ -255,8 +255,7 @@ export const generateDocx = async (
   try {
     processedBlob = await postProcessDocx(packedBlob, {
       layout,
-      removeNonprintingPaginationMarkers:
-        profile.id !== 'technical-legacy',
+      removeNonprintingPaginationMarkers: true,
     });
   } catch (error) {
     if (error instanceof DocxPackageIssueError) {
