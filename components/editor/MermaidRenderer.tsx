@@ -1,7 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 let mermaidPromise: Promise<any> | null = null;
+let domPurifyPromise: Promise<any> | null = null;
 let mermaidInitialized = false;
+
+const sanitizeMermaidSvg = async (svg: string): Promise<string> => {
+  if (!domPurifyPromise) {
+    domPurifyPromise = import('dompurify').then((module) => module.default);
+  }
+
+  const domPurify = await domPurifyPromise;
+  return domPurify.sanitize(svg, {
+    USE_PROFILES: {
+      html: true,
+      svg: true,
+      svgFilters: true,
+    },
+  });
+};
 
 const loadMermaid = async () => {
   if (!mermaidPromise) {
@@ -29,7 +45,7 @@ const loadMermaid = async () => {
         .label { font-weight: 700 !important; }
         .mermaid .label { font-weight: 700 !important; }
       `,
-      securityLevel: 'loose',
+      securityLevel: 'strict',
     });
     mermaidInitialized = true;
   }
@@ -42,7 +58,6 @@ interface MermaidRendererProps {
 }
 
 const MermaidRenderer: React.FC<MermaidRendererProps> = ({ chart }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
   const [svg, setSvg] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,8 +72,9 @@ const MermaidRenderer: React.FC<MermaidRendererProps> = ({ chart }) => {
         const mermaid = await loadMermaid();
         const id = `mermaid-${Math.random().toString(36).slice(2, 11)}`;
         const result = await mermaid.render(id, chart);
+        const safeSvg = await sanitizeMermaidSvg(result.svg);
         if (isActive) {
-          setSvg(result.svg);
+          setSvg(safeSvg);
         }
       } catch (err) {
         console.error('Mermaid rendering failed:', err);
@@ -92,11 +108,13 @@ const MermaidRenderer: React.FC<MermaidRendererProps> = ({ chart }) => {
           </pre>
         </div>
       ) : (
-        <div
-          ref={containerRef}
-          className="flex w-full justify-center overflow-x-auto rounded-md border border-slate-200 bg-white p-5 shadow-sm"
-          dangerouslySetInnerHTML={{ __html: isLoading && !svg ? '<span>Loading Mermaid...</span>' : svg }}
-        />
+        <div className="flex w-full justify-center overflow-x-auto rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+          {isLoading && !svg ? (
+            <span>Loading Mermaid...</span>
+          ) : (
+            <div dangerouslySetInnerHTML={{ __html: svg }} />
+          )}
+        </div>
       )}
     </div>
   );

@@ -1,7 +1,7 @@
-# MD2DOC-Evolution | v1.5.0
+# MD2DOC-Evolution | v2.0.0
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
 [![CI](https://github.com/eric861129/MD2DOC-Evolution/actions/workflows/ci.yml/badge.svg)](https://github.com/eric861129/MD2DOC-Evolution/actions/workflows/ci.yml)
 
 [中文](README.md) | [English](README_EN.md)
@@ -12,7 +12,7 @@ MD2DOC-Evolution 是開源的 Markdown → Word DOCX 出版工作台，為技術
 
 > 專業工具台 UI 的右側採連續白底預覽，適合檢查內容結構與樣式；最終 Word 分頁仍以實際 DOCX、字型與 Word 版本為準。
 
-## v1.5.0 重點
+## v2.0.0 重點
 
 - 出版版型：17.6 × 23.6 cm、A4、A5、B5、自訂紙張與自訂邊界。
 - 常用邊界：1.27、1.50、2.00、2.54 cm、出版社精確邊界與鏡像裝訂。
@@ -25,6 +25,7 @@ MD2DOC-Evolution 是開源的 Markdown → Word DOCX 出版工作台，為技術
 - AI Prompt v2：提供「轉換既有稿件」與「建立新稿初稿」兩種模式。
 - 教學中心：站內搜尋、章節導覽、Word 換頁專章，以及完整範例 Markdown／DOCX 下載。
 - DOCX QA：檢查 package、relationship、media、content type、TOC、bookmark 與版面幾何。
+- 安全邊界：遠端圖片需由使用者確認後才載入；Mermaid SVG、Canvas 與 YAML metadata 都有防護。
 
 ## 快速使用
 
@@ -113,7 +114,7 @@ Header 的「AI 轉稿提示」提供兩種 Prompt v2：
 ## 能力邊界與隱私
 
 - 轉換主要在瀏覽器本機完成，專案沒有書稿上傳 API。
-- 圖片 URL、字型、部署平台或使用者另外使用的 AI 服務，仍可能產生第三方網路請求。
+- 遠端圖片 URL 只有在使用者按下「載入遠端圖片」後才會發出請求，並使用 `no-referrer`；字型、部署平台或使用者另外使用的 AI 服務仍可能產生第三方網路請求。
 - 右側不是 Word 分頁模擬器；頁數會受 Word、字型、印表機與圖片影響。
 - TOC 欄位、奇偶頁分節、跨頁表格、索引、腳註與出版社巨集可能需要 Word 後製。
 - 使用 AI 前請移除機密、個資與未公開商業內容。

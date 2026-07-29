@@ -108,7 +108,9 @@ export const resources = {
         mobilePreview: '預覽',
         zoomIn: '放大預覽',
         zoomOut: '縮小預覽',
-        fitWidth: '符合寬度'
+        fitWidth: '符合寬度',
+        loadRemoteImage: '載入遠端圖片',
+        loadRemoteImageLabel: '載入遠端圖片：{{alt}}'
       }
     }
   },
@@ -210,7 +212,9 @@ export const resources = {
         mobilePreview: 'Preview',
         zoomIn: 'Zoom in',
         zoomOut: 'Zoom out',
-        fitWidth: 'Fit width'
+        fitWidth: 'Fit width',
+        loadRemoteImage: 'Load remote image',
+        loadRemoteImageLabel: 'Load remote image: {{alt}}'
       }
     }
   }

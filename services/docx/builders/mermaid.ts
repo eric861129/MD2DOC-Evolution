@@ -49,6 +49,43 @@ class MermaidQueue {
 }
 
 const mermaidQueue = new MermaidQueue();
+const MERMAID_CANVAS_SCALE = 3;
+const MAX_MERMAID_CANVAS_SIDE = 8192;
+const MAX_MERMAID_CANVAS_PIXELS = 16_000_000;
+
+/**
+ * 計算列印用 Mermaid Canvas 尺寸，並拒絕可能耗盡瀏覽器資源的圖表。
+ */
+export const resolveMermaidCanvasDimensions = (
+  originalWidth: number,
+  originalHeight: number,
+): { width: number; height: number } => {
+  if (
+    !Number.isFinite(originalWidth)
+    || !Number.isFinite(originalHeight)
+    || originalWidth <= 0
+    || originalHeight <= 0
+  ) {
+    throw new Error('Mermaid 圖表尺寸無效。');
+  }
+
+  let width = Math.ceil(originalWidth * MERMAID_CANVAS_SCALE);
+  let height = Math.ceil(originalHeight * MERMAID_CANVAS_SCALE);
+  if (width % 2 !== 0) width++;
+  if (height % 2 !== 0) height++;
+
+  if (
+    width > MAX_MERMAID_CANVAS_SIDE
+    || height > MAX_MERMAID_CANVAS_SIDE
+    || width * height > MAX_MERMAID_CANVAS_PIXELS
+  ) {
+    throw new Error(
+      'Mermaid 圖表尺寸過大，請簡化圖表或拆分成多張圖。',
+    );
+  }
+
+  return { width, height };
+};
 
 // Helper: Extract dimensions from SVG string
 const getSvgDimensions = (svg: string): { width: number; height: number } => {
@@ -84,14 +121,10 @@ const svgToPng = (svg: string, originalWidth: number, originalHeight: number): P
 
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      // Scale for print quality (3x is standard for ~300DPI feel)
-      const scale = 3; 
-      
-      // Ensure even dimensions to avoid compression artifacts
-      let canvasWidth = Math.ceil(originalWidth * scale);
-      let canvasHeight = Math.ceil(originalHeight * scale);
-      if (canvasWidth % 2 !== 0) canvasWidth++;
-      if (canvasHeight % 2 !== 0) canvasHeight++;
+      const {
+        width: canvasWidth,
+        height: canvasHeight,
+      } = resolveMermaidCanvasDimensions(originalWidth, originalHeight);
 
       canvas.width = canvasWidth;
       canvas.height = canvasHeight;
@@ -156,6 +189,7 @@ export const createMermaidBlock = async (
           .label { font-weight: bold !important; }
           .mermaid .label { font-weight: bold !important; }
         `,
+        securityLevel: 'strict',
         flowchart: { useMaxWidth: false, htmlLabels: true },
       });
 

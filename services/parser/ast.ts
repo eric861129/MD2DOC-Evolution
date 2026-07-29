@@ -5,7 +5,6 @@
  */
 
 import { Lexer, marked } from 'marked';
-import yaml from 'js-yaml';
 import {
   BlockType,
   type ChapterMetadata,
@@ -13,6 +12,10 @@ import {
   type ValidationIssue,
 } from '../types';
 import { cleanTextForPublishing } from '../../utils/textProcessor';
+import {
+  MAX_YAML_SOURCE_LENGTH,
+  parseBoundedYaml,
+} from './yaml';
 
 // Configure marked options if needed
 marked.use({
@@ -331,8 +334,22 @@ const parseChapterMetadata = (
 
   let parsedYaml: unknown;
   try {
-    parsedYaml = yaml.load(yamlContent, { schema: yaml.DEFAULT_SCHEMA });
-  } catch {
+    parsedYaml = parseBoundedYaml(yamlContent);
+  } catch (error) {
+    if (
+      error instanceof RangeError
+      && yamlContent.length > MAX_YAML_SOURCE_LENGTH
+    ) {
+      issues.push(createChapterIssue(
+        sourceLine,
+        'yaml-size',
+        'error',
+        '章首頁 YAML 超過大小限制',
+        '請將章首頁 metadata 控制在 256 KiB 內，大段正文或圖片資料請移到章首頁區塊之外。',
+      ));
+      return { chapter: emptyChapter, issues };
+    }
+
     issues.push(createChapterIssue(
       sourceLine,
       'yaml',

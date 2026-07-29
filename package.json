@@ -1,7 +1,7 @@
 {
   "name": "md2doc-evolution",
   "private": true,
-  "version": "1.5.0",
+  "version": "2.0.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/eric861129/MD2DOC-Evolution.git"
@@ -32,14 +32,15 @@
     "@tailwindcss/vite": "^4.3.1",
     "buffer": "^6.0.3",
     "docx": "^9.5.1",
+    "dompurify": "^3.4.12",
     "file-saver": "^2.0.5",
     "gsap": "^3.15.0",
     "i18next": "^25.7.3",
     "i18next-browser-languagedetector": "^8.2.0",
-    "js-yaml": "^4.1.1",
+    "js-yaml": "^4.3.0",
     "lucide-react": "^0.562.0",
     "marked": "^17.0.1",
-    "mermaid": "^11.12.2",
+    "mermaid": "^11.16.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
@@ -59,7 +60,7 @@
     "pngjs": "^7.0.0",
     "tsx": "^4.23.1",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0",
-    "vitest": "^4.0.16"
+    "vite": "^6.4.3",
+    "vitest": "^4.1.10"
   }
 }

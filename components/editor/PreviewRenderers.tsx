@@ -6,10 +6,56 @@
 
 import React from 'react';
 import { QrCode } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { BlockType, ParsedBlock } from '../../services/types';
 import { InlineStyleType, parseInlineElements } from '../../utils/styleParser';
 import { useEditor } from '../../contexts/EditorContext';
 import MermaidRenderer from './MermaidRenderer';
+
+interface SafePreviewImageProps {
+  src?: string;
+  alt: string;
+  className: string;
+}
+
+const isRemoteImageUrl = (src?: string): boolean =>
+  Boolean(src && /^https?:\/\//i.test(src));
+
+const SafePreviewImage: React.FC<SafePreviewImageProps> = ({
+  src,
+  alt,
+  className,
+}) => {
+  const { t } = useTranslation();
+  const [remoteAllowed, setRemoteAllowed] = React.useState(false);
+  const requiresConsent = isRemoteImageUrl(src) && !remoteAllowed;
+
+  if (!src) {
+    return null;
+  }
+
+  if (requiresConsent) {
+    return (
+      <button
+        type="button"
+        aria-label={t('workspace.loadRemoteImageLabel', { alt })}
+        className="inline-flex min-h-9 items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-slate-400 hover:bg-slate-100"
+        onClick={() => setRemoteAllowed(true)}
+      >
+        {t('workspace.loadRemoteImage')}
+      </button>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      referrerPolicy="no-referrer"
+    />
+  );
+};
 
 export const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
   const segments = parseInlineElements(text);
@@ -44,7 +90,7 @@ export const RenderRichText: React.FC<{ text: string }> = ({ text }) => {
           case InlineStyleType.IMAGE: {
             const imageUrl = segment.url && imageRegistry[segment.url] ? imageRegistry[segment.url] : segment.url;
             return (
-              <img
+              <SafePreviewImage
                 key={index}
                 src={imageUrl}
                 alt={segment.content}
@@ -417,7 +463,7 @@ const ImageBlock: React.FC<{ block: ParsedBlock }> = ({ block }) => {
 
   return (
     <figure className="my-10 flex flex-col items-center">
-      <img
+      <SafePreviewImage
         src={imageUrl}
         alt={block.metadata?.alt || 'Markdown embedded image'}
         className="h-auto max-w-full rounded-md border border-slate-200 shadow-lg"
@@ -494,7 +540,7 @@ const ChapterPreview: React.FC<{ block: ParsedBlock }> = ({ block }) => {
         </p>
       )}
       {imageSource && (
-        <img
+        <SafePreviewImage
           src={imageSource}
           alt={`章首頁：${chapter.title}`}
           className="mx-auto mt-6 h-auto max-w-[70%]"

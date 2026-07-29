@@ -1,7 +1,7 @@
-# MD2DOC-Evolution | v1.5.0
+# MD2DOC-Evolution | v2.0.0
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
 [![CI](https://github.com/eric861129/MD2DOC-Evolution/actions/workflows/ci.yml/badge.svg)](https://github.com/eric861129/MD2DOC-Evolution/actions/workflows/ci.yml)
 
 [中文](README.md) | [English](README_EN.md)
@@ -12,7 +12,7 @@ Live demo: [https://huangchiyu.com/MD2DOC-Evolution/](https://huangchiyu.com/MD2
 
 > The right side of the professional workspace UI is a continuous white document preview. It validates structure and design language; it does not pretend to reproduce final Word pagination.
 
-## v1.5.0 Highlights
+## v2.0.0 Highlights
 
 - Publishing layouts: 17.6 × 23.6 cm, A4, A5, B5, custom paper, and custom margins.
 - Margin presets: 1.27, 1.50, 2.00, 2.54 cm, publisher-exact, and mirrored binding.
@@ -25,6 +25,7 @@ Live demo: [https://huangchiyu.com/MD2DOC-Evolution/](https://huangchiyu.com/MD2
 - AI Prompt v2: separate modes for converting an existing manuscript and drafting a new manuscript.
 - Tutorial center: search, chapter navigation, Word pagination guidance, and complete Markdown/DOCX downloads.
 - DOCX QA: package, relationship, media, content type, TOC, bookmark, and layout validation.
+- Security boundaries: remote images require explicit consent; Mermaid SVG, Canvas allocation, and YAML metadata are bounded or sanitized.
 
 ## Quick Start
 
@@ -113,7 +114,7 @@ Latest public sample DOCX: [samples/範例Word.docx](samples/範例Word.docx)
 ## Boundaries and Privacy
 
 - Conversion primarily happens in the browser; the project does not provide a manuscript-upload API.
-- Image URLs, fonts, hosting, or an AI service selected by the user may still make third-party requests.
+- Remote image URLs are requested only after the user chooses to load them and use `no-referrer`; fonts, hosting, or an AI service selected by the user may still make third-party requests.
 - Preview is not Word pagination. Word version, fonts, printer drivers, and images can change page count.
 - TOC updates, odd/even section breaks, complex cross-page tables, indexes, footnotes, and publisher macros may require Word post-processing.
 - Remove confidential, personal, and unpublished commercial content before using any external AI service.

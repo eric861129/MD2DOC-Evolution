@@ -4,9 +4,9 @@
  * Licensed under the MIT License. 
  */
 
-import yaml from 'js-yaml';
 import { ParsedBlock, ParseResult, DocumentMeta } from './types';
 import { parseMarkdownWithAST } from './parser/ast';
+import { parseBoundedYaml } from './parser/yaml';
 
 export const parseMarkdown = (text: string): ParseResult => {
   let meta: DocumentMeta = {};
@@ -22,7 +22,7 @@ export const parseMarkdown = (text: string): ParseResult => {
   if (match) {
     try {
       const yamlContent = match[1];
-      const parsedYaml = yaml.load(yamlContent) as object;
+      const parsedYaml = parseBoundedYaml(yamlContent) as object;
       if (parsedYaml && typeof parsedYaml === 'object') {
         meta = parsedYaml;
       }

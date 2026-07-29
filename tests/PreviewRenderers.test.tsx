@@ -1,15 +1,20 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   PreviewBlock,
   RenderRichText,
 } from '../components/editor/PreviewRenderers';
 import { getDocumentProfile } from '../services/docx/profiles';
 import type { DocumentStyleProfile } from '../services/docx/profiles';
+import i18n from '../services/i18n';
 import { BlockType } from '../services/types';
 
 const editorContextState = vi.hoisted(() => ({
   documentProfile: undefined as DocumentStyleProfile | undefined,
+}));
+
+vi.mock('../constants/meta', () => ({
+  APP_VERSION: '2.0.0',
 }));
 
 vi.mock('../contexts/EditorContext', () => ({
@@ -21,6 +26,10 @@ vi.mock('../contexts/EditorContext', () => ({
 
 beforeEach(() => {
   editorContextState.documentProfile = getDocumentProfile('technical-legacy');
+});
+
+afterEach(async () => {
+  await i18n.changeLanguage('zh');
 });
 
 describe('PreviewBlock Callout', () => {
@@ -79,6 +88,66 @@ describe('PreviewBlock Callout', () => {
     expect(screen.getByText('建立可靠的工作環境。')).toBeInTheDocument();
     expect(screen.getByText('本章完成')).toBeInTheDocument();
     expect(screen.getByText('完成環境設定。')).toBeInTheDocument();
+  });
+
+  it('遠端圖片需經使用者同意才載入且不傳送 referrer', () => {
+    render(
+      <PreviewBlock
+        block={{
+          type: BlockType.IMAGE,
+          content: 'https://tracker.example/cover.png',
+          metadata: { alt: '遠端封面' },
+        }}
+      />,
+    );
+
+    expect(screen.queryByRole('img', { name: '遠端封面' }))
+      .not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', {
+      name: '載入遠端圖片：遠端封面',
+    }));
+
+    expect(screen.getByRole('img', { name: '遠端封面' })).toHaveAttribute(
+      'referrerpolicy',
+      'no-referrer',
+    );
+  });
+
+  it('data URL 圖片不需確認即可預覽', () => {
+    render(
+      <PreviewBlock
+        block={{
+          type: BlockType.IMAGE,
+          content: 'data:image/png;base64,AA==',
+          metadata: { alt: '本機圖片' },
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('img', { name: '本機圖片' }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: '載入遠端圖片：本機圖片',
+    })).not.toBeInTheDocument();
+  });
+
+  it('英文介面顯示英文遠端圖片確認文字', async () => {
+    await i18n.changeLanguage('en');
+
+    render(
+      <PreviewBlock
+        block={{
+          type: BlockType.IMAGE,
+          content: 'https://tracker.example/cover.png',
+          metadata: { alt: 'Remote cover' },
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('button', {
+      name: 'Load remote image: Remote cover',
+    })).toHaveTextContent('Load remote image');
   });
 });
 

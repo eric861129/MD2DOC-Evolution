@@ -1,6 +1,6 @@
 /**
  * BookPublisher MD2Docx
- * Copyright (c) 2025 EricHuang
+ * Copyright (c) 2025-2026 EricHuang
  * Licensed under the MIT License.
  */
 
@@ -14,7 +14,7 @@ const Footer: React.FC = () => {
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 text-xs">
         <div className="flex min-w-0 items-center gap-3 font-medium text-slate-500 dark:text-slate-400">
           <span className="truncate">
-            (c) 2025 <span className="text-[var(--brand-primary)]">EricHuang</span>
+            (c) 2025-2026 <span className="text-[var(--brand-primary)]">EricHuang</span>
           </span>
           <span className="hidden h-3 w-px bg-slate-300 dark:bg-slate-700 sm:block" />
           <span className="hidden truncate sm:block">

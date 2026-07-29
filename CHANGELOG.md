@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-07-29
+
+### Added
+- Three publisher-first document profiles: `publisher-exact`, `publisher-narrow`, and `publisher-binding`.
+- 17.6 × 23.6 cm technical-book paper size, configurable margins, mirrored binding, and gutter settings.
+- Bilingual quick and complete manuscript examples backed by one syntax coverage contract.
+- Grouped editor tools, shared Insert menu, AI Prompt v2, searchable tutorial center, and Markdown/DOCX guide downloads.
+- Publishing-grade DOCX acceptance checks for package structure, relationships, media, TOC, bookmarks, page geometry, list semantics, and nonprinting markers.
+
+### Changed
+- **Breaking:** `publisher-exact` is now the default profile and the legacy profile is no longer selectable.
+- Publisher dialogue roles and content are rendered on separate lines with the round-seven spacing and typography contract.
+- Browser preview uses one continuous white content surface instead of simulated pages.
+- Remote preview images now require explicit user consent and use `no-referrer`.
+
+### Fixed
+- Only true unordered lists emit Word bullets; task lists, dialogue, headings, and ordinary paragraphs no longer create invalid leading black dots.
+- Complete built-in examples register their image assets and no longer emit missing-image warnings.
+- Export warnings remain advisory and do not block DOCX generation.
+
+### Security
+- Upgraded Mermaid, js-yaml, Vite, and Vitest to patched release lines.
+- Sanitized Mermaid preview SVG, enabled strict Mermaid rendering, bounded DOCX Canvas allocation, and limited YAML metadata blocks to 256 KiB.
+- Removed browser API-key replacement hooks and restricted the Vite development server to loopback.
+- Moved GitHub Pages deployment permissions to the deploy job and passed pull-request refs to Bash through environment variables.
+
 ## [1.3.0] - 2026-01-21
 
 ### Added

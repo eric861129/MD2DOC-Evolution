@@ -1,7 +1,7 @@
 # MD2DOC 出版社級 Word 版型與頁面設定 Implementation Plan
 
 > **歷史文件（已執行計畫）：** 本文件保留 2026-07-28 當時的設計、估算與待辦，
-> 不代表 v1.5.0 現行功能或操作方式。現行產品契約請依
+> 不代表 v2.0.0 現行功能或操作方式。現行產品契約請依
 > `services/syntaxSpec.ts`、`docs/USER_GUIDE.md` 與
 > `docs/PUBLISHER_PROFILE.md`；請勿把下方未勾選項目當成目前缺陷清單。
 

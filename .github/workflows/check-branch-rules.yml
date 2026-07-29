@@ -13,10 +13,10 @@ jobs:
 
       - name: Check Branch Flow Rules
         shell: bash
+        env:
+          TARGET_BRANCH: ${{ github.base_ref }}
+          SOURCE_BRANCH: ${{ github.head_ref }}
         run: |
-          TARGET_BRANCH="${{ github.base_ref }}"
-          SOURCE_BRANCH="${{ github.head_ref }}"
-          
           echo "Checking PR flow: $SOURCE_BRANCH -> $TARGET_BRANCH"
           
           # Rule 1: Merging into 'main'

@@ -172,7 +172,7 @@ describe('public repository content', () => {
     expect(prompt).toContain('一般 Markdown 連結保持 hyperlink');
   });
 
-  it('公開文件對齊 v1.5.0 範例、教學、隱私與能力邊界', () => {
+  it('公開文件對齊 v2.0.0 範例、教學、隱私與能力邊界', () => {
     const zh = readUtf8('README.md');
     const en = readUtf8('README_EN.md');
     const overview = readUtf8('docs/PROJECT_OVERVIEW.md');
@@ -180,6 +180,7 @@ describe('public repository content', () => {
     const customization = readUtf8('docs/CUSTOMIZATION.md');
 
     for (const content of [zh, en]) {
+      expect(content).toContain('v2.0.0');
       expect(content).toContain('content/examples/complete.zh.md');
       expect(content).toContain('docs/USER_GUIDE.md');
       expect(content).toMatch(/隱私|Privacy/);
@@ -209,7 +210,7 @@ describe('public repository content', () => {
     );
 
     expect(historicalPlan).toContain('歷史文件（已執行計畫）');
-    expect(historicalPlan).toContain('不代表 v1.5.0 現行功能');
+    expect(historicalPlan).toContain('不代表 v2.0.0 現行功能');
     expect(historicalPlan).toContain('docs/USER_GUIDE.md');
   });
 });

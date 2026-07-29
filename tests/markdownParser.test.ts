@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { parseMarkdown } from '../services/markdownParser';
 import { BlockType } from '../services/types';
 
@@ -16,6 +16,23 @@ describe('markdownParser', () => {
     expect(meta.author).toBe('Eric');
     expect(blocks).toHaveLength(1);
     expect(blocks[0].content).toBe('Heading 1');
+  });
+
+  it('拒絕超過 256 KiB 的 frontmatter，避免阻塞瀏覽器', () => {
+    const oversizedTitle = 'x'.repeat((256 * 1024) + 1);
+    const input = [
+      '---',
+      `title: ${oversizedTitle}`,
+      '---',
+      '# 安全解析',
+    ].join('\n');
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { meta } = parseMarkdown(input);
+
+    expect(meta).toEqual({});
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
   });
 
   it('should parse headers correctly', () => {

@@ -298,6 +298,28 @@ describe('出版社 Markdown 語法', () => {
     });
   });
 
+  it('超過 256 KiB 的 CHAPTER YAML 轉為明確錯誤而不繼續解析', () => {
+    const markdown = [
+      '[CHAPTER]',
+      'number: "118"',
+      'title: "大型章首頁"',
+      `summary: "${'x'.repeat((256 * 1024) + 1)}"`,
+      '[/CHAPTER]',
+    ].join('\n');
+
+    const { blocks } = parseMarkdown(markdown);
+
+    expect(blocks[0]).toMatchObject({
+      type: BlockType.CHAPTER_OPENER,
+      validationIssues: expect.arrayContaining([
+        expect.objectContaining({
+          severity: 'error',
+          title: '章首頁 YAML 超過大小限制',
+        }),
+      ]),
+    });
+  });
+
   it('goals 缺失時正規化為空陣列且不產生錯誤', async () => {
     const markdown = [
       '[CHAPTER]',
