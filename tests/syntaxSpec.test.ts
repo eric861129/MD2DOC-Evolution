@@ -9,6 +9,21 @@ import {
 } from '../services/syntaxSpec';
 
 describe('syntaxSpec', () => {
+  type CoverageContract = {
+    slashCommand: boolean;
+    quickAction: boolean;
+    aiPrompt: boolean;
+    quickExample: boolean;
+    completeExample: boolean;
+    readme: boolean;
+    userGuide: boolean;
+  };
+
+  type FeatureContract = (typeof SYNTAX_FEATURES)[number] & {
+    status?: 'supported' | 'experimental' | 'legacy';
+    coverage?: CoverageContract;
+  };
+
   it('keeps command ids and quick actions backed by syntax features', () => {
     const featureIds = new Set(SYNTAX_FEATURES.map((feature) => feature.id));
     const commandIds = SYNTAX_COMMANDS.map((command) => command.id);
@@ -16,6 +31,49 @@ describe('syntaxSpec', () => {
     expect(new Set(commandIds).size).toBe(commandIds.length);
     expect(SYNTAX_COMMANDS.every((command) => featureIds.has(command.featureId))).toBe(true);
     expect(QUICK_ACTION_IDS.every((id) => commandIds.includes(id))).toBe(true);
+  });
+
+  it('以單一規格宣告支援狀態與各使用介面的覆蓋範圍', () => {
+    const features = SYNTAX_FEATURES as FeatureContract[];
+
+    expect(features.every(({ status }) => status !== undefined)).toBe(true);
+    expect(features.every(({ coverage }) => coverage !== undefined)).toBe(true);
+    expect(features.map(({ id }) => id)).toContain('task-list');
+
+    for (const feature of features) {
+      const commands = SYNTAX_COMMANDS.filter(({ featureId }) => featureId === feature.id);
+
+      expect(feature.coverage?.slashCommand, feature.id).toBe(commands.length > 0);
+      expect(feature.coverage?.quickAction, feature.id)
+        .toBe(commands.some(({ quickAction }) => quickAction));
+
+      if (feature.status === 'supported') {
+        expect(feature.coverage, feature.id).toMatchObject({
+          completeExample: true,
+          readme: true,
+          userGuide: true,
+        });
+      }
+    }
+  });
+
+  it('所有公開語法範例使用真正換行，不輸出字面上的反斜線 n', () => {
+    for (const feature of SYNTAX_FEATURES) {
+      expect(feature.syntax, feature.id).not.toContain('\\n');
+      expect(feature.example, feature.id).not.toContain('\\n');
+    }
+  });
+
+  it('區分一般超連結、獨立 QR 與 Publisher 目錄契約', () => {
+    const linkFeature = SYNTAX_FEATURES.find(({ id }) => id === 'link');
+    const qrFeature = SYNTAX_FEATURES.find(({ id }) => id === 'qr');
+    const tocFeature = SYNTAX_FEATURES.find(({ id }) => id === 'toc');
+
+    expect(linkFeature?.description).toContain('hyperlink');
+    expect(linkFeature?.description).not.toContain('QR');
+    expect(qrFeature?.description).toContain('獨占一行');
+    expect(tocFeature?.description).toContain('Publisher Profile');
+    expect(tocFeature?.description).toContain('legacy');
   });
 
   it('builds a repo-aware prompt from the core syntax contract', () => {
