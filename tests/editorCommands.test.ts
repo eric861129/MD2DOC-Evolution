@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   EDITOR_COMMANDS,
   QUICK_ACTION_IDS,
+  getQuickActionGroups,
   getQuickActions,
 } from '../components/editor/editorCommands';
 
@@ -33,6 +34,30 @@ describe('editorCommands', () => {
     expect(byId['frontmatter'].insertText).toContain('title: 書稿標題');
     expect(byId['chat-left'].insertText).toContain('User "::');
     expect(byId['chapter'].insertText).toContain('[CHAPTER]');
+  });
+
+  it('群組化完整快捷工具，補齊清單、圖片、QR 與置中對話', () => {
+    const quickActionIds = getQuickActions().map(({ id }) => id);
+    const groups = getQuickActionGroups();
+
+    expect(quickActionIds).toEqual(expect.arrayContaining([
+      'bullet-list',
+      'numbered-list',
+      'todo-list',
+      'image',
+      'qr',
+      'chat-center',
+    ]));
+    expect(groups.map(({ id }) => id)).toEqual(expect.arrayContaining([
+      'Basic',
+      'List',
+      'Callout',
+      'Technical',
+      'Chat',
+      'Media',
+      'Metadata',
+    ]));
+    expect(groups.every(({ actions }) => actions.length > 0)).toBe(true);
   });
 
   it('does not contain replacement or private-use mojibake markers', () => {

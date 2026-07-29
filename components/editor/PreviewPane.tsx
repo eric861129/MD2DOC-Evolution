@@ -112,10 +112,16 @@ const createPreviewPageStyle = (
 };
 
 const renderList = (items: ParsedBlock[], type: BlockType, isPublisher: boolean) => {
-  const ListTag = type === BlockType.BULLET_LIST ? 'ul' : 'ol';
+  const isTaskList = type === BlockType.TASK_LIST;
+  const ListTag = type === BlockType.NUMBERED_LIST ? 'ol' : 'ul';
 
   return (
-    <ListTag className={`mb-8 ml-8 ${type === BlockType.NUMBERED_LIST ? 'list-decimal' : ''}`}>
+    <ListTag
+      className={`mb-8 ml-8 ${
+        type === BlockType.NUMBERED_LIST ? 'list-decimal' : 'list-none'
+      }`}
+      data-list-type={isTaskList ? 'task' : type === BlockType.BULLET_LIST ? 'bullet' : 'numbered'}
+    >
       {items.map((item, index) => (
         <li
           key={`${item.content}-${index}`}
@@ -124,11 +130,21 @@ const renderList = (items: ParsedBlock[], type: BlockType, isPublisher: boolean)
             marginLeft: `${(item.nestingLevel || 0) * 1.5}rem`,
           }}
           className={
-            type === BlockType.BULLET_LIST
+            isTaskList
+              ? 'mb-2 flex list-none items-start gap-2 leading-8 text-slate-800'
+              : type === BlockType.BULLET_LIST
               ? "relative mb-2 list-none pl-4 leading-8 text-slate-800 before:absolute before:left-0 before:top-[0.72em] before:h-2 before:w-2 before:rounded-full before:bg-slate-400"
               : 'mb-2 pl-2 leading-8 text-slate-800'
           }
         >
+          {isTaskList && (
+            <span
+              aria-label={item.metadata?.checked === true ? '已完成' : '未完成'}
+              className="mt-0.5 shrink-0 font-sans text-base"
+            >
+              {item.metadata?.checked === true ? '☒' : '☐'}
+            </span>
+          )}
           <RenderRichText text={item.content} />
         </li>
       ))}
@@ -158,7 +174,11 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
     while (index < parsedBlocks.length) {
       const block = parsedBlocks[index];
 
-      if (block.type === BlockType.BULLET_LIST || block.type === BlockType.NUMBERED_LIST) {
+      if (
+        block.type === BlockType.BULLET_LIST
+        || block.type === BlockType.NUMBERED_LIST
+        || block.type === BlockType.TASK_LIST
+      ) {
         const listType = block.type;
         const listItems: ParsedBlock[] = [];
         while (index < parsedBlocks.length && parsedBlocks[index].type === listType) {

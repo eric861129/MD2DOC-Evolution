@@ -5,10 +5,12 @@
  */
 
 import React from 'react';
-import { FileDown, Keyboard, Upload } from 'lucide-react';
+import { FileDown, FileUp, Keyboard, Upload } from 'lucide-react';
 import { UI_THEME } from '../../constants/theme';
 import { useEditor } from '../../contexts/EditorContext';
 import { useSlashCommand } from '../../hooks/editor/useSlashCommand';
+import { createEditorInsertion } from '../../utils/editor/insertTemplate';
+import { InsertMenu } from './InsertMenu';
 import { SlashCommandMenu } from './slash-command/SlashCommandMenu';
 
 interface EditorPaneProps {
@@ -28,6 +30,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
 }) => {
   const { registerImage, t } = useEditor();
   const [editorScrollTop, setEditorScrollTop] = React.useState(0);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const lineNumbers = React.useMemo(
     () => Array.from({ length: Math.max(content.split(/\r\n|\r|\n/).length, 1) }, (_, index) => index + 1),
     [content]
@@ -74,9 +77,23 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
     onScroll();
   };
 
-  const handleDrop = async (e: React.DragEvent<HTMLTextAreaElement>) => {
-    e.preventDefault();
-    const files = Array.from(e.dataTransfer.files) as File[];
+  const insertTemplate = React.useCallback((template: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const insertion = createEditorInsertion(content, template, start, end);
+    setContent(insertion.content);
+
+    window.setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = insertion.selectionStart;
+      textarea.selectionEnd = insertion.selectionEnd;
+    }, 0);
+  }, [content, setContent, textareaRef]);
+
+  const importFiles = async (files: File[]) => {
     const mdFile = files.find((file) =>
       file.name.toLowerCase().endsWith('.md') ||
       file.type === 'text/markdown' ||
@@ -84,6 +101,9 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
     );
 
     if (mdFile) {
+      if (content.trim() && !confirm(t('imports.replaceConfirm'))) {
+        return;
+      }
       const text = await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
@@ -96,9 +116,9 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
     const imageFiles = files.filter((file) => file.type.startsWith('image/'));
     if (imageFiles.length === 0) return;
 
-    const target = e.target as HTMLTextAreaElement;
-    const start = target.selectionStart;
-    const end = target.selectionEnd;
+    const target = textareaRef.current;
+    const start = target?.selectionStart ?? content.length;
+    const end = target?.selectionEnd ?? content.length;
     let insertedText = '';
 
     for (const file of imageFiles) {
@@ -110,10 +130,27 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
 
       const imageId = `img_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
       registerImage(imageId, base64);
-      insertedText += `\n![${file.name}](${imageId})\n`;
+      insertedText += `![${file.name}](${imageId})\n`;
     }
 
-    setContent(content.substring(0, start) + insertedText + content.substring(end));
+    const insertion = createEditorInsertion(content, insertedText, start, end);
+    setContent(insertion.content);
+    window.setTimeout(() => {
+      if (!target) return;
+      target.focus();
+      target.selectionStart = insertion.selectionStart;
+      target.selectionEnd = insertion.selectionEnd;
+    }, 0);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    await importFiles(Array.from(e.dataTransfer.files) as File[]);
+  };
+
+  const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await importFiles(Array.from(e.target.files ?? []));
+    e.target.value = '';
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLTextAreaElement>) => {
@@ -123,12 +160,32 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
 
   return (
     <section className="workspace-panel relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-md">
-      <div className="flex items-center justify-between border-b border-slate-200/70 bg-white/60 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/30">
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200/70 bg-white/60 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/30">
         <div>
           <p className="text-sm font-bold text-slate-950 dark:text-white">{t('workspace.editor')}</p>
           <p className="text-xs text-slate-500 dark:text-slate-400">{t('workspace.source')}</p>
         </div>
-        <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <InsertMenu
+            label={t('workspace.insert')}
+            onInsert={insertTemplate}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 transition-colors hover:border-product-primary hover:text-product-primary dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+          >
+            <FileUp className="h-3.5 w-3.5" />
+            {t('workspace.import')}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".md,text/markdown,text/x-markdown,image/*"
+            multiple
+            onChange={handleFileInput}
+            className="sr-only"
+          />
           <span className="hidden items-center gap-1.5 md:flex">
             <Keyboard className="h-3.5 w-3.5" />
             Slash command
@@ -198,7 +255,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
         <span>Tab inserts two spaces</span>
         <span className="flex items-center gap-1.5">
           <FileDown className="h-3.5 w-3.5" />
-          Drag .md or images into the editor
+          {t('workspace.importHelp')}
         </span>
       </div>
     </section>

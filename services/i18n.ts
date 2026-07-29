@@ -26,6 +26,9 @@ export const resources = {
         selectorPlaceholder: '載入範例',
         replaceConfirm: '載入範例會取代目前草稿，確定要繼續嗎？',
       },
+      imports: {
+        replaceConfirm: '匯入 Markdown 會取代目前草稿，確定要繼續嗎？',
+      },
       theme: {
         light: '切換為淺色模式',
         dark: '切換為深色模式'
@@ -83,6 +86,9 @@ export const resources = {
         editor: '稿件編輯',
         preview: '列印預覽',
         source: 'Markdown 草稿',
+        insert: '插入',
+        import: '匯入',
+        importHelp: '點選或拖入 .md 與圖片',
         blocks: '區塊',
         words: '字數',
         frontmatterReady: 'Frontmatter 已設定',
@@ -121,6 +127,9 @@ export const resources = {
         selectorLabel: 'Example manuscript',
         selectorPlaceholder: 'Load example',
         replaceConfirm: 'Loading an example replaces the current draft. Continue?',
+      },
+      imports: {
+        replaceConfirm: 'Importing Markdown replaces the current draft. Continue?',
       },
       theme: {
         light: 'Switch to light mode',
@@ -179,6 +188,9 @@ export const resources = {
         editor: 'Manuscript editor',
         preview: 'Print preview',
         source: 'Markdown draft',
+        insert: 'Insert',
+        import: 'Import',
+        importHelp: 'Click or drop .md files and images',
         blocks: 'Blocks',
         words: 'Words',
         frontmatterReady: 'Frontmatter ready',

@@ -4,7 +4,7 @@
  * Licensed under the MIT License.
  */
 
-import { Paragraph } from "docx";
+import { Paragraph, TextRun } from "docx";
 import { BlockType, ParsedBlock } from "../../types";
 import { docxRegistry } from "../registry";
 import { DocxConfig } from "../types";
@@ -156,6 +156,25 @@ export const registerDefaultHandlers = () => {
         level: block.nestingLevel || 0,
         instance: block.metadata?.listInstance ?? 0,
       },
+      ...(config.profile.id === 'technical-legacy'
+        ? {}
+        : {
+            spacing: {
+              after: 80,
+              line: config.profile.paragraph.normal.lineTwips,
+            },
+          }),
+    })
+  );
+  docxRegistry.register(BlockType.TASK_LIST, async (block, config) =>
+    new Paragraph({
+      style: DOCUMENT_STYLE_IDS.normal,
+      children: [
+        new TextRun({
+          text: block.metadata?.checked === true ? '☒ ' : '☐ ',
+        }),
+        ...await parseInlineStyles(block.content, config),
+      ],
       ...(config.profile.id === 'technical-legacy'
         ? {}
         : {

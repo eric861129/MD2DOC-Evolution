@@ -1145,6 +1145,7 @@ const parseMarkdownFragment = (
               item.raw ?? '',
               ordered,
             );
+            const isTaskListItem = !ordered && item.task === true;
             let parentContent = '';
             let isParentEmitted = false;
             const emitParent = (): void => {
@@ -1155,12 +1156,15 @@ const parseMarkdownFragment = (
                 .trim()
                 .replace(/^\[[ x]\]\s*/, '');
               addBlock({
-                type: ordered
-                  ? BlockType.NUMBERED_LIST
-                  : BlockType.BULLET_LIST,
+                type: isTaskListItem
+                  ? BlockType.TASK_LIST
+                  : ordered
+                    ? BlockType.NUMBERED_LIST
+                    : BlockType.BULLET_LIST,
                 content: cleanTextForPublishing(cleanText),
                 nestingLevel: level,
                 metadata: {
+                  ...(isTaskListItem ? { checked: item.checked === true } : {}),
                   ...(ordered ? { listInstance: orderedInstance } : {}),
                   ...(manualTocEntry ? { manualTocEntry } : {}),
                 },
