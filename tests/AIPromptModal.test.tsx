@@ -14,24 +14,35 @@ describe('AIPromptModal', () => {
     });
   });
 
-  it('renders the repo-aware AI prompt contract', () => {
+  it('顯示兩種 AI 提示模式與 Profile 邊界', () => {
     render(<AIPromptModal isOpen onClose={vi.fn()} />);
 
-    expect(screen.getByRole('dialog', { name: 'AI 轉稿提示' })).toBeInTheDocument();
-    expect(screen.getByText(/https:\/\/github\.com\/eric861129\/MD2DOC-Evolution/)).toBeInTheDocument();
-    expect(screen.getByText(/Non-negotiable Output Contract/)).toBeInTheDocument();
-    expect(screen.getByText(/只輸出「轉換後的 Markdown 原稿」/)).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'AI 轉稿提示 v2' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /轉換既有稿件/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /建立新稿初稿/ })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByTestId('ai-prompt-preview')).toHaveTextContent(
+      'https://github.com/eric861129/MD2DOC-Evolution',
+    );
+    expect(screen.getByTestId('ai-prompt-preview')).toHaveTextContent('Profile and Pagination Boundary');
   });
 
-  it('copies the full prompt to the clipboard', async () => {
+  it('可分別複製既有稿件轉換與新稿初稿提示詞', async () => {
     render(<AIPromptModal isOpen onClose={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /複製/ }));
+    fireEvent.click(screen.getByRole('button', { name: '複製轉換既有稿件提示詞' }));
 
     await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalledTimes(1));
-    const copied = vi.mocked(navigator.clipboard.writeText).mock.calls[0][0];
-    expect(copied).toContain('https://github.com/eric861129/MD2DOC-Evolution');
-    expect(copied).toContain('Silent Quality Check Before Answering');
+    expect(vi.mocked(navigator.clipboard.writeText).mock.calls[0][0])
+      .toContain('## Source Manuscript');
     expect(await screen.findByText('已複製')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /建立新稿初稿/ }));
+    expect(screen.getByTestId('ai-prompt-preview')).toHaveTextContent('## Book Brief');
+
+    fireEvent.click(screen.getByRole('button', { name: '複製建立新稿初稿提示詞' }));
+
+    await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalledTimes(2));
+    expect(vi.mocked(navigator.clipboard.writeText).mock.calls[1][0])
+      .toContain('## Book Brief');
   });
 });

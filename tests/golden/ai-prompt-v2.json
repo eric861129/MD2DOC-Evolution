@@ -1,0 +1,25 @@
+{
+  "commonSectionOrder": [
+    "## Role",
+    "## Mode",
+    "## Reference Repository",
+    "## Non-negotiable Output Contract",
+    "## Required Document Order",
+    "## Profile and Pagination Boundary",
+    "## MD2DOC-Evolution Syntax Rules",
+    "## Content Restructuring Rules",
+    "## Silent Quality Check Before Answering"
+  ],
+  "modes": {
+    "transform": {
+      "label": "轉換既有稿件",
+      "inputHeading": "## Source Manuscript",
+      "criticalContract": "保留原意、事實、程式碼與引用來源"
+    },
+    "draft": {
+      "label": "建立新稿初稿",
+      "inputHeading": "## Book Brief",
+      "criticalContract": "未提供的事實必須標示「待補」"
+    }
+  }
+}
