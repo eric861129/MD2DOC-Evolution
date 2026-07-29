@@ -11,8 +11,8 @@
 ### 初次安裝
 ```bash
 # Clone 專案
-git clone MD2DOC-Evolution.git
-cd BookPublisher_MD2Doc
+git clone https://github.com/eric861129/MD2DOC-Evolution.git
+cd MD2DOC-Evolution
 
 # 安裝依賴
 npm install
@@ -26,7 +26,7 @@ npm install
 
 | 指令 | 說明 |
 | :--- | :--- |
-| `npm run dev` | 啟動開發伺服器 (Vite)，預設 port 為 5173。支援 HMR (熱重載)。 |
+| `npm run dev` | 啟動 Vite，網址為 `http://localhost:3000/MD2DOC-Evolution/`，支援 HMR。 |
 | `npm run build` | 建置生產環境版本，產物位於 `dist/` 目錄。 |
 | `npm run preview` | 在本地預覽 `dist/` 中的建置結果。 |
 | `npm run test` | 執行單元測試 (Vitest)。 |
@@ -42,7 +42,7 @@ npm install
 
 ### 1. Markdown 解析除錯
 若發現轉檔結果不如預期，可以先檢查 Parser 的輸出。
-在 `services/docxGenerator.ts` 中，可以加入 `console.log(blocks)` 來查看解析後的 AST 結構，確認是否在解析階段就發生錯誤。
+優先用 `tests/markdownParser.publisher.test.ts` 建立最小重現，直接檢查 `parseMarkdown()` 產生的 `ParsedBlock[]`，確認錯誤位於 Parser、Preview 或 DOCX Builder。臨時除錯輸出不可留在提交中。
 
 ### 2. Word 樣式除錯
 Word 的樣式除錯較為困難。建議使用 `constants/theme.ts` 中的顏色變數進行視覺化除錯。例如，暫時將某個邊框設為紅色，以確認該樣式是否正確套用到目標元素上。
@@ -61,11 +61,15 @@ Mermaid 渲染失敗通常是因為語法錯誤或 SVG 轉換問題。
 ### 測試檔案位置
 所有測試位於 `tests/` 目錄下：
 - `tests/markdownParser.test.ts`: 測試解析邏輯。
-- `tests/docxGenerator.test.ts`: 測試 Word 生成邏輯 (Snapshot Testing)。
+- `tests/docxGenerator.test.ts`: 測試 Word 生成入口。
+- `tests/docx/`: 驗證版面、樣式、表格、元件與 OOXML package。
+- `tests/exampleCoverage.test.ts`: 驗證中英文範例與語法矩陣。
+- `tests/aiPrompt.golden.test.ts`: 驗證 AI Prompt v2 契約。
+- `tests/userGuide.test.ts`: 驗證教學安全 AST、搜尋與內容。
 
 ### 執行特定測試
 ```bash
-npx vitest tests/markdownParser.test.ts
+npm run test:run -- tests/markdownParser.test.ts
 ```
 
 ### Publisher DOCX 視覺回歸

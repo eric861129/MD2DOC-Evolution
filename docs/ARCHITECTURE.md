@@ -7,7 +7,7 @@
 ### 技術棧 (Tech Stack)
 - **核心框架**: React 19, TypeScript
 - **建置工具**: Vite 6
-- **Markdown 解析**: regex-based (舊版) / AST-based (新版, migrating to `marked`)
+- **Markdown 解析**: `marked` token stream → 專案 `ParsedBlock` AST
 - **Word 生成**: `docx` library
 - **圖表渲染**: `mermaid`
 - **樣式管理**: Tailwind CSS + 集中式 Word Theme/Profile tokens
@@ -20,7 +20,9 @@
 /
 ├── components/          # React UI 元件
 │   ├── editor/          # 編輯器核心元件 (輸入區、預覽區、Mermaid 渲染)
+│   ├── GuideCenter.tsx  # 安全 Markdown AST 教學中心
 │   └── ui/              # 通用 UI 元件 (按鈕、下拉選單)
+├── content/examples/    # 中英文快速／完整範例的單一來源
 ├── constants/           # 全域常數設定
 │   └── theme.ts         # Word 樣式定義 (字體、顏色、間距)
 ├── contexts/            # React Context (EditorContext)
@@ -34,8 +36,10 @@
 │   │   ├── quality.ts   # DOCX package inspection
 │   │   └── registry.ts  # Builder 註冊表
 │   ├── parser/          # Markdown 解析器 (AST)
+│   ├── syntaxSpec.ts    # 語法狀態與跨介面覆蓋矩陣
+│   ├── userGuide.ts     # 教學 Markdown 的安全 AST
 │   ├── docxGenerator.ts # Word 生成入口
-│   └── markdownParser.ts# 舊版 Regex 解析器 (維護中)
+│   └── markdownParser.ts# Frontmatter 擷取與 AST Parser 入口
 ├── scripts/qa/          # 公開 fixture、LibreOffice render 與視覺比較
 ├── tests/visual/        # 固定環境審查後的 PNG baseline
 ├── utils/               # 工具函式
@@ -48,12 +52,11 @@
 
 ### 1. Markdown 解析流程 (Parsing)
 
-目前系統處於從 Regex 解析過渡到 AST (Abstract Syntax Tree) 解析的階段。
-
 - **輸入**: 使用者在編輯器輸入的 Markdown 字串。
 - **處理**: 
-    1. `services/markdownParser.ts` (Legacy): 使用正則表達式逐行掃描，識別標題、列表、程式碼區塊。優點是容錯率高，缺點是難以處理複雜巢狀結構。
-    2. `services/parser/ast.ts` (Modern): 基於 `marked` 庫將 Markdown 轉換為 Token Stream，再轉換為專案內部的 `ParsedBlock` 結構。
+    1. `services/markdownParser.ts` 擷取 YAML Frontmatter 與來源 offset。
+    2. `services/parser/ast.ts` 以 `marked` 產生 Token Stream，再轉換為專案內部 `ParsedBlock`。
+    3. 章首頁、對話、QR、Callout 與待辦清單等出版語法在 AST 層轉成明確 Block type。
 - **輸出**: `ParsedBlock[]` 陣列，每個 Block 代表一個文檔節點（如段落、表格、圖片）。
 
 ### 2. Word 文件生成流程 (Generation)
@@ -99,9 +102,11 @@ Mermaid 圖表的轉換是本專案的技術難點之一，因為 Word 不支援
 1. **Parser 層**: 在 `services/parser/ast.ts` 中擴充 Token 解析邏輯，識別新語法並生成對應的 `ParsedBlock`。
 2. **Builder 層**: 在 `services/docx/builders/` 下建立新的 Builder (如 `MathBuilder.ts`)，實作轉換為 Word 物件的邏輯。
 3. **註冊**: 在 `services/docx/builders/index.ts` 中註冊新的 Builder。
+4. **公開契約**: 在 `services/syntaxSpec.ts` 宣告支援狀態與 Slash command、快捷操作、AI、範例、README、User Guide 覆蓋。
+5. **跨層驗證**: 新增 Parser、Preview、DOCX 與 coverage tests，並補中英文完整功能稿。
 
 ### 修改樣式
-Word 輸出基礎 token 集中於 `constants/theme.ts`，Profile 映射位於 `services/docx/profiles/`。版面幾何屬於 `services/docx/layout/`，不要在 Builder 內加入新的紙張或邊界魔術數字。
+`constants/theme.ts` 只保留 legacy 相容 token；現行文件 Profile 位於 `services/docx/profiles/`。版面幾何屬於 `services/docx/layout/`，不要在 Builder 內加入新的紙張或邊界魔術數字。完整擴充流程請見 [CUSTOMIZATION.md](CUSTOMIZATION.md)。
 
 ---
 
@@ -114,5 +119,6 @@ Word 輸出基礎 token 集中於 `constants/theme.ts`，Profile 映射位於 `s
 - **視覺回歸**: 公開 fixture 在固定 LibreOffice／Poppler／字型環境渲染成 PNG，再以唯讀 baseline 比較。
 
 ```bash
-npm run test
+npm run verify
+npm run qa:fixture
 ```

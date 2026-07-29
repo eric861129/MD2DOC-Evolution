@@ -147,4 +147,45 @@ describe('public repository content', () => {
     expect(prompt).toContain('[QR:標籤](URL)');
     expect(prompt).toContain('一般 Markdown 連結保持 hyperlink');
   });
+
+  it('公開文件對齊 v1.5.0 範例、教學、隱私與能力邊界', () => {
+    const zh = readUtf8('README.md');
+    const en = readUtf8('README_EN.md');
+    const overview = readUtf8('docs/PROJECT_OVERVIEW.md');
+    const guide = readUtf8('docs/USER_GUIDE.md');
+    const customization = readUtf8('docs/CUSTOMIZATION.md');
+
+    for (const content of [zh, en]) {
+      expect(content).toContain('content/examples/complete.zh.md');
+      expect(content).toContain('docs/USER_GUIDE.md');
+      expect(content).toMatch(/隱私|Privacy/);
+      expect(content).toMatch(/能力邊界|Boundaries/);
+      expect(content).toMatch(/連續預覽|continuous preview/i);
+    }
+    expect(overview).toContain('只有真正清單才有黑點');
+    expect(overview).not.toContain('連結自動轉二維碼');
+    expect(overview).not.toContain('`User:`、`AI:`');
+    expect(guide).toContain('Word 後製與換頁專章');
+    expect(customization).toContain('不能只完成 Parser');
+  });
+
+  it('AI Guide v2 明確允許底線例外並禁止其他 HTML', () => {
+    const guide = readUtf8('docs/AI_GENERATION_GUIDE.md');
+
+    expect(guide).toContain('AI Generation Guide v2');
+    expect(guide).toContain('`<u>` 是唯一正式支援');
+    expect(guide).toContain('不要輸出 `<br>`');
+    expect(guide).not.toContain('使用 HTML 標籤（如 `<u>`');
+    expect(guide).toContain('沒有字面上的反斜線加 n');
+  });
+
+  it('歷史計畫有明確標示，不會被誤認為現行規格', () => {
+    const historicalPlan = readUtf8(
+      'docs/superpowers/plans/2026-07-28-publisher-docx-layout-and-quality.md',
+    );
+
+    expect(historicalPlan).toContain('歷史文件（已執行計畫）');
+    expect(historicalPlan).toContain('不代表 v1.5.0 現行功能');
+    expect(historicalPlan).toContain('docs/USER_GUIDE.md');
+  });
 });

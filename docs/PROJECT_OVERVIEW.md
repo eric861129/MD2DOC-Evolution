@@ -1,75 +1,110 @@
-# 專案概觀 (Project Overview)
+# MD2DOC-Evolution 專案概觀
 
-## 📖 什麼是 MD2DOC-Evolution？
+## 產品定位
 
-**MD2DOC-Evolution** 是一個專為**技術書籍作者**、**工程師**與**專業內容創作者**打造的「Markdown 轉 Word (DOCX)」工具。
+MD2DOC-Evolution 是面向技術書作者、工程師與內容團隊的 Markdown → Word DOCX 出版工作台。它的目標不是取代 Word 排版軟體，而是把「可版本控制的內容來源」穩定轉成「可由編輯繼續修訂的出版級 Word 書稿」。
 
-它的核心目標只有一個：**讓作者用最習慣的 Markdown 語法寫作，然後一鍵產出符合出版社專業排版要求的 Word 稿件。**
+核心價值：
 
-在傳統的出版流程中，技術作者常面臨以下痛點：
-1.  **寫作工具斷層**：工程師習慣用 VS Code + Markdown 寫作，但出版社編輯通常要求提供 Word 檔以便修訂與排版。
-2.  **排版耗時**：從 Markdown 複製貼上到 Word 後，程式碼區塊的樣式、圖片大小、標題層級往往全亂，需要花大量時間手工調整。
-3.  **缺乏技術元素支援**：一般的轉換工具（如 Pandoc）對「程式碼行號」、「Mermaid 圖表」、「對話框」等技術書常見元素支援較差。
+1. 作者用 Markdown 專注內容與結構。
+2. Profile 集中管理紙張、邊界、裝訂與樣式。
+3. Parser、Preview、DOCX 與文件使用同一份語法契約。
+4. 匯出後保留 Word 的可編輯性、目錄欄位與出版社後製空間。
+5. 透過 OOXML 自動測試與 Word 人工驗收，降低格式回歸。
 
-**MD2DOC-Evolution** 正是為了解決這些問題而生。它不是一個通用的格式轉換器，而是一個針對「出版」場景深度客製化的生產力工具。
+## 解決的問題
 
----
+- 工程師使用 Markdown，出版社通常以 Word 進行審稿與修訂。
+- 程式碼、Mermaid、Callout、表格、QR 與角色對話很難靠複製貼上維持一致。
+- 紙張、邊界、裝訂與字型不同時，單純的 HTML 預覽無法代表 Word 分頁。
+- Word 的清單屬性若誤套在一般段落，開啟格式標記時可能看見無效黑點或黑方塊。
+- 範例、AI prompt、網站按鈕與 GitHub 文件若分開維護，語法很容易漂移。
 
-## 🎯 核心設計哲學
+## 現行工作流
 
-### 1. 寫作與排版分離 (Content over Format)
-作者應該專注於內容創作，而不是字體大小或行距。本工具透過預設的專業主題（Theme），自動處理所有視覺樣式。
+```text
+Markdown / images
+  → AST Parser
+  → ParsedBlock
+  → continuous Preview
+  → Layout + Profile
+  → DOCX builders
+  → OOXML post-process
+  → package inspection
+  → editable Word manuscript
+  → human pagination pass
+```
 
-### 2. 工程師友善 (Developer Friendly)
-支援所有工程師喜愛的元素：
-- **Mermaid 圖表**：直接寫 code 畫流程圖，轉檔自動變圖片。
-- **程式碼區塊**：不僅有語法高亮，還能自動加行號、語言標籤。
-- **QR Code**：連結自動轉二維碼，適應紙本閱讀體驗。
+## 主要能力
 
-### 3. 所見即所得 (WYSIWYG)
-雖然底層是 Markdown，但我們提供了一個「雙欄預覽」介面。左邊寫作，右邊即時渲染出接近 Word 輸出效果的預覽，確保落版效果符合預期。
+### 出版版型
 
----
+- 17.6 × 23.6 cm 技術書、A4、A5、B5 與自訂尺寸。
+- 1.27、1.50、2.00、2.54 cm 常用邊界。
+- 出版社精確邊界：上下 2.10、左右 2.30 cm。
+- 鏡像內外側邊界與 gutter。
+- `technical-legacy`、`publisher-exact`、`publisher-narrow`、`publisher-binding` 四種 Profile。
 
-## 🛠️ 詳細功能解讀
+### 出版內容
 
-### 1. 專業級排版引擎
-- **中英文字體最佳化**：自動將中文字設定為「微軟正黑體 (Microsoft JhengHei)」，英數字與程式碼設定為「Consolas」，符合技術書籍標準。
-- **版面尺寸**：支援標準 A4、A5、B5 以及技術書使用的 17.6 × 23.6 cm 規格。
-- **自動目錄 (TOC)**：支援 Word 原生目錄功能，頁碼自動更新。
+- Frontmatter、Word TOC field、章首頁與 H1～H3。
+- 無序、編號、待辦清單、引用與水平分隔線。
+- 程式碼行號、語言標籤、Mermaid、表格、圖片與明確 QR。
+- NOTE、TIP、WARNING、IMPORTANT、CAUTION。
+- 左側、右側、置中角色對話；角色名稱與內容在 Word 中分行。
+- 一般連結保持 hyperlink，只有 `[QR:標籤](URL)` 產生 QR。
 
-### 2. 增強型程式碼處理
-技術書的核心在於程式碼展示。本工具提供：
-- **自動行號**：可配置開啟/關閉，方便讀者對照程式碼行數。
-- **邊框與底色**：清晰區隔程式碼與正文。
-- **語言標記**：在區塊右上角自動標示 `JavaScript`、`Python` 等語言類型。
+### 作者工作台
 
-### 3. 圖表與視覺化
-- **Mermaid 整合**：原生支援 Mermaid.js。在 Markdown 中撰寫的流程圖、時序圖，在匯出時會由瀏覽器渲染為 SVG 並轉存為高解析度 PNG 嵌入 Word，無需手動截圖。
-- **對話框模式 (Chat Dialogues)**：使用特定語法（如 `User:`、`AI:`）即可生成類似通訊軟體的對話氣泡，非常適合撰寫「AI 對話錄」或「情境模擬」類型的書籍。
+- 連續白底預覽，不在瀏覽器切假頁。
+- 分組桌機工具列與跨裝置「插入」選單。
+- 點選或拖放 Markdown／圖片。
+- 中文與英文快速範例、完整功能稿。
+- AI Prompt v2 兩種使用情境。
+- 站內教學中心、搜尋、章節導覽與範例下載。
 
-### 4. 實體書閱讀優化
-- **QR Code 自動生成**：這是本工具的一大特色。當檢測到連結時，可以選擇自動在旁生成 QR Code。這解決了紙本書讀者無法點擊連結的痛點，拿起手機一掃即可訪問資源。
-- **黑白印刷友善**：雖然支援彩色，但預設樣式在黑白印刷下依然保持高對比度與清晰度。
+### 品質門檻
 
-### 5. 提示與標註 (Callouts)
-支援 GitHub 風格的 Alert 語法：
-- `> [!TIP]`：提示技巧
-- `> [!NOTE]`：補充筆記
-- `> [!WARNING]`：警示訊息
-這些會被轉換為帶有特定邊框與圖示的 Word 文字方塊，增加版面豐富度。
+- 語法覆蓋矩陣檢查 Slash command、快捷操作、AI、範例與文件。
+- Parser、Preview、DOCX component、OOXML package 與大稿效能測試。
+- relationship、media、content type、TOC、bookmark 與版面幾何檢查。
+- 公開星圖工坊 fixture，不使用作者私稿作為公開測試資料。
 
----
+## 設計原則
 
-## 👥 適用對象
+### 單一語法來源
 
-1.  **IT 技術書作者**：需要貼程式碼、畫架構圖，且最終需交付 Word 稿件給編輯。
-2.  **學術論文/報告撰寫者**：需要嚴謹的標題層級與圖表管理。
-3.  **技術部落客**：想將系列文章集結成電子書（PDF/Word）發布。
-4.  **教育訓練講師**：製作包含大量範例代碼的講義。
+`services/syntaxSpec.ts` 宣告每項功能的狀態與覆蓋。編輯器命令、AI prompt、範例測試與文件測試都應從此契約驗證，不自行發明第二套語法。
 
----
+### 內容結構與最終分頁分離
 
-## 🏁 結語
+Markdown 描述章節、段落、清單與媒體。紙張和邊界由 Layout/Profile 決定；最終頁碼、奇偶頁分節與少數換頁點由 Word 後製決定。這條界線能避免 AI 或作者用大量空行推版。
 
-**MD2DOC-Evolution** 試圖在「Markdown 的高效」與「Word 的普及」之間找到最佳平衡點。它讓你能繼續用最喜歡的方式寫作，同時滿足出版業的標準化需求。
+### 只有真正清單才有黑點
+
+無序清單才套 Word bullet numbering。待辦清單輸出 `☐／☒`，對話、標題、一般段落與 Callout 不使用清單屬性。
+
+### 可編輯輸出優先
+
+DOCX 不是 PDF 截圖容器。標題、清單、表格、TOC、超連結與段落盡可能保留為 Word 可編輯結構；Mermaid、QR 與圖片才使用媒體。
+
+## 能力邊界
+
+- 連續 Preview 只能驗證比例與設計語言，不能保證 Word 精確分頁。
+- 不同 Word、字型、印表機與圖片尺寸可能產生不同頁數。
+- Word 原生目錄必須更新欄位後才得到正確頁碼。
+- 複雜索引、交叉引用、腳註、出版社巨集與進階跨頁表格仍需 Word 後製。
+- LibreOffice 適合固定環境回歸，但不能替代出版社以 Word 365 進行最終檢查。
+
+## 隱私模型
+
+本專案沒有書稿上傳 API，主要轉換在瀏覽器本機完成。不過外部圖片 URL、網頁字型、部署平台或使用者自行選擇的 AI 服務，仍可能產生第三方請求。機密、個資或未公開內容在送往 AI 之前必須先移除或依組織政策處理。
+
+## 文件入口
+
+- [完整使用教學](USER_GUIDE.md)
+- [出版社 Profile](PUBLISHER_PROFILE.md)
+- [AI 轉稿規格](AI_GENERATION_GUIDE.md)
+- [客製化指南](CUSTOMIZATION.md)
+- [架構說明](ARCHITECTURE.md)
+- [開發指南](DEVELOPMENT_GUIDE.md)

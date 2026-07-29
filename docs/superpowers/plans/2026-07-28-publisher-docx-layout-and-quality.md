@@ -1,5 +1,10 @@
 # MD2DOC 出版社級 Word 版型與頁面設定 Implementation Plan
 
+> **歷史文件（已執行計畫）：** 本文件保留 2026-07-28 當時的設計、估算與待辦，
+> 不代表 v1.5.0 現行功能或操作方式。現行產品契約請依
+> `services/syntaxSpec.ts`、`docs/USER_GUIDE.md` 與
+> `docs/PUBLISHER_PROFILE.md`；請勿把下方未勾選項目當成目前缺陷清單。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 > **2026-07-29 後續需求：**共用技術書紙張 preset 已由本計畫原始的
