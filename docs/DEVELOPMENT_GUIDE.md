@@ -125,7 +125,7 @@ content type。
 對 `publisher-narrow` 與 `publisher-binding` 的驗收應使用同一份公開
 fixture，並直接檢查 OOXML：
 
-- narrow 的 17 × 23 cm 紙張搭配四邊 1.27 cm，內容寬度必須是 14.46 cm。
+- narrow 的 17.6 × 23.6 cm 紙張搭配四邊 1.27 cm，內容寬度必須是 15.06 cm。
 - binding 的 `w:pgMar` 必須包含上 2.00、下 2.20、內 2.20、外 1.80 cm
   與 0.50 cm gutter，`settings.xml` 必須含有 `w:mirrorMargins`。
 - 鏡像邊界由 Word 在奇偶頁交換內外側；網頁單頁 Preview 不是雙面印刷證據。

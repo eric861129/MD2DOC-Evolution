@@ -142,7 +142,7 @@ describe('ExportSettingsModal', () => {
     expect(resources.zh.translation.layout.openSettings).toBe('版面設定');
     expect(resources.zh.translation.layout.gutter).toBe('裝訂預留');
     expect(resources.zh.translation.layout.printRiskWarning).toBe('邊界小於 1 公分，部分印表機可能無法完整列印。');
-    expect(formatLayoutSummary({ widthCm: 17, heightCm: 23, leftMarginCm: 2 }, t('layout.marginPresets.balanced')))
-      .toBe('17.00×23.00 cm · 平衡 2.00 cm');
+    expect(formatLayoutSummary({ widthCm: 17.6, heightCm: 23.6, leftMarginCm: 2 }, t('layout.marginPresets.balanced')))
+      .toBe('17.60×23.60 cm · 平衡 2.00 cm');
   });
 });

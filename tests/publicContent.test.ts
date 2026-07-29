@@ -55,6 +55,23 @@ describe('public repository content', () => {
     expect(en).toContain('normal Markdown links remain hyperlinks');
   });
 
+  it('publishes the 17.6 × 23.6 cm technical-book preset consistently', () => {
+    const zh = readUtf8('README.md');
+    const en = readUtf8('README_EN.md');
+    const profile = readUtf8('docs/PUBLISHER_PROFILE.md');
+
+    for (const content of [
+      zh,
+      en,
+      profile,
+      INITIAL_CONTENT_ZH,
+      INITIAL_CONTENT_EN,
+    ]) {
+      expect(content).toContain('17.6 × 23.6 cm');
+      expect(content).not.toContain('17 × 23 cm');
+    }
+  });
+
   it('keeps key public strings valid UTF-8 without replacement or private-use characters', () => {
     const files = [
       'README.md',

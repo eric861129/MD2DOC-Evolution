@@ -26,7 +26,7 @@ export const resources = {
         dark: '切換為深色模式'
       },
       sizes: {
-        tech: '技術書稿 (17x23cm)',
+        tech: '技術書稿 (17.6x23.6cm)',
         a4: 'A4 (21x29.7cm)',
         a5: 'A5 (14.8x21cm)',
         b5: 'B5 (17.6x25cm)'
@@ -117,7 +117,7 @@ export const resources = {
         dark: 'Switch to dark mode'
       },
       sizes: {
-        tech: 'Technical book (17x23cm)',
+        tech: 'Technical book (17.6x23.6cm)',
         a4: 'A4 (21x29.7cm)',
         a5: 'A5 (14.8x21cm)',
         b5: 'B5 (17.6x25cm)'

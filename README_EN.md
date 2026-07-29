@@ -14,7 +14,7 @@ Live demo: [https://huangchiyu.com/MD2DOC-Evolution/](https://huangchiyu.com/MD2
 
 ## v1.5.0 Highlights
 
-- Paper and margins: 17 × 23 cm, A4, A5, B5, custom paper, and reusable or custom margin presets.
+- Paper and margins: 17.6 × 23.6 cm, A4, A5, B5, custom paper, and reusable or custom margin presets.
 - Publisher profiles: `publisher-exact`, `publisher-narrow`, and `publisher-binding`, while `technical-legacy` remains the default.
 - Binding layout: mirrored inside/outside margins and gutter support.
 - Publishing syntax: `[CHAPTER]`, explicit `[QR:label](URL)`, plus `IMPORTANT` and `CAUTION` callouts.

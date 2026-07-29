@@ -3,28 +3,30 @@ import { DEFAULT_EXPORT_SETTINGS } from '../../services/docx/layout/presets';
 import { resolvePageLayout } from '../../services/docx/layout/resolve';
 
 describe('resolvePageLayout', () => {
-  it('解析出版社一致版為 17x23 公分與 2.54 公分邊界', () => {
+  it('解析出版社一致版為 17.6x23.6 公分與 2.54 公分邊界', () => {
     const layout = resolvePageLayout({
       ...DEFAULT_EXPORT_SETTINGS,
       profileId: 'publisher-exact',
       marginPresetId: 'publisher-exact',
     });
 
-    expect(layout.page.widthCm).toBe(17);
-    expect(layout.page.heightCm).toBe(23);
+    expect(layout.page.widthCm).toBe(17.6);
+    expect(layout.page.heightCm).toBe(23.6);
+    expect(layout.page.widthTwips).toBe(9978);
+    expect(layout.page.heightTwips).toBe(13380);
     expect(layout.margins.leftCm).toBe(2.54);
     expect(layout.margins.leftTwips).toBe(1440);
-    expect(layout.content.widthCm).toBeCloseTo(11.92, 2);
+    expect(layout.content.widthCm).toBeCloseTo(12.52, 2);
   });
 
-  it('解析窄邊界內容寬度為 14.46 公分', () => {
+  it('解析窄邊界內容寬度為 15.06 公分', () => {
     const layout = resolvePageLayout({
       ...DEFAULT_EXPORT_SETTINGS,
       profileId: 'publisher-narrow',
       marginPresetId: 'narrow',
     });
 
-    expect(layout.content.widthCm).toBeCloseTo(14.46, 2);
+    expect(layout.content.widthCm).toBeCloseTo(15.06, 2);
   });
 
   it('拒絕有效內容寬度小於 8 公分', () => {
@@ -62,8 +64,8 @@ describe('resolvePageLayout', () => {
       outsideCm: 1.8,
       gutterCm: 0.5,
     });
-    expect(layout.content.widthCm).toBeCloseTo(12.5, 2);
-    expect(layout.content.widthTwips).toBe(7088);
+    expect(layout.content.widthCm).toBeCloseTo(13.1, 2);
+    expect(layout.content.widthTwips).toBe(7428);
   });
 
   it('自訂邊界低於 1 公分時回傳列印風險警告', () => {
@@ -166,11 +168,11 @@ describe('resolvePageLayout', () => {
       },
     });
 
+    expect(layout.content.widthCm).toBeCloseTo(13.6, 2);
     expect(layout.content).toMatchObject({
-      widthCm: 13,
-      heightCm: 18.5,
-      widthTwips: 7370,
-      heightTwips: 10488,
+      heightCm: 19.1,
+      widthTwips: 7710,
+      heightTwips: 10829,
     });
   });
 

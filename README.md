@@ -14,7 +14,7 @@ MD2DOC-Evolution 是一個開源的 Markdown 到 Word DOCX 技術書稿工作台
 
 ## v1.5.0 Highlights
 
-- 紙張與邊界：支援 17 × 23 cm、A4、A5、B5、自訂紙張，以及常用／自訂邊界。
+- 紙張與邊界：支援 17.6 × 23.6 cm、A4、A5、B5、自訂紙張，以及常用／自訂邊界。
 - 出版社 Profile：新增 `publisher-exact`、`publisher-narrow`、`publisher-binding`；預設仍為相容既有文件的 `technical-legacy`。
 - 雙面裝訂：支援鏡像邊界、內外側邊界與 gutter。
 - 出版語法：新增 `[CHAPTER]` 章首頁、`[QR:標籤](URL)` 明確 QR，以及 `IMPORTANT`、`CAUTION` Callout。

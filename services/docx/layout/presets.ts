@@ -15,7 +15,7 @@ export const DOCUMENT_PROFILE_PRESETS = [
 ] as const satisfies readonly DocumentProfilePreset[];
 
 export const PAGE_SIZE_PRESETS: readonly PageSizePreset[] = [
-  { id: 'tech', widthCm: 17, heightCm: 23 },
+  { id: 'tech', widthCm: 17.6, heightCm: 23.6 },
   { id: 'a4', widthCm: 21, heightCm: 29.7 },
   { id: 'a5', widthCm: 14.8, heightCm: 21 },
   { id: 'b5', widthCm: 17.6, heightCm: 25 },
@@ -51,7 +51,7 @@ export const MARGIN_PRESETS: readonly MarginPreset[] = [
   },
 ];
 
-/** 保持舊版匯出幾何，避免升級後默默改變既有文件。 */
+/** 預設沿用 technical-legacy 樣式，紙張採目前的技術書 preset。 */
 export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
   profileId: 'technical-legacy',
   pageSizeId: 'tech',

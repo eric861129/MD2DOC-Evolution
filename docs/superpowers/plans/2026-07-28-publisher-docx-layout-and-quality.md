@@ -2,6 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **2026-07-29 後續需求：**共用技術書紙張 preset 已由本計畫原始的
+> 17 × 23 cm 調整為 17.6 × 23.6 cm。下方 17 × 23 cm 數值保留為計畫執行時
+> 的歷史規格；現行產品契約以 `services/docx/layout/presets.ts` 與
+> `docs/PUBLISHER_PROFILE.md` 為準。
+
 **Goal:** 讓 MD2DOC-Evolution 能選擇紙張、邊界與裝訂設定，並產出在字體、段落、表格、程式碼、Callout、對話框、圖片、QR、目錄與章首頁等方面符合出版社參考稿的 DOCX。
 
 **Architecture:** 保留既有 Markdown Parser、Block Registry、React 編輯器與下載流程，在 DOCX 匯出層加入「版面設定解析器」與「文件樣式 Profile」。所有 Builder 只消費已解析的 `DocxConfig`，網站預覽也消費相同的版面與樣式 Token；DOCX 打包後再經 OOXML 後處理與品質檢查，最後用固定環境做渲染回歸。

@@ -48,10 +48,10 @@ const publisherBlocks: ParsedBlock[] = [
 
 const exactLayout: ResolvedPageLayout = {
   page: {
-    widthCm: 17,
-    heightCm: 23,
-    widthTwips: 9638,
-    heightTwips: 13039,
+    widthCm: 17.6,
+    heightCm: 23.6,
+    widthTwips: 9978,
+    heightTwips: 13380,
   },
   margins: {
     mode: 'standard',
@@ -68,10 +68,10 @@ const exactLayout: ResolvedPageLayout = {
     gutterTwips: 0,
   },
   content: {
-    widthCm: 11.92,
-    heightCm: 17.92,
-    widthTwips: 6758,
-    heightTwips: 10159,
+    widthCm: 12.52,
+    heightCm: 18.52,
+    widthTwips: 7098,
+    heightTwips: 10500,
   },
   isCustomizedFromProfile: false,
   warnings: [],
@@ -91,10 +91,10 @@ const narrowLayout: ResolvedPageLayout = {
     leftTwips: 720,
   },
   content: {
-    widthCm: 14.46,
-    heightCm: 20.46,
-    widthTwips: 8198,
-    heightTwips: 11599,
+    widthCm: 15.06,
+    heightCm: 21.06,
+    widthTwips: 8538,
+    heightTwips: 11940,
   },
 };
 
@@ -117,10 +117,10 @@ const bindingLayout: ResolvedPageLayout = {
     gutterTwips: 283,
   },
   content: {
-    widthCm: 12.5,
-    heightCm: 18.8,
-    widthTwips: 7088,
-    heightTwips: 10658,
+    widthCm: 13.1,
+    heightCm: 19.4,
+    widthTwips: 7428,
+    heightTwips: 10999,
   },
 };
 
@@ -310,14 +310,14 @@ describe('PreviewPane 版面同步', () => {
     }));
 
     const page = screen.getByRole('article', { name: '文件頁面預覽' });
-    expect(page).toHaveAttribute('data-page-size', '17x23');
+    expect(page).toHaveAttribute('data-page-size', '17.6x23.6');
     expect(page).toHaveAttribute('data-margin-preset', 'narrow');
     expect(page).toHaveAttribute('data-profile', 'publisher-narrow');
-    expect(page.style.aspectRatio).toBe('17 / 23');
+    expect(page.style.aspectRatio).toBe('17.6 / 23.6');
     expect(page.style.padding).toBe('1.27cm');
-    expect(page.style.getPropertyValue('--page-aspect-ratio')).toBe('17 / 23');
-    expect(page.style.getPropertyValue('--page-width')).toBe('17cm');
-    expect(page.style.getPropertyValue('--page-height')).toBe('23cm');
+    expect(page.style.getPropertyValue('--page-aspect-ratio')).toBe('17.6 / 23.6');
+    expect(page.style.getPropertyValue('--page-width')).toBe('17.6cm');
+    expect(page.style.getPropertyValue('--page-height')).toBe('23.6cm');
     expect(page.style.getPropertyValue('--page-margin-left')).toBe('1.27cm');
     expect(page.style.getPropertyValue('--publisher-body')).toBe('#000000');
     expect(page.style.getPropertyValue('--publisher-heading-1')).toBe('#2E74B5');
@@ -434,8 +434,8 @@ describe('useMarkdownEditor 的版面 Context', () => {
     const { result, unmount } = renderHook(() => useMarkdownEditor());
 
     expect(result.current.resolvedPageLayout.page).toMatchObject({
-      widthCm: 17,
-      heightCm: 23,
+      widthCm: 17.6,
+      heightCm: 23.6,
     });
     expect(result.current.documentProfile.id).toBe('technical-legacy');
 
@@ -470,7 +470,7 @@ describe('useMarkdownEditor 的版面 Context', () => {
     fireEvent.click(screen.getByRole('button', { name: '套用無效設定' }));
     expect(getPage()).toHaveAttribute('data-profile', 'publisher-narrow');
     expect(getPage()).toHaveAttribute('data-margin-preset', 'narrow');
-    expect(getPage()).toHaveAttribute('data-page-size', '17x23');
+    expect(getPage()).toHaveAttribute('data-page-size', '17.6x23.6');
     expect(getPage().style.padding).toBe('1.27cm');
     expect(screen.getByRole('alert')).toHaveTextContent(
       '版面設定無效：自訂紙張尺寸不可為空',
@@ -522,7 +522,7 @@ describe('useMarkdownEditor 的版面 Context', () => {
     const page = screen.getByRole('article', { name: '文件頁面預覽' });
     expect(page).toHaveAttribute('data-profile', 'technical-legacy');
     expect(page).toHaveAttribute('data-margin-preset', 'publisher-exact');
-    expect(page).toHaveAttribute('data-page-size', '17x23');
+    expect(page).toHaveAttribute('data-page-size', '17.6x23.6');
     expect(page.style.padding).toBe('2.54cm');
     expect(screen.getByRole('alert')).toHaveTextContent(
       '版面設定無效：自訂紙張尺寸不可為空；已改用預設版面',

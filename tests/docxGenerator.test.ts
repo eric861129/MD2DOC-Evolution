@@ -71,7 +71,7 @@ describe('docxGenerator', () => {
     const documentXml = await readDocxXml(blob, 'word/document.xml');
     expect(documentXml).toContain('Hello world');
     expect(documentXml).toMatch(
-      /<w:pgSz(?=[^>]*w:w="9638")(?=[^>]*w:h="13039")[^>]*\/>/,
+      /<w:pgSz(?=[^>]*w:w="9978")(?=[^>]*w:h="13380")[^>]*\/>/,
     );
     expect(documentXml).toMatch(
       /<w:pgMar(?=[^>]*w:top="1440")(?=[^>]*w:right="1440")(?=[^>]*w:bottom="1440")(?=[^>]*w:left="1440")(?=[^>]*w:header="708")(?=[^>]*w:footer="708")(?=[^>]*w:gutter="0")[^>]*\/>/,
