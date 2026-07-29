@@ -1,8 +1,8 @@
 ---
 title: "星圖工坊：觀測站建置手冊"
 author: "星圖工坊編輯室"
-subject: "公開 DOCX 視覺回歸測試"
-keywords: "星圖,觀測站,Golden Fixture"
+subject: "MD2DOC-Evolution 完整功能範例"
+keywords: "星圖,觀測站,出版排版,完整範例"
 header: true
 footer: true
 ---
@@ -14,7 +14,7 @@ number: "01"
 part: "第一部：建立觀測站"
 title: "點亮第一張星圖"
 englishTitle: "Lighting the First Star Map"
-summary: "星圖工坊準備了一套虛構的觀測流程，用來確認出版社版型中的章首頁、圖片與學習目標。"
+summary: "星圖工坊準備了一套完全虛構的觀測流程，用來示範章首頁、圖片、學習目標與出版排版。"
 image: "fixture-generated-image"
 goals:
   - "辨識觀測資料的輸入與輸出。"
@@ -23,7 +23,9 @@ goals:
 
 # 星圖工坊觀測指南
 
-這是一段一般文字，包含**重要觀測原則**、`star-map --calibrate` 行內程式碼，以及[公開觀測說明](https://example.com/starmap-workshop/guide)。
+這份 [MD2DOC-Evolution](https://github.com/eric861129/MD2DOC-Evolution) 稿件可搭配 `technical-legacy`、`publisher-exact`、`publisher-narrow` 或 `publisher-binding`。其中出版社精確版型使用上下 2.10、左右 2.30 cm；若要更寬的內容區，可改用窄邊界版型。
+
+這是一段一般文字，包含**重要觀測原則**、*術語斜體*、<u>人工確認底線</u>、`star-map --calibrate` 行內程式碼、[Ctrl] 快捷鍵，以及[公開觀測說明](https://example.com/starmap-workshop/guide)。
 
 ## 準備觀測器材
 
@@ -36,6 +38,13 @@ goals:
 1. 啟動虛構觀測台
 2. 載入星圖工坊測試資料
 3. 匯出公開觀測摘要
+
+- [ ] 待確認出版社換頁
+- [x] 已完成紙張與邊界設定
+
+> 這是一段一般引用，用來保留觀測員的原始備註。
+
+---
 
 > [!NOTE]
 > 筆記：每次觀測都要保留校準時間。
@@ -51,6 +60,8 @@ goals:
 
 > [!CAUTION]
 > 注意：切換鏡頭前要先保存目前的觀測座標。
+
+## 角色對話
 
 觀測員 ":: 我已經找到北方測試星。
 校準助手 ::" 請把亮度記錄為七級。
@@ -82,16 +93,16 @@ goals:
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | S-05 | 正南 | 28° | 三級 | 追蹤中 | 虛構資料 |
 
-## 程式碼與圖片
+## 程式碼、圖片與 QR
 
-```ts showLineNumbers
+```typescript:ln
 type Observation = {
   starId: string;
   brightness: number;
 };
 
 const observation: Observation = {
-  starId: 'S-05',
+  starId: "S-05",
   brightness: 3,
 };
 ```

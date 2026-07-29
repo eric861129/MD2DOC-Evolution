@@ -938,6 +938,25 @@ const parseMarkdownFragment = (
         const qrLines = sourceLines.map(({ content }) =>
           parseStandaloneQrLink(content)
         );
+        const inlineTokens = (token.tokens ?? []).filter(
+          ({ type }: { type: string }) => type !== 'space',
+        );
+
+        if (
+          inlineTokens.length === 1
+          && inlineTokens[0].type === 'image'
+        ) {
+          const imageToken = inlineTokens[0];
+          addBlock({
+            type: BlockType.IMAGE,
+            content: imageToken.href,
+            metadata: {
+              alt: imageToken.text,
+              title: imageToken.title,
+            },
+          });
+          break;
+        }
 
         if (qrLines.some(Boolean)) {
           let fragmentStart = 0;

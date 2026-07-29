@@ -313,7 +313,7 @@ export const SYNTAX_FEATURES: SyntaxFeature[] = [
       slashCommand: true,
       quickAction: false,
       aiPrompt: true,
-      quickExample: false,
+      quickExample: true,
       completeExample: true,
       readme: true,
       userGuide: true,

@@ -4,6 +4,7 @@ import {
   INITIAL_CONTENT_EN,
   INITIAL_CONTENT_ZH,
 } from '../constants/defaultContent';
+import { getExampleManuscript } from '../constants/exampleContent';
 import { buildAIPromptFromSyntaxSpec } from '../services/aiPrompt';
 import { parseMarkdown } from '../services/markdownParser';
 import { BlockType } from '../services/types';
@@ -103,9 +104,9 @@ describe('public repository content', () => {
   });
 
   it.each([
-    ['繁體中文', INITIAL_CONTENT_ZH],
-    ['英文', INITIAL_CONTENT_EN],
-  ])('%s 預設內容示範完整出版社語法而不把一般連結轉成 QR', (
+    ['繁體中文', getExampleManuscript('complete-zh').content],
+    ['英文', getExampleManuscript('complete-en').content],
+  ])('%s 完整功能稿示範完整出版社語法而不把一般連結轉成 QR', (
     _language,
     markdown,
   ) => {

@@ -20,6 +20,7 @@ import { useEditor } from '../../contexts/EditorContext';
 import { Button } from '../ui/Button';
 import { IconButton } from '../ui/IconButton';
 import { AIPromptModal } from '../AIPromptModal';
+import { ExampleSelector } from './ExampleSelector';
 import { ExportSettingsModal } from './ExportSettingsModal';
 
 interface EditorHeaderProps {
@@ -43,6 +44,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
     handleDownload,
     handleExportMarkdown,
     resetToDefault,
+    loadExample,
     language,
     toggleLanguage,
     t,
@@ -145,6 +147,11 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
             </button>
           </div>
 
+          <ExampleSelector
+            label={t('examples.selectorLabel')}
+            placeholder={t('examples.selectorPlaceholder')}
+            onSelect={loadExample}
+          />
           <IconButton onClick={() => setIsAIModalOpen(true)} title={t('aiPrompt')}>
             <Bot className="h-4 w-4" />
           </IconButton>

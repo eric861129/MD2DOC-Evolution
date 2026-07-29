@@ -50,9 +50,9 @@ const argumentValue = (name: string): string | undefined => {
 };
 const FIXTURE_PATH = path.resolve(argumentValue('--fixture') ?? path.join(
   REPOSITORY_ROOT,
-  'tests',
-  'fixtures',
-  'publisher-manuscript.md',
+  'content',
+  'examples',
+  'complete.zh.md',
 ));
 const ARTIFACT_ROOT = path.resolve(
   argumentValue('--artifact-root')
@@ -61,7 +61,6 @@ const ARTIFACT_ROOT = path.resolve(
 const OUTPUT_PATH = path.join(ARTIFACT_ROOT, 'publisher-fixture.docx');
 const GENERATED_IMAGE_KEY = 'fixture-generated-image';
 const MERMAID_IMAGE_KEY = 'fixture-mermaid-image';
-const IMAGE_PATTERN = /^!\[([^\]]*)\]\((\S+)(?:\s+"([^"]*)")?\)$/;
 const PNG_SIGNATURE = Buffer.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
 ]);
@@ -319,25 +318,7 @@ const prepareFixtureBlocks = (
   blocks: ParsedBlock[],
 ): { blocks: ParsedBlock[]; mermaidSource: string } => {
   let mermaidSource = '';
-  let chapterNeedsContentPage = false;
   const preparedBlocks = blocks.map((block): ParsedBlock => {
-    if (block.type === BlockType.CHAPTER_OPENER) {
-      chapterNeedsContentPage = true;
-      return block;
-    }
-    if (
-      chapterNeedsContentPage
-      && block.type === BlockType.HEADING_1
-    ) {
-      chapterNeedsContentPage = false;
-      return {
-        ...block,
-        metadata: {
-          ...block.metadata,
-          pageBreakBefore: true,
-        },
-      };
-    }
     if (block.type === BlockType.MERMAID) {
       if (mermaidSource) {
         throw new Error('公開 fixture 目前只允許一個 Mermaid 圖表。');
@@ -352,21 +333,6 @@ const prepareFixtureBlocks = (
           title: '星圖工坊 Mermaid 圖表',
         },
       };
-    }
-
-    if (block.type === BlockType.PARAGRAPH) {
-      const imageMatch = block.content.match(IMAGE_PATTERN);
-      if (imageMatch) {
-        return {
-          ...block,
-          type: BlockType.IMAGE,
-          content: imageMatch[2],
-          metadata: {
-            alt: imageMatch[1],
-            title: imageMatch[3] ?? imageMatch[1],
-          },
-        };
-      }
     }
     return block;
   });

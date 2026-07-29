@@ -12,9 +12,9 @@ import { BlockType } from '../../services/types';
 
 const fixturePath = path.resolve(
   process.cwd(),
-  'tests',
-  'fixtures',
-  'publisher-manuscript.md',
+  'content',
+  'examples',
+  'complete.zh.md',
 );
 
 const runQaFixture = (
@@ -115,9 +115,12 @@ describe('出版社公開 Golden Fixture', () => {
         .map(({ tableRows }) => tableRows?.[0]?.length),
     ).toEqual([1, 2, 3, 4, 5, 6]);
     expect(blocks).toContainEqual(expect.objectContaining({
-      type: BlockType.PARAGRAPH,
-      content: '![星圖工坊觀測面板](fixture-generated-image '
-        + '"星圖工坊測試圖片")',
+      type: BlockType.IMAGE,
+      content: 'fixture-generated-image',
+      metadata: {
+        alt: '星圖工坊觀測面板',
+        title: '星圖工坊測試圖片',
+      },
     }));
     expect(
       blocks.find(({ type }) => type === BlockType.QR),

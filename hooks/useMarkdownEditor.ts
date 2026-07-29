@@ -32,6 +32,7 @@ export const useMarkdownEditor = (
     language,
     toggleLanguage,
     resetToDefault,
+    loadExample,
     t
   } = useEditorState();
 
@@ -98,6 +99,7 @@ export const useMarkdownEditor = (
     handleDownload,
     handleExportMarkdown,
     resetToDefault,
+    loadExample,
     toggleLanguage,
     
     // Helpers/Constants

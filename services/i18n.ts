@@ -21,6 +21,11 @@ export const resources = {
       reset: '重設範例',
       resetConfirm: '確定要重設為範例內容嗎？目前草稿會被取代。',
       switchLangConfirm: '切換語言會載入該語言的範例內容，並清除目前草稿。要繼續嗎？',
+      examples: {
+        selectorLabel: '範例稿件',
+        selectorPlaceholder: '載入範例',
+        replaceConfirm: '載入範例會取代目前草稿，確定要繼續嗎？',
+      },
       theme: {
         light: '切換為淺色模式',
         dark: '切換為深色模式'
@@ -112,6 +117,11 @@ export const resources = {
       reset: 'Reset example',
       resetConfirm: 'Reset to the example content? Your current draft will be replaced.',
       switchLangConfirm: 'Switching language loads the example for that language and clears the current draft. Continue?',
+      examples: {
+        selectorLabel: 'Example manuscript',
+        selectorPlaceholder: 'Load example',
+        replaceConfirm: 'Loading an example replaces the current draft. Continue?',
+      },
       theme: {
         light: 'Switch to light mode',
         dark: 'Switch to dark mode'

@@ -3,6 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { parseMarkdown } from '../services/markdownParser';
 import { ParsedBlock, DocumentMeta } from '../services/types';
 import { INITIAL_CONTENT_ZH, INITIAL_CONTENT_EN } from '../constants/defaultContent';
+import {
+  getExampleManuscript,
+  type ExampleManuscriptId,
+} from '../constants/exampleContent';
 
 export const useEditorState = () => {
   const { t, i18n } = useTranslation();
@@ -59,6 +63,17 @@ export const useEditorState = () => {
     }
   };
 
+  const loadExample = (id: ExampleManuscriptId) => {
+    if (!confirm(t('examples.replaceConfirm'))) {
+      return;
+    }
+    const example = getExampleManuscript(id);
+    void i18n.changeLanguage(example.language);
+    setContent(example.content);
+    localStorage.removeItem('draft_content');
+    setImageRegistry({});
+  };
+
   return {
     content,
     setContent,
@@ -69,6 +84,7 @@ export const useEditorState = () => {
     language,
     toggleLanguage,
     resetToDefault,
+    loadExample,
     t // Export translation helper if needed
   };
 };
