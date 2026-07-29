@@ -7,6 +7,7 @@ import {
   getExampleManuscript,
   type ExampleManuscriptId,
 } from '../constants/exampleContent';
+import { getBuiltInExampleImageRegistry } from '../constants/exampleAssets';
 
 export const useEditorState = () => {
   const { t, i18n } = useTranslation();
@@ -20,7 +21,9 @@ export const useEditorState = () => {
   
   const [parsedBlocks, setParsedBlocks] = useState<ParsedBlock[]>([]);
   const [documentMeta, setDocumentMeta] = useState<DocumentMeta>({});
-  const [imageRegistry, setImageRegistry] = useState<Record<string, string>>({});
+  const [imageRegistry, setImageRegistry] = useState<Record<string, string>>(
+    () => ({ ...getBuiltInExampleImageRegistry(content) }),
+  );
 
   const registerImage = (id: string, base64: string) => {
     setImageRegistry(prev => ({ ...prev, [id]: base64 }));
@@ -41,6 +44,20 @@ export const useEditorState = () => {
 
     return () => clearTimeout(timer);
   }, [content]);
+
+  useEffect(() => {
+    const builtInImages = getBuiltInExampleImageRegistry(content);
+    const missingImages = Object.entries(builtInImages).filter(
+      ([id]) => imageRegistry[id] === undefined,
+    );
+    if (missingImages.length === 0) {
+      return;
+    }
+    setImageRegistry((previous) => ({
+      ...Object.fromEntries(missingImages),
+      ...previous,
+    }));
+  }, [content, imageRegistry]);
 
   // Language Toggle Logic
   const toggleLanguage = () => {
@@ -71,7 +88,7 @@ export const useEditorState = () => {
     void i18n.changeLanguage(example.language);
     setContent(example.content);
     localStorage.removeItem('draft_content');
-    setImageRegistry({});
+    setImageRegistry({ ...example.imageRegistry });
   };
 
   return {

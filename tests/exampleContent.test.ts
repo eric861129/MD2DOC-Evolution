@@ -9,6 +9,7 @@ import {
   INITIAL_CONTENT_EN,
   INITIAL_CONTENT_ZH,
 } from '../constants/defaultContent';
+import { validateExport } from '../services/exportValidation';
 import { parseMarkdown } from '../services/markdownParser';
 import { BlockType } from '../services/types';
 
@@ -73,6 +74,25 @@ describe('exampleContent', () => {
       ).toEqual(['left', 'right', 'center']);
     }
   });
+
+  it.each(['complete-zh', 'complete-en'] as const)(
+    '內建完整稿 %s 連同內建圖片通過匯出預檢且不顯示提醒',
+    async (id) => {
+      const example = getExampleManuscript(id);
+      const { blocks, meta } = parseMarkdown(example.content);
+
+      const issues = await validateExport({
+        content: example.content,
+        blocks: blocks.filter(({ type }) => (
+          type === BlockType.CHAPTER_OPENER || type === BlockType.IMAGE
+        )),
+        meta,
+        imageRegistry: { ...example.imageRegistry },
+      });
+
+      expect(issues).toEqual([]);
+    },
+  );
 
   it('QA 與網站完整中文稿讀取完全相同的 Markdown 檔案', async () => {
     const sourcePath = path.resolve(

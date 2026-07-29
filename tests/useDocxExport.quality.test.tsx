@@ -51,4 +51,31 @@ describe('useDocxExport DOCX 品質錯誤', () => {
     consoleError.mockRestore();
     unmount();
   });
+
+  it('只有 warning 提醒時仍會匯出並下載 DOCX', async () => {
+    const { result, unmount } = renderHook(() => useDocxExport({
+      content: '```\nconst ready = true;\n```',
+      parsedBlocks: [{
+        type: BlockType.CODE_BLOCK,
+        content: 'const ready = true;',
+      }],
+      documentMeta: { title: '提醒不阻擋匯出', author: '黃祈豫' },
+      imageRegistry: {},
+    }));
+
+    await act(async () => {
+      await result.current.handleDownload();
+    });
+
+    expect(result.current.validationIssues).toContainEqual(
+      expect.objectContaining({
+        id: 'code-language-0',
+        severity: 'warning',
+      }),
+    );
+    expect(generateDocx).toHaveBeenCalledOnce();
+    expect(saveAs).toHaveBeenCalledOnce();
+    expect(result.current.exportError).toBeNull();
+    unmount();
+  });
 });

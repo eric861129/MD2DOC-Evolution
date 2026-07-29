@@ -5,6 +5,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import JSZip from 'jszip';
+import { COMPLETE_EXAMPLE_IMAGE_REGISTRY } from '../../constants/exampleAssets';
 import {
   PUBLISHER_ACCEPTANCE_PROFILES,
   type PublisherAcceptanceProfile,
@@ -62,7 +63,6 @@ const DEFAULT_FIXTURE_PATH = path.resolve(path.join(
 const DEFAULT_ARTIFACT_ROOT = path.resolve(
   path.join(REPOSITORY_ROOT, 'artifacts', 'docx-qa'),
 );
-const GENERATED_IMAGE_KEY = 'fixture-generated-image';
 const MERMAID_IMAGE_KEY = 'fixture-mermaid-image';
 const PNG_SIGNATURE = Buffer.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
@@ -81,28 +81,6 @@ export const installNodeDocumentRuntime = (): void => {
 
 const toDataUrl = (bytes: Uint8Array): string =>
   `data:image/png;base64,${Buffer.from(bytes).toString('base64')}`;
-
-const createGeneratedFixturePng = (): Buffer => {
-  const width = 900;
-  const height = 420;
-  const png = new PNG({ width, height });
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      const offset = (y * width + x) * 4;
-      const isGridLine = x % 90 < 2 || y % 70 < 2;
-      const isStar = (
-        ((x - 180) ** 2 + (y - 130) ** 2 < 120)
-        || ((x - 560) ** 2 + (y - 210) ** 2 < 180)
-        || ((x - 730) ** 2 + (y - 95) ** 2 < 90)
-      );
-      png.data[offset] = isStar ? 236 : isGridLine ? 115 : 15;
-      png.data[offset + 1] = isStar ? 190 : isGridLine ? 154 : 45;
-      png.data[offset + 2] = isStar ? 70 : isGridLine ? 178 : 72;
-      png.data[offset + 3] = 255;
-    }
-  }
-  return PNG.sync.write(png);
-};
 
 const findMermaidBrowser = (): string => {
   const configuredPath = process.env.MERMAID_BROWSER_PATH?.trim();
@@ -416,7 +394,6 @@ export const generatePublisherFixture = async (
   ]);
   const parsed = parseMarkdown(markdown);
   const prepared = prepareFixtureBlocks(parsed.blocks);
-  const generatedPng = createGeneratedFixturePng();
   const mermaidPng = await renderMermaidPng(
     prepared.mermaidSource,
     runtimeDirectory,
@@ -432,7 +409,7 @@ export const generatePublisherFixture = async (
     showLineNumbers: true,
     meta: parsed.meta,
     imageRegistry: {
-      [GENERATED_IMAGE_KEY]: toDataUrl(generatedPng),
+      ...COMPLETE_EXAMPLE_IMAGE_REGISTRY,
       [MERMAID_IMAGE_KEY]: toDataUrl(mermaidPng),
     },
     onWarning: (warning) => warnings.push(

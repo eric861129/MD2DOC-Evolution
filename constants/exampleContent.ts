@@ -2,6 +2,7 @@ import completeEn from '../content/examples/complete.en.md?raw';
 import completeZh from '../content/examples/complete.zh.md?raw';
 import quickEn from '../content/examples/quick.en.md?raw';
 import quickZh from '../content/examples/quick.zh.md?raw';
+import { COMPLETE_EXAMPLE_IMAGE_REGISTRY } from './exampleAssets';
 
 export type ExampleLanguage = 'zh' | 'en';
 export type ExampleKind = 'quick' | 'complete';
@@ -18,6 +19,7 @@ export interface ExampleManuscript {
   label: string;
   description: string;
   content: string;
+  imageRegistry?: Readonly<Record<string, string>>;
 }
 
 export const EXAMPLE_MANUSCRIPTS: ExampleManuscript[] = [
@@ -36,6 +38,7 @@ export const EXAMPLE_MANUSCRIPTS: ExampleManuscript[] = [
     label: '中文完整功能稿',
     description: '涵蓋 Parser、Preview 與 DOCX 的完整出版級範例。',
     content: completeZh,
+    imageRegistry: COMPLETE_EXAMPLE_IMAGE_REGISTRY,
   },
   {
     id: 'quick-en',
@@ -52,6 +55,7 @@ export const EXAMPLE_MANUSCRIPTS: ExampleManuscript[] = [
     label: 'English complete manuscript',
     description: 'A complete publishing example covering Parser, Preview, and DOCX.',
     content: completeEn,
+    imageRegistry: COMPLETE_EXAMPLE_IMAGE_REGISTRY,
   },
 ];
 
