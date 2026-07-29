@@ -7,6 +7,7 @@ import {
 } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { listMermaidBrowserCandidates } from '../../scripts/qa/generate-publisher-fixture';
 import { parseMarkdown } from '../../services/markdownParser';
 import { BlockType } from '../../services/types';
 
@@ -69,6 +70,19 @@ const listFiles = async (directory: string): Promise<string[]> => {
   }
   return files;
 };
+
+describe('Mermaid 瀏覽器探索', () => {
+  it('在 Linux 同時檢查常見安裝位置與 PATH', () => {
+    expect(listMermaidBrowserCandidates(
+      'linux',
+      '/opt/browser/bin:/usr/local/bin',
+    )).toEqual(expect.arrayContaining([
+      '/usr/bin/google-chrome',
+      '/opt/browser/bin/google-chrome',
+      '/usr/local/bin/chromium',
+    ]));
+  });
+});
 
 describe('出版社公開 Golden Fixture', () => {
   it('以星圖工坊虛構內容涵蓋所有出版社元件', async () => {

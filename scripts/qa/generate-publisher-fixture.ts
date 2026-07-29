@@ -82,19 +82,55 @@ export const installNodeDocumentRuntime = (): void => {
 const toDataUrl = (bytes: Uint8Array): string =>
   `data:image/png;base64,${Buffer.from(bytes).toString('base64')}`;
 
+/**
+ * 依作業系統列出 Mermaid QA 可使用的瀏覽器執行檔候選位置。
+ */
+export const listMermaidBrowserCandidates = (
+  platform: NodeJS.Platform = process.platform,
+  pathValue: string = process.env.PATH ?? '',
+): string[] => {
+  const isWindows = platform === 'win32';
+  const pathModule = isWindows ? path.win32 : path.posix;
+  const pathDelimiter = isWindows ? ';' : ':';
+  const executableNames = isWindows
+    ? ['msedge.exe', 'chrome.exe']
+    : ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser'];
+  const commonPaths = platform === 'win32'
+    ? [
+      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    ]
+    : platform === 'darwin'
+      ? [
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+        '/Applications/Chromium.app/Contents/MacOS/Chromium',
+      ]
+      : [
+        '/usr/bin/google-chrome',
+        '/usr/bin/google-chrome-stable',
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser',
+      ];
+  const pathCandidates = pathValue
+    .split(pathDelimiter)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .flatMap((entry) => executableNames.map(
+      (executable) => pathModule.join(entry, executable),
+    ));
+  return [...commonPaths, ...pathCandidates];
+};
+
 const findMermaidBrowser = (): string => {
   const configuredPath = process.env.MERMAID_BROWSER_PATH?.trim();
-  if (configuredPath) {
-    return path.resolve(configuredPath);
-  }
-  const commonPaths = [
-    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-  ];
+  const candidates = configuredPath
+    ? [path.resolve(configuredPath)]
+    : listMermaidBrowserCandidates();
   const fs = require('node:fs') as typeof import('node:fs');
-  const detected = commonPaths.find((candidate) =>
+  const detected = candidates.find((candidate) =>
     fs.existsSync(candidate) && fs.statSync(candidate).isFile()
   );
   if (!detected) {
