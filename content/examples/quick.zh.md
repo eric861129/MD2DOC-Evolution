@@ -22,7 +22,7 @@ goals:
 
 ## 選擇出版社版型
 
-MD2DOC-Evolution 預設維持 `technical-legacy`；`publisher-exact` 對齊出版社幾何（上下 2.10、左右 2.30 cm）；`publisher-narrow` 使用窄邊界；`publisher-binding` 提供鏡像邊界與裝訂預留。一般連結如 [MD2DOC-Evolution](https://github.com/eric861129/MD2DOC-Evolution) 會保持為 hyperlink。
+MD2DOC-Evolution 預設使用 `publisher-exact`，對齊出版社幾何（上下 2.10、左右 2.30 cm）；`publisher-narrow` 使用窄邊界；`publisher-binding` 提供鏡像邊界與裝訂預留。一般連結如 [MD2DOC-Evolution](https://github.com/eric861129/MD2DOC-Evolution) 會保持為 hyperlink。
 
 - 先用短稿確認版面。
 - 再匯入完整書稿。

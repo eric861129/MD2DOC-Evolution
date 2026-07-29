@@ -80,7 +80,7 @@ Frontmatter 必須位於文件第一行，至少包含 title、author、header�
 
 ## Profile and Pagination Boundary
 1. Markdown 只描述內容結構，不指定紙張尺寸、邊界或最終頁碼。
-2. technical-legacy、publisher-exact、publisher-narrow、publisher-binding 由使用者在匯出前選擇；AI 不得在 Frontmatter 偽造 Profile 設定。
+2. publisher-exact 是新版預設；publisher-narrow 與 publisher-binding 可由使用者在匯出前選擇。AI 不得在 Frontmatter 偽造 Profile 設定。
 3. [CHAPTER] 是語意章首頁，不代表 AI 可以預測 Word 的實際分頁。
 4. Word 目錄是欄位；匯出後由使用者在 Word 更新目錄與所有欄位。
 5. 圖片、表格、程式碼與段落可能因字型、印表機或 Word 版本重新排頁。需要精準齊頁時，應由使用者在 Word 做最後的「段落與下一段同頁」、段前分頁或分節設定。

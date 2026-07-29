@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ExportSettingsModal } from '../components/editor/ExportSettingsModal';
 import { formatLayoutSummary } from '../components/editor/EditorHeader';
@@ -16,6 +16,28 @@ const t = (key: string): string => key.split('.').reduce<unknown>((value, segmen
 const cmLabel = (key: string) => `${t(key)} (cm)`;
 
 describe('ExportSettingsModal', () => {
+  it('只提供三種新版出版社版型並預設選取精確版型', () => {
+    render(
+      <ExportSettingsModal
+        isOpen
+        value={DEFAULT_EXPORT_SETTINGS}
+        onClose={vi.fn()}
+        onApply={vi.fn()}
+        t={t}
+      />,
+    );
+
+    const profileSelect = screen.getByLabelText(t('layout.profile'));
+    expect(within(profileSelect).getAllByRole('option').map(
+      (option) => (option as HTMLOptionElement).value,
+    )).toEqual([
+      'publisher-exact',
+      'publisher-narrow',
+      'publisher-binding',
+    ]);
+    expect(profileSelect).toHaveValue('publisher-exact');
+  });
+
   it('loads the narrow profile page and margin defaults before applying settings', () => {
     const onApply = vi.fn();
 

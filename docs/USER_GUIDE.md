@@ -109,8 +109,7 @@ AI ::" 這是右側角色的回覆。
 
 Profile 的定位：
 
-- `technical-legacy`：相容既有技術書稿。
-- `publisher-exact`：固定採出版社精確邊界。
+- `publisher-exact`：新版預設，固定採出版社精確邊界。
 - `publisher-narrow`：採窄邊界，增加內容寬度。
 - `publisher-binding`：鏡像邊界與裝訂預留。
 

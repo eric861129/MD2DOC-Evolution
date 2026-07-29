@@ -16,7 +16,7 @@ MD2DOC-Evolution 是開源的 Markdown → Word DOCX 出版工作台，為技術
 
 - 出版版型：17.6 × 23.6 cm、A4、A5、B5、自訂紙張與自訂邊界。
 - 常用邊界：1.27、1.50、2.00、2.54 cm、出版社精確邊界與鏡像裝訂。
-- 四種 Profile：`technical-legacy`、`publisher-exact`、`publisher-narrow`、`publisher-binding`。
+- 三種新版 Profile：`publisher-exact`（預設）、`publisher-narrow`、`publisher-binding`。
 - 出版社排版：角色名稱與內容分行、段落間距優化、待辦清單使用 `☐／☒`。
 - 黑點治理：只有真正的無序清單會輸出 Word 項目符號；清單、對話與一般段落的語意分離。
 - 連續預覽：右側使用單一白底內容流，不在瀏覽器假裝切 Word 頁面。
@@ -41,8 +41,7 @@ MD2DOC-Evolution 是開源的 Markdown → Word DOCX 出版工作台，為技術
 
 | Profile | 主要用途 | 17.6 × 23.6 cm 預設 |
 | :--- | :--- | :--- |
-| `technical-legacy` | 相容既有技術書稿 | 四邊 2.54 cm |
-| `publisher-exact` | 對齊目前出版社幾何 | 上下 2.10、左右 2.30 cm |
+| `publisher-exact` | 預設；對齊目前出版社幾何 | 上下 2.10、左右 2.30 cm |
 | `publisher-narrow` | 增加內容寬度 | 四邊 1.27 cm |
 | `publisher-binding` | 雙面印刷與裝訂 | 鏡像內外側 + 0.50 cm gutter |
 

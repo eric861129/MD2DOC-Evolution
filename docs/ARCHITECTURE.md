@@ -31,7 +31,7 @@
 │   ├── docx/            # Word 生成邏輯
 │   │   ├── builders/    # 各種 Markdown 元素的 Word 建構器 (Paragraph, Table...)
 │   │   ├── layout/      # 紙張、邊界、鏡像與內容區幾何
-│   │   ├── profiles/    # technical-legacy 與 publisher 樣式
+│   │   ├── profiles/    # 出版社版型樣式與共用 token
 │   │   ├── postprocess.ts # OOXML 後處理
 │   │   ├── quality.ts   # DOCX package inspection
 │   │   └── registry.ts  # Builder 註冊表
@@ -72,7 +72,7 @@ Markdown → ParsedBlock → Layout/Profile → DOCX Builders → Packer
 
 1. `services/markdownParser.ts` 產生 `ParsedBlock[]` 與 Frontmatter metadata。
 2. `services/docx/layout/resolve.ts` 把紙張、邊界、gutter 與 Profile 選擇解析成共用幾何；Preview 與 DOCX 使用同一份結果。
-3. `services/docx/profiles/` 提供樣式 token。`technical-legacy` 保留既有行為，三種 publisher Profile 共用出版社樣式。
+3. `services/docx/profiles/` 提供樣式 token；三種新版 publisher Profile 共用出版社樣式，並依版型解析不同頁面幾何。
 4. `services/docx/registry.ts` 依 Block 類型把內容交給 `services/docx/builders/`，建立段落、章首頁、TOC、表格、Callout、對話、圖片與明確 QR 等 DOCX 節點。
 5. `docx` 的 `Packer` 先產生 OPC package。
 6. `services/docx/postprocess.ts` 以 deterministic OOXML 後處理補上鏡像邊界、gutter 與必要的 package 設定；出版社 Profile 另把段落另起頁轉成顯式分頁符，並移除會顯示黑方塊的非列印分頁屬性。

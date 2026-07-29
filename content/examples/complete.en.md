@@ -23,7 +23,7 @@ goals:
 
 # Star Map Workshop Observation Guide
 
-This [MD2DOC-Evolution](https://github.com/eric861129/MD2DOC-Evolution) manuscript works with `technical-legacy`, `publisher-exact`, `publisher-narrow`, or `publisher-binding`. The exact profile uses 2.10 cm vertical and 2.30 cm horizontal margins; choose the narrow profile for a wider content area.
+This [MD2DOC-Evolution](https://github.com/eric861129/MD2DOC-Evolution) manuscript defaults to `publisher-exact` and also works with `publisher-narrow` or `publisher-binding`. The exact profile uses 2.10 cm vertical and 2.30 cm horizontal margins; choose the narrow profile for a wider content area.
 
 This paragraph contains an **important observation rule**, an *italic term*, <u>underlined review text</u>, the `star-map --calibrate` inline command, a [Ctrl] key label, and a [public observation guide](https://example.com/starmap-workshop/guide).
 

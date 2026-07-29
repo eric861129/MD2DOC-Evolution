@@ -16,7 +16,7 @@ Live demo: [https://huangchiyu.com/MD2DOC-Evolution/](https://huangchiyu.com/MD2
 
 - Publishing layouts: 17.6 × 23.6 cm, A4, A5, B5, custom paper, and custom margins.
 - Margin presets: 1.27, 1.50, 2.00, 2.54 cm, publisher-exact, and mirrored binding.
-- Four profiles: `technical-legacy`, `publisher-exact`, `publisher-narrow`, and `publisher-binding`.
+- Three current profiles: `publisher-exact` (default), `publisher-narrow`, and `publisher-binding`.
 - Publisher typography: dialogue roles and content on separate lines, refined spacing, and `☐／☒` task items.
 - Bullet correctness: only real unordered lists receive Word bullets.
 - Continuous preview: one white content surface instead of simulated browser pages.
@@ -41,8 +41,7 @@ See the [complete user guide](docs/USER_GUIDE.md). The live site also exposes it
 
 | Profile | Primary use | 17.6 × 23.6 cm default |
 | :--- | :--- | :--- |
-| `technical-legacy` | Existing technical manuscripts | 2.54 cm on all sides |
-| `publisher-exact` | Current publisher geometry | 2.10 cm vertical, 2.30 cm horizontal |
+| `publisher-exact` | Default; current publisher geometry | 2.10 cm vertical, 2.30 cm horizontal |
 | `publisher-narrow` | Wider content area | 1.27 cm on all sides |
 | `publisher-binding` | Duplex print and binding | Mirrored inside/outside + 0.50 cm gutter |
 

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_EXPORT_SETTINGS } from '../../services/docx/layout/presets';
+import {
+  DEFAULT_EXPORT_SETTINGS,
+  DOCUMENT_PROFILE_PRESETS,
+} from '../../services/docx/layout/presets';
 import { resolvePageLayout } from '../../services/docx/layout/resolve';
 
 describe('resolvePageLayout', () => {
@@ -28,18 +31,24 @@ describe('resolvePageLayout', () => {
     expect(layout.content.widthTwips).toBe(7370);
   });
 
-  it('technical-legacy 預設仍維持四邊 2.54 公分', () => {
+  it('預設只採新版出版社精確版型', () => {
     const layout = resolvePageLayout(DEFAULT_EXPORT_SETTINGS);
 
+    expect(DEFAULT_EXPORT_SETTINGS).toEqual({
+      profileId: 'publisher-exact',
+      pageSizeId: 'tech',
+      marginPresetId: 'publisher-exact',
+    });
+    expect(DOCUMENT_PROFILE_PRESETS.map(({ id }) => id)).toEqual([
+      'publisher-exact',
+      'publisher-narrow',
+      'publisher-binding',
+    ]);
     expect(layout.margins).toMatchObject({
-      topCm: 2.54,
-      rightCm: 2.54,
-      bottomCm: 2.54,
-      leftCm: 2.54,
-      topTwips: 1440,
-      rightTwips: 1440,
-      bottomTwips: 1440,
-      leftTwips: 1440,
+      topCm: 2.1,
+      rightCm: 2.3,
+      bottomCm: 2.1,
+      leftCm: 2.3,
     });
   });
 

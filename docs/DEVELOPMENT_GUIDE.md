@@ -185,7 +185,7 @@ UTF-8、私人內容、秘密字串、staged diff 與 `npm audit` 剩餘數量�
 
 1. 完成功能開發並通過測試。
 2. 更新 `package.json` 中的版本號與公開 release notes。
-3. 執行完整 release candidate gate，確認預設仍為 `technical-legacy`。
+3. 執行完整 release candidate gate，確認預設為 `publisher-exact`，且三種新版版型皆可正常匯出。
 4. 建立經審查的 Conventional Commit；只有收到明確指示後才能 push 或 publish。
 
 ---

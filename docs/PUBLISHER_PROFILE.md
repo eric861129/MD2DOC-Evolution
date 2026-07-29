@@ -1,13 +1,12 @@
 # 出版社版型與語法指南
 
-MD2DOC-Evolution 以文件 Profile 同時控制版面幾何與 Word 樣式。新安裝與既有文件都維持 `technical-legacy` 為預設；選擇出版社 Profile 不會改寫 Markdown 原稿。
+MD2DOC-Evolution 以文件 Profile 同時控制版面幾何與 Word 樣式。新版以 `publisher-exact` 為預設；切換 Profile 不會改寫 Markdown 原稿。
 
-## 四種文件 Profile
+## 三種新版文件 Profile
 
-| Profile | 適用情境 | 預設紙張 | 預設邊界 | 相容性 |
+| Profile | 適用情境 | 預設紙張 | 預設邊界 | 排版特性 |
 | :--- | :--- | :--- | :--- | :--- |
-| `technical-legacy` | 既有技術文件 | 17.6 × 23.6 cm | 四邊 2.54 cm | 預設值；保留舊版樣式與匯出語意，紙張採新版 technical preset |
-| `publisher-exact` | 對照出版社幾何契約 | 17.6 × 23.6 cm | 上下 2.10 cm、左右 2.30 cm | 使用第七輪出版社樣式；覆寫幾何後不保證參考稿頁碼一致 |
+| `publisher-exact` | 預設；對照出版社幾何契約 | 17.6 × 23.6 cm | 上下 2.10 cm、左右 2.30 cm | 使用第七輪出版社樣式；覆寫幾何後不保證參考稿頁碼一致 |
 | `publisher-narrow` | 希望增加內容寬度 | 17.6 × 23.6 cm | 四邊 1.27 cm | 與 exact 共用出版社樣式；允許換行與頁碼重排 |
 | `publisher-binding` | 雙面印刷與裝訂 | 17.6 × 23.6 cm | 上 2.00、下 2.20、內 2.20、外 1.80 cm，gutter 0.50 cm | 使用鏡像邊界；允許頁碼重排 |
 
@@ -35,7 +34,7 @@ MD2DOC-Evolution 以文件 Profile 同時控制版面幾何與 Word 樣式。新
 - 只有真正的 Markdown 無序清單會產生 Word 項目符號。一般段落、標題、對話框與 callout 不會注入清單編號。
 - 出版社 Profile 會把真正的另起頁轉成顯式分頁符，並移除 Word 會在顯示格式標記時畫成黑方塊的段落分頁屬性。
 
-`technical-legacy` 不套用上述 OOXML 正規化，仍維持既有四邊 2.54 cm、頁首書名與頁尾頁碼，避免舊文件升級後默默改版。
+三種新版 Profile 都套用上述出版社樣式與 OOXML 正規化；彼此只依使用情境調整頁面邊界與裝訂幾何。
 
 鏡像邊界使用「內側／外側」而不是固定左／右。Word 在奇數頁把內側放在左側、偶數頁交換到右側；gutter 會額外保留裝訂空間。網頁單頁預覽只能示意一側，交付前仍應以 Word 的雙面或多頁檢視確認奇偶頁。
 

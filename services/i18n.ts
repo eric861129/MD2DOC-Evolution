@@ -69,7 +69,6 @@ export const resources = {
         customizedWarning: '已自訂出版社版型，頁碼可能與參考稿不同。',
         printRiskWarning: '邊界小於 1 公分，部分印表機可能無法完整列印。',
         profiles: {
-          'technical-legacy': '技術書稿（相容舊版）',
           'publisher-exact': '出版社精確版型',
           'publisher-narrow': '出版社窄邊界版型',
           'publisher-binding': '出版社裝訂版型'
@@ -172,7 +171,6 @@ export const resources = {
         customizedWarning: 'This publisher profile was customized; pagination may differ from the reference manuscript.',
         printRiskWarning: 'Margins below 1 cm may not print completely on some printers.',
         profiles: {
-          'technical-legacy': 'Technical manuscript (legacy compatible)',
           'publisher-exact': 'Publisher exact profile',
           'publisher-narrow': 'Publisher narrow-margin profile',
           'publisher-binding': 'Publisher binding profile'

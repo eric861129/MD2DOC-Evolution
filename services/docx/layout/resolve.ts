@@ -1,4 +1,8 @@
-import { DOCUMENT_PROFILE_PRESETS, MARGIN_PRESETS, PAGE_SIZE_PRESETS } from './presets';
+import {
+  DOCUMENT_PROFILE_GEOMETRY_DEFAULTS,
+  MARGIN_PRESETS,
+  PAGE_SIZE_PRESETS,
+} from './presets';
 import type {
   ExportSettings,
   MarginConfigCm,
@@ -120,7 +124,9 @@ const toResolvedMargins = (margins: MarginConfigCm): ResolvedMargins => {
 };
 
 const isGeometryCustomized = (settings: ExportSettings): boolean => {
-  const profileDefaults = DOCUMENT_PROFILE_PRESETS.find((profile) => profile.id === settings.profileId);
+  const profileDefaults = DOCUMENT_PROFILE_GEOMETRY_DEFAULTS.find(
+    (profile) => profile.id === settings.profileId,
+  );
   if (!profileDefaults) {
     throw new Error(`找不到文件版型預設：${settings.profileId}`);
   }

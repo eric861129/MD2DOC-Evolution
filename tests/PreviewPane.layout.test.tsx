@@ -12,7 +12,6 @@ import { PreviewPane } from '../components/editor/PreviewPane';
 import { EditorProvider } from '../contexts/EditorContext';
 import { useMarkdownEditor } from '../hooks/useMarkdownEditor';
 import { generateDocx } from '../services/docxGenerator';
-import { DEFAULT_EXPORT_SETTINGS } from '../services/docx/layout/presets';
 import { resolvePageLayout } from '../services/docx/layout/resolve';
 import type {
   ExportSettings,
@@ -159,6 +158,12 @@ const exactSettings: ExportSettings = {
   profileId: 'publisher-exact',
   pageSizeId: 'tech',
   marginPresetId: 'publisher-exact',
+};
+
+const technicalLegacySettings: ExportSettings = {
+  profileId: 'technical-legacy',
+  pageSizeId: 'tech',
+  marginPresetId: 'standard',
 };
 
 const narrowSettings: ExportSettings = {
@@ -426,7 +431,7 @@ describe('PreviewPane 版面同步', () => {
 
   it('technical-legacy renderer 保留既有 H1、warning callout 與表頭外觀', () => {
     render(createPreviewTree({
-      settings: DEFAULT_EXPORT_SETTINGS,
+      settings: technicalLegacySettings,
       layout: exactLayout,
       blocks: publisherBlocks,
     }));
@@ -453,7 +458,7 @@ describe('useMarkdownEditor 的版面 Context', () => {
       widthCm: 17.6,
       heightCm: 23.6,
     });
-    expect(result.current.documentProfile.id).toBe('technical-legacy');
+    expect(result.current.documentProfile.id).toBe('publisher-exact');
 
     act(() => {
       result.current.setExportSettings(narrowSettings);
@@ -536,10 +541,10 @@ describe('useMarkdownEditor 的版面 Context', () => {
     );
 
     const page = screen.getByRole('article', { name: '文件頁面預覽' });
-    expect(page).toHaveAttribute('data-profile', 'technical-legacy');
-    expect(page).toHaveAttribute('data-margin-preset', 'standard');
+    expect(page).toHaveAttribute('data-profile', 'publisher-exact');
+    expect(page).toHaveAttribute('data-margin-preset', 'publisher-exact');
     expect(page).toHaveAttribute('data-page-size', '17.6x23.6');
-    expect(page.style.padding).toBe('2.54cm');
+    expect(page.style.padding).toBe('2.1cm 2.3cm');
     expect(screen.getByRole('alert')).toHaveTextContent(
       '版面設定無效：自訂紙張尺寸不可為空；已改用預設版面',
     );

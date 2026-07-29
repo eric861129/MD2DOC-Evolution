@@ -57,7 +57,7 @@ goals:
 ## Profile 與換頁責任
 
 - AI 只整理內容，不在 Frontmatter 偽造 Profile。
-- `technical-legacy`、`publisher-exact`、`publisher-narrow`、`publisher-binding` 由使用者匯出前選擇。
+- `publisher-exact` 是新版預設；`publisher-narrow`、`publisher-binding` 可由使用者在匯出前選擇。
 - `[CHAPTER]` 是章首頁語意，不代表 AI 能預測 Word 的實際頁面。
 - 目錄是 Word 欄位，匯出後由使用者更新。
 - 不自行插入手動換頁。精準齊頁在 Word 使用「與下段同頁」、「段中不分頁」、「段前分頁」或必要分節設定。

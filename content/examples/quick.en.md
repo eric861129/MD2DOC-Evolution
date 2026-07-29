@@ -22,7 +22,7 @@ goals:
 
 ## Choose a publisher profile
 
-MD2DOC-Evolution keeps `technical-legacy` as its compatibility default. `publisher-exact` uses the publisher geometry (2.10 cm vertical, 2.30 cm horizontal), `publisher-narrow` uses narrow margins, and `publisher-binding` adds mirrored margins and a gutter. A normal [MD2DOC-Evolution link](https://github.com/eric861129/MD2DOC-Evolution) remains a hyperlink.
+MD2DOC-Evolution defaults to `publisher-exact`, using the publisher geometry (2.10 cm vertical, 2.30 cm horizontal). `publisher-narrow` uses narrow margins, and `publisher-binding` adds mirrored margins and a gutter. A normal [MD2DOC-Evolution link](https://github.com/eric861129/MD2DOC-Evolution) remains a hyperlink.
 
 - Verify the layout with a short manuscript.
 - Then import the complete book.

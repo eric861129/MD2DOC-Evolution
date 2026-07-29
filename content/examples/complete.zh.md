@@ -23,7 +23,7 @@ goals:
 
 # 星圖工坊觀測指南
 
-這份 [MD2DOC-Evolution](https://github.com/eric861129/MD2DOC-Evolution) 稿件可搭配 `technical-legacy`、`publisher-exact`、`publisher-narrow` 或 `publisher-binding`。其中出版社精確版型使用上下 2.10、左右 2.30 cm；若要更寬的內容區，可改用窄邊界版型。
+這份 [MD2DOC-Evolution](https://github.com/eric861129/MD2DOC-Evolution) 稿件預設使用 `publisher-exact`，也可選擇 `publisher-narrow` 或 `publisher-binding`。其中出版社精確版型使用上下 2.10、左右 2.30 cm；若要更寬的內容區，可改用窄邊界版型。
 
 這是一段一般文字，包含**重要觀測原則**、*術語斜體*、<u>人工確認底線</u>、`star-map --calibrate` 行內程式碼、[Ctrl] 快捷鍵，以及[公開觀測說明](https://example.com/starmap-workshop/guide)。
 

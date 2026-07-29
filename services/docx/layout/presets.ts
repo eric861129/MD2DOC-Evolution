@@ -8,10 +8,18 @@ type DocumentProfilePreset = {
 
 /** 文件版型與其預設紙張、邊界組合，供介面選擇時一致套用。 */
 export const DOCUMENT_PROFILE_PRESETS = [
-  { id: 'technical-legacy', pageSizeId: 'tech', marginPresetId: 'standard' },
   { id: 'publisher-exact', pageSizeId: 'tech', marginPresetId: 'publisher-exact' },
   { id: 'publisher-narrow', pageSizeId: 'tech', marginPresetId: 'narrow' },
   { id: 'publisher-binding', pageSizeId: 'tech', marginPresetId: 'publisher-binding' },
+] as const satisfies readonly DocumentProfilePreset[];
+
+/**
+ * 版面解析器使用的完整幾何預設。
+ * technical-legacy 僅供內部回歸，不會出現在新版使用者介面。
+ */
+export const DOCUMENT_PROFILE_GEOMETRY_DEFAULTS = [
+  { id: 'technical-legacy', pageSizeId: 'tech', marginPresetId: 'standard' },
+  ...DOCUMENT_PROFILE_PRESETS,
 ] as const satisfies readonly DocumentProfilePreset[];
 
 export const PAGE_SIZE_PRESETS: readonly PageSizePreset[] = [
@@ -62,9 +70,9 @@ export const MARGIN_PRESETS: readonly MarginPreset[] = [
   },
 ];
 
-/** 預設沿用 technical-legacy 樣式，紙張採目前的技術書 preset。 */
+/** 新版預設採出版社精確版型，紙張使用 17.6 × 23.6 公分。 */
 export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
-  profileId: 'technical-legacy',
+  profileId: 'publisher-exact',
   pageSizeId: 'tech',
-  marginPresetId: 'standard',
+  marginPresetId: 'publisher-exact',
 };

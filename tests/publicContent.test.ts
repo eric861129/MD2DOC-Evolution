@@ -86,6 +86,30 @@ describe('public repository content', () => {
       .toContain('2.10 cm vertical, 2.30 cm horizontal');
   });
 
+  it('現行公開介面與文件只描述新版出版社版型', () => {
+    const currentPublicFiles = [
+      'README.md',
+      'README_EN.md',
+      'content/examples/quick.zh.md',
+      'content/examples/quick.en.md',
+      'content/examples/complete.zh.md',
+      'content/examples/complete.en.md',
+      'docs/AI_GENERATION_GUIDE.md',
+      'docs/ARCHITECTURE.md',
+      'docs/DEVELOPMENT_GUIDE.md',
+      'docs/PROJECT_OVERVIEW.md',
+      'docs/PUBLISHER_PROFILE.md',
+      'docs/USER_GUIDE.md',
+      'services/aiPrompt.ts',
+      'services/i18n.ts',
+    ];
+
+    for (const path of currentPublicFiles) {
+      expect(readUtf8(path), path).not.toContain('technical-legacy');
+    }
+    expect(buildAIPromptFromSyntaxSpec()).not.toContain('technical-legacy');
+  });
+
   it('keeps key public strings valid UTF-8 without replacement or private-use characters', () => {
     const files = [
       'README.md',

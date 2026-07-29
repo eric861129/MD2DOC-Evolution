@@ -43,7 +43,7 @@ Markdown / images
 - 1.27、1.50、2.00、2.54 cm 常用邊界。
 - 出版社精確邊界：上下 2.10、左右 2.30 cm。
 - 鏡像內外側邊界與 gutter。
-- `technical-legacy`、`publisher-exact`、`publisher-narrow`、`publisher-binding` 四種 Profile。
+- `publisher-exact`（預設）、`publisher-narrow`、`publisher-binding` 三種新版 Profile。
 
 ### 出版內容
 
