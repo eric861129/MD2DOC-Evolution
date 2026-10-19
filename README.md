@@ -1,7 +1,7 @@
-# MD2DOC-Evolution | v2.0.0
+# MD2DOC-Evolution | v2.0.1
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
+[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](https://github.com/eric861129/MD2DOC-Evolution)
 [![CI](https://github.com/eric861129/MD2DOC-Evolution/actions/workflows/ci.yml/badge.svg)](https://github.com/eric861129/MD2DOC-Evolution/actions/workflows/ci.yml)
 
 [中文](README.md) | [English](README_EN.md)
