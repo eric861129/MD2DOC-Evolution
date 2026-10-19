@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 
 let mermaidPromise: Promise<any> | null = null;
 let domPurifyPromise: Promise<any> | null = null;
-let mermaidInitialized = false;
 
 const sanitizeMermaidSvg = async (svg: string): Promise<string> => {
   if (!domPurifyPromise) {
@@ -26,29 +25,29 @@ const loadMermaid = async () => {
 
   const mermaid = await mermaidPromise;
 
-  if (!mermaidInitialized) {
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'base',
-      themeVariables: {
-        fontFamily: '"Microsoft JhengHei", "PingFang TC", sans-serif',
-        fontSize: '16px',
-        primaryColor: '#F8F5EF',
-        primaryTextColor: '#1F2933',
-        primaryBorderColor: '#345A70',
-        lineColor: '#345A70',
-        secondaryColor: '#EFE7DA',
-        tertiaryColor: '#FFFFFF',
-      },
-      themeCSS: `
-        .node label { font-weight: 700 !important; }
-        .label { font-weight: 700 !important; }
-        .mermaid .label { font-weight: 700 !important; }
-      `,
-      securityLevel: 'strict',
-    });
-    mermaidInitialized = true;
-  }
+  // Word 匯出會重設共用設定，預覽每次渲染前都需還原版型。
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    // 使用原生 SVG 文字，避免 HTML 文字區塊在安全清理時被移除。
+    htmlLabels: false,
+    themeVariables: {
+      fontFamily: '"Microsoft JhengHei", "PingFang TC", sans-serif',
+      fontSize: '16px',
+      primaryColor: '#F8F5EF',
+      primaryTextColor: '#1F2933',
+      primaryBorderColor: '#345A70',
+      lineColor: '#345A70',
+      secondaryColor: '#EFE7DA',
+      tertiaryColor: '#FFFFFF',
+    },
+    themeCSS: `
+      .node label { font-weight: 700 !important; }
+      .label { font-weight: 700 !important; }
+      .mermaid .label { font-weight: 700 !important; }
+    `,
+    securityLevel: 'strict',
+  });
 
   return mermaid;
 };
@@ -112,7 +111,7 @@ const MermaidRenderer: React.FC<MermaidRendererProps> = ({ chart }) => {
           {isLoading && !svg ? (
             <span>Loading Mermaid...</span>
           ) : (
-            <div dangerouslySetInnerHTML={{ __html: svg }} />
+            <div className="flex w-full justify-center" dangerouslySetInnerHTML={{ __html: svg }} />
           )}
         </div>
       )}
