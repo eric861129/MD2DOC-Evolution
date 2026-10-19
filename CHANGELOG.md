@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2026-10-19
+
+### Fixed
+- Mermaid 預覽改用原生 SVG 文字，修復安全清理後中文節點與連線文字消失的問題。
+- Word 匯出重設共用 Mermaid 設定後，編輯圖表仍會還原預覽設定並保留文字。
+- Mermaid 預覽隨可用寬度縮放，避免圖表被內層容器壓縮。
+
 ## [2.0.1] - 2026-10-19
 
 ### Added
